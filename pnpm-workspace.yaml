@@ -1,0 +1,8 @@
+packages:
+  - .
+
+enablePrePostScripts: true
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

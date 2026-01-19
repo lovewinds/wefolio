@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 카테고리 (기본 제공 + 사용자 정의)
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  type         String        // "income" | "expense"
+  icon         String?
+  color        String?
+  isDefault    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  templates    RecurringTemplate[]
+}
+
+// 수입/지출 거래
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String   // "income" | "expense"
+  amount      Float
+  description String?
+  date        DateTime
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 고정 지출 템플릿
+model RecurringTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "income" | "expense"
+  amount      Float
+  description String?
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 자산
+model Asset {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "cash" | "bank" | "investment" | "property" | "other"
+  balance   Float
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
