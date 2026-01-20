@@ -1,34 +1,62 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
-import {
-  mockTransactions,
-  calculateStats,
-  getExpenseByCategory,
-  formatAmount,
-} from '@/lib/mock-data';
-
-// 통계 계산
-const { totalIncome, totalExpense, balance } = calculateStats(mockTransactions);
-
-// 카테고리별 지출 데이터 (Pie Chart용)
-const expenseByCategory = getExpenseByCategory(mockTransactions);
-
-// 수입 vs 지출 비교 데이터 (Bar Chart용)
-const incomeExpenseData = [
-  {
-    category: '이번 달',
-    수입: totalIncome,
-    지출: totalExpense,
-  },
-];
+import { fetchDashboardData, formatAmount, type DashboardData } from '@/lib/mock-data';
 
 export default function Home() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const currentMonth = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
   });
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const dashboardData = await fetchDashboardData();
+        setData(dashboardData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+        <div className="text-rose-600 dark:text-rose-400">{error ?? 'Failed to load data'}</div>
+      </div>
+    );
+  }
+
+  const { stats, transactions, expenseByCategory } = data;
+  const { totalIncome, totalExpense, balance } = stats;
+
+  // 수입 vs 지출 비교 데이터 (Bar Chart용)
+  const incomeExpenseData = [
+    {
+      category: '이번 달',
+      수입: totalIncome,
+      지출: totalExpense,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
@@ -169,7 +197,7 @@ export default function Home() {
             최근 거래 내역
           </h3>
           <div className="space-y-3">
-            {mockTransactions.slice(0, 5).map(transaction => (
+            {transactions.slice(0, 5).map(transaction => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between border-b border-zinc-100 pb-3 last:border-0 dark:border-zinc-700"

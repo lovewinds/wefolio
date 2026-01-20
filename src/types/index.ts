@@ -49,3 +49,31 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// Dashboard Types
+export interface DashboardTransaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  category: string;
+  description?: string;
+  date: string;
+}
+
+export interface DashboardStats {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
+export interface CategoryExpense {
+  id: string;
+  label: string;
+  value: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  transactions: DashboardTransaction[];
+  expenseByCategory: CategoryExpense[];
+}

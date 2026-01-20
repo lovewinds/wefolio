@@ -57,7 +57,7 @@ export const defaultCategories: SeedCategory[] = [
   { name: '기타', type: 'expense', icon: '📝', color: '#71717a', isDefault: true },
 ];
 
-// Mock 거래 데이터 (2025년 1월)
+// Mock 거래 데이터 (2026년 1월)
 const januaryTransactions: SeedTransaction[] = [
   // 수입
   {
@@ -65,14 +65,14 @@ const januaryTransactions: SeedTransaction[] = [
     amount: 4500000,
     category: '급여',
     description: '1월 급여',
-    date: createDate('20250110'),
+    date: createDate('20260110'),
   },
   {
     type: 'income',
     amount: 200000,
     category: '부수입',
     description: '프리랜서 작업',
-    date: createDate('20250115'),
+    date: createDate('20260115'),
   },
   // 지출
   {
@@ -80,60 +80,60 @@ const januaryTransactions: SeedTransaction[] = [
     amount: 1200000,
     category: '주거비',
     description: '월세',
-    date: createDate('20250105'),
+    date: createDate('20260105'),
   },
   {
     type: 'expense',
     amount: 450000,
     category: '식비',
     description: '식료품 및 외식',
-    date: createDate('20250108'),
+    date: createDate('20260108'),
   },
   {
     type: 'expense',
     amount: 150000,
     category: '교통비',
     description: '대중교통 및 주유',
-    date: createDate('20250110'),
+    date: createDate('20260110'),
   },
   {
     type: 'expense',
     amount: 80000,
     category: '통신비',
     description: '핸드폰 요금',
-    date: createDate('20250112'),
+    date: createDate('20260112'),
   },
   {
     type: 'expense',
     amount: 200000,
     category: '문화생활',
     description: '영화, 공연',
-    date: createDate('20250114'),
+    date: createDate('20260114'),
   },
   {
     type: 'expense',
     amount: 350000,
     category: '쇼핑',
     description: '의류 구매',
-    date: createDate('20250116'),
+    date: createDate('20260116'),
   },
   {
     type: 'expense',
     amount: 120000,
     category: '의료비',
     description: '병원 진료',
-    date: createDate('20250118'),
+    date: createDate('20260118'),
   },
   {
     type: 'expense',
     amount: 300000,
     category: '저축',
     description: '적금 이체',
-    date: createDate('20250120'),
+    date: createDate('20260120'),
   },
 ];
 
-// Mock 거래 데이터 (2025년 2월)
+// Mock 거래 데이터 (2026년 2월)
 const februaryTransactions: SeedTransaction[] = [
   // 수입
   {
@@ -141,14 +141,14 @@ const februaryTransactions: SeedTransaction[] = [
     amount: 4500000,
     category: '급여',
     description: '2월 급여',
-    date: createDate('20250210'),
+    date: createDate('20260210'),
   },
   {
     type: 'income',
     amount: 150000,
     category: '이자',
     description: '예금 이자',
-    date: createDate('20250228'),
+    date: createDate('20260228'),
   },
   // 지출
   {
@@ -156,60 +156,60 @@ const februaryTransactions: SeedTransaction[] = [
     amount: 1200000,
     category: '주거비',
     description: '월세',
-    date: createDate('20250205'),
+    date: createDate('20260205'),
   },
   {
     type: 'expense',
     amount: 520000,
     category: '식비',
     description: '식료품 및 외식',
-    date: createDate('20250207'),
+    date: createDate('20260207'),
   },
   {
     type: 'expense',
     amount: 180000,
     category: '교통비',
     description: '대중교통 및 주유',
-    date: createDate('20250210'),
+    date: createDate('20260210'),
   },
   {
     type: 'expense',
     amount: 80000,
     category: '통신비',
     description: '핸드폰 요금',
-    date: createDate('20250212'),
+    date: createDate('20260212'),
   },
   {
     type: 'expense',
     amount: 150000,
     category: '문화생활',
     description: '콘서트 티켓',
-    date: createDate('20250214'),
+    date: createDate('20260214'),
   },
   {
     type: 'expense',
     amount: 280000,
     category: '쇼핑',
     description: '생활용품',
-    date: createDate('20250218'),
+    date: createDate('20260218'),
   },
   {
     type: 'expense',
     amount: 300000,
     category: '저축',
     description: '적금 이체',
-    date: createDate('20250220'),
+    date: createDate('20260220'),
   },
   {
     type: 'expense',
     amount: 50000,
     category: '기타',
     description: '경조사비',
-    date: createDate('20250225'),
+    date: createDate('20260225'),
   },
 ];
 
-// Mock 거래 데이터 (2025년 3월)
+// Mock 거래 데이터 (2026년 3월)
 const marchTransactions: SeedTransaction[] = [
   // 수입
   {
@@ -217,21 +217,21 @@ const marchTransactions: SeedTransaction[] = [
     amount: 4500000,
     category: '급여',
     description: '3월 급여',
-    date: createDate('20250310'),
+    date: createDate('20260310'),
   },
   {
     type: 'income',
     amount: 300000,
     category: '부수입',
     description: '프리랜서 작업',
-    date: createDate('20250320'),
+    date: createDate('20260320'),
   },
   {
     type: 'income',
     amount: 100000,
     category: '용돈',
     description: '부모님 용돈',
-    date: createDate('20250315'),
+    date: createDate('20260315'),
   },
   // 지출
   {
@@ -239,56 +239,56 @@ const marchTransactions: SeedTransaction[] = [
     amount: 1200000,
     category: '주거비',
     description: '월세',
-    date: createDate('20250305'),
+    date: createDate('20260305'),
   },
   {
     type: 'expense',
     amount: 480000,
     category: '식비',
     description: '식료품 및 외식',
-    date: createDate('20250308'),
+    date: createDate('20260308'),
   },
   {
     type: 'expense',
     amount: 160000,
     category: '교통비',
     description: '대중교통 및 주유',
-    date: createDate('20250310'),
+    date: createDate('20260310'),
   },
   {
     type: 'expense',
     amount: 80000,
     category: '통신비',
     description: '핸드폰 요금',
-    date: createDate('20250312'),
+    date: createDate('20260312'),
   },
   {
     type: 'expense',
     amount: 250000,
     category: '문화생활',
     description: '여행 경비',
-    date: createDate('20250322'),
+    date: createDate('20260322'),
   },
   {
     type: 'expense',
     amount: 420000,
     category: '쇼핑',
     description: '봄옷 구매',
-    date: createDate('20250316'),
+    date: createDate('20260316'),
   },
   {
     type: 'expense',
     amount: 85000,
     category: '의료비',
     description: '건강검진',
-    date: createDate('20250325'),
+    date: createDate('20260325'),
   },
   {
     type: 'expense',
     amount: 300000,
     category: '저축',
     description: '적금 이체',
-    date: createDate('20250320'),
+    date: createDate('20260320'),
   },
 ];
 

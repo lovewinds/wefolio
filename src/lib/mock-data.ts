@@ -1,4 +1,8 @@
 // 클라이언트 사이드 Mock 데이터 (개발/테스트용)
+import type { DashboardData, DashboardTransaction, DashboardStats, CategoryExpense } from '@/types';
+
+// Mock 데이터 사용 여부 확인
+export const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 
 export interface MockTransaction {
   id: string;
@@ -144,3 +148,52 @@ export function formatAmount(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+// Mock 데이터를 DashboardData 형식으로 변환
+export function getMockDashboardData(): DashboardData {
+  const stats = calculateStats(mockTransactions);
+  const expenseByCategory = getExpenseByCategory(mockTransactions);
+
+  const transactions: DashboardTransaction[] = mockTransactions.map(t => ({
+    id: t.id,
+    type: t.type,
+    amount: t.amount,
+    category: t.category,
+    description: t.description,
+    date: t.date,
+  }));
+
+  return {
+    stats: {
+      totalIncome: stats.totalIncome,
+      totalExpense: stats.totalExpense,
+      balance: stats.balance,
+    },
+    transactions,
+    expenseByCategory,
+  };
+}
+
+// 대시보드 데이터 가져오기 (mock 또는 API)
+export async function fetchDashboardData(year?: number, month?: number): Promise<DashboardData> {
+  if (useMockData) {
+    return getMockDashboardData();
+  }
+
+  const params = new URLSearchParams();
+  if (year) params.set('year', String(year));
+  if (month) params.set('month', String(month));
+
+  const url = `/api/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+  const response = await fetch(url);
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error ?? 'Failed to fetch dashboard data');
+  }
+
+  return result.data;
+}
+
+// 타입 재export
+export type { DashboardData, DashboardTransaction, DashboardStats, CategoryExpense };
