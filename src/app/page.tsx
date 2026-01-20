@@ -2,50 +2,18 @@
 
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
+import {
+  mockTransactions,
+  calculateStats,
+  getExpenseByCategory,
+  formatAmount,
+} from '@/lib/mock-data';
 
-// Mock data - 이번 달 거래 데이터
-const mockTransactions = [
-  // 수입
-  { id: '1', type: 'income', amount: 4500000, category: '급여', date: '2026-01-10' },
-  { id: '2', type: 'income', amount: 200000, category: '부수입', date: '2026-01-15' },
-  // 지출
-  { id: '3', type: 'expense', amount: 1200000, category: '주거비', date: '2026-01-05' },
-  { id: '4', type: 'expense', amount: 450000, category: '식비', date: '2026-01-08' },
-  { id: '5', type: 'expense', amount: 150000, category: '교통비', date: '2026-01-10' },
-  { id: '6', type: 'expense', amount: 80000, category: '통신비', date: '2026-01-12' },
-  { id: '7', type: 'expense', amount: 200000, category: '문화생활', date: '2026-01-14' },
-  { id: '8', type: 'expense', amount: 350000, category: '쇼핑', date: '2026-01-16' },
-  { id: '9', type: 'expense', amount: 120000, category: '의료비', date: '2026-01-18' },
-  { id: '10', type: 'expense', amount: 300000, category: '저축', date: '2026-01-20' },
-];
-
-// 수입/지출 계산
-const totalIncome = mockTransactions
-  .filter(t => t.type === 'income')
-  .reduce((sum, t) => sum + t.amount, 0);
-
-const totalExpense = mockTransactions
-  .filter(t => t.type === 'expense')
-  .reduce((sum, t) => sum + t.amount, 0);
-
-const balance = totalIncome - totalExpense;
+// 통계 계산
+const { totalIncome, totalExpense, balance } = calculateStats(mockTransactions);
 
 // 카테고리별 지출 데이터 (Pie Chart용)
-const expenseByCategory = mockTransactions
-  .filter(t => t.type === 'expense')
-  .reduce(
-    (acc, t) => {
-      const existing = acc.find(item => item.id === t.category);
-      if (existing) {
-        existing.value += t.amount;
-      } else {
-        acc.push({ id: t.category, label: t.category, value: t.amount });
-      }
-      return acc;
-    },
-    [] as { id: string; label: string; value: number }[]
-  )
-  .sort((a, b) => b.value - a.value);
+const expenseByCategory = getExpenseByCategory(mockTransactions);
 
 // 수입 vs 지출 비교 데이터 (Bar Chart용)
 const incomeExpenseData = [
@@ -55,15 +23,6 @@ const incomeExpenseData = [
     지출: totalExpense,
   },
 ];
-
-// 금액 포맷팅
-const formatAmount = (amount: number) => {
-  return new Intl.NumberFormat('ko-KR', {
-    style: 'currency',
-    currency: 'KRW',
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 export default function Home() {
   const currentMonth = new Date().toLocaleDateString('ko-KR', {

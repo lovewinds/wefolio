@@ -80,6 +80,35 @@ pnpm prisma migrate dev  # 마이그레이션 생성 및 적용
 pnpm prisma studio    # Prisma Studio 실행
 ```
 
+## 데이터 초기화
+
+### 처음 시작할 때
+
+```bash
+# 1. 의존성 설치
+pnpm install
+
+# 2. 환경 변수 설정 (.env 파일 생성)
+echo 'DATABASE_URL="file:./dev.db"' > .env
+
+# 3. 데이터베이스 스키마 반영 및 시드 데이터 삽입
+pnpm prisma db push
+pnpm db:seed
+```
+
+### 시드 데이터 명령어
+
+```bash
+pnpm db:seed   # 시드 데이터 삽입 (카테고리, 거래, 자산, 템플릿)
+pnpm db:reset  # DB 초기화 후 시드 데이터 재삽입
+```
+
+### 시드 데이터 파일
+
+- `prisma/seed-data.ts` - 시드 데이터 정의 (카테고리, 거래, 자산, 템플릿)
+- `prisma/seed.ts` - 시드 스크립트 (데이터 삽입 로직)
+- `src/lib/mock-data.ts` - 클라이언트 사이드 Mock 데이터 (개발/테스트용)
+
 ## 코드 컨벤션
 
 - ESLint + Prettier 사용
