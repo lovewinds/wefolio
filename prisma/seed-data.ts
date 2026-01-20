@@ -58,7 +58,7 @@ export const defaultCategories: SeedCategory[] = [
 ];
 
 // Mock 거래 데이터 (2025년 1월)
-export const mockTransactions: SeedTransaction[] = [
+const januaryTransactions: SeedTransaction[] = [
   // 수입
   {
     type: 'income',
@@ -131,6 +131,172 @@ export const mockTransactions: SeedTransaction[] = [
     description: '적금 이체',
     date: createDate('20250120'),
   },
+];
+
+// Mock 거래 데이터 (2025년 2월)
+const februaryTransactions: SeedTransaction[] = [
+  // 수입
+  {
+    type: 'income',
+    amount: 4500000,
+    category: '급여',
+    description: '2월 급여',
+    date: createDate('20250210'),
+  },
+  {
+    type: 'income',
+    amount: 150000,
+    category: '이자',
+    description: '예금 이자',
+    date: createDate('20250228'),
+  },
+  // 지출
+  {
+    type: 'expense',
+    amount: 1200000,
+    category: '주거비',
+    description: '월세',
+    date: createDate('20250205'),
+  },
+  {
+    type: 'expense',
+    amount: 520000,
+    category: '식비',
+    description: '식료품 및 외식',
+    date: createDate('20250207'),
+  },
+  {
+    type: 'expense',
+    amount: 180000,
+    category: '교통비',
+    description: '대중교통 및 주유',
+    date: createDate('20250210'),
+  },
+  {
+    type: 'expense',
+    amount: 80000,
+    category: '통신비',
+    description: '핸드폰 요금',
+    date: createDate('20250212'),
+  },
+  {
+    type: 'expense',
+    amount: 150000,
+    category: '문화생활',
+    description: '콘서트 티켓',
+    date: createDate('20250214'),
+  },
+  {
+    type: 'expense',
+    amount: 280000,
+    category: '쇼핑',
+    description: '생활용품',
+    date: createDate('20250218'),
+  },
+  {
+    type: 'expense',
+    amount: 300000,
+    category: '저축',
+    description: '적금 이체',
+    date: createDate('20250220'),
+  },
+  {
+    type: 'expense',
+    amount: 50000,
+    category: '기타',
+    description: '경조사비',
+    date: createDate('20250225'),
+  },
+];
+
+// Mock 거래 데이터 (2025년 3월)
+const marchTransactions: SeedTransaction[] = [
+  // 수입
+  {
+    type: 'income',
+    amount: 4500000,
+    category: '급여',
+    description: '3월 급여',
+    date: createDate('20250310'),
+  },
+  {
+    type: 'income',
+    amount: 300000,
+    category: '부수입',
+    description: '프리랜서 작업',
+    date: createDate('20250320'),
+  },
+  {
+    type: 'income',
+    amount: 100000,
+    category: '용돈',
+    description: '부모님 용돈',
+    date: createDate('20250315'),
+  },
+  // 지출
+  {
+    type: 'expense',
+    amount: 1200000,
+    category: '주거비',
+    description: '월세',
+    date: createDate('20250305'),
+  },
+  {
+    type: 'expense',
+    amount: 480000,
+    category: '식비',
+    description: '식료품 및 외식',
+    date: createDate('20250308'),
+  },
+  {
+    type: 'expense',
+    amount: 160000,
+    category: '교통비',
+    description: '대중교통 및 주유',
+    date: createDate('20250310'),
+  },
+  {
+    type: 'expense',
+    amount: 80000,
+    category: '통신비',
+    description: '핸드폰 요금',
+    date: createDate('20250312'),
+  },
+  {
+    type: 'expense',
+    amount: 250000,
+    category: '문화생활',
+    description: '여행 경비',
+    date: createDate('20250322'),
+  },
+  {
+    type: 'expense',
+    amount: 420000,
+    category: '쇼핑',
+    description: '봄옷 구매',
+    date: createDate('20250316'),
+  },
+  {
+    type: 'expense',
+    amount: 85000,
+    category: '의료비',
+    description: '건강검진',
+    date: createDate('20250325'),
+  },
+  {
+    type: 'expense',
+    amount: 300000,
+    category: '저축',
+    description: '적금 이체',
+    date: createDate('20250320'),
+  },
+];
+
+// 월별 데이터 통합
+export const mockTransactions: SeedTransaction[] = [
+  ...januaryTransactions,
+  ...februaryTransactions,
+  ...marchTransactions,
 ];
 
 // Mock 자산 데이터
