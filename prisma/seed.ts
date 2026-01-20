@@ -43,15 +43,12 @@ async function main() {
       continue;
     }
 
-    const date = new Date();
-    date.setDate(date.getDate() - transaction.daysAgo);
-
     await prisma.transaction.create({
       data: {
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description,
-        date: date,
+        date: transaction.date,
         categoryId: categoryId,
       },
     });
