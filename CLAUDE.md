@@ -118,6 +118,26 @@ pnpm db:reset  # DB 초기화 후 시드 데이터 재삽입
 - 컴포넌트명: PascalCase (예: `TransactionList`)
 - 타입/인터페이스: PascalCase, `I` prefix 없이 사용
 
+## 커밋 컨벤션
+
+- Conventional Commit 스타일 사용
+- Co-Authored-By 사용하지 않음
+
+```
+<type>: <subject>
+
+<body>
+```
+
+**Type 종류:**
+- `feat`: 새로운 기능 추가
+- `fix`: 버그 수정
+- `refactor`: 코드 리팩토링
+- `chore`: 빌드, 설정 등 기타 변경
+- `docs`: 문서 변경
+- `style`: 코드 포맷팅
+- `test`: 테스트 추가/수정
+
 ## 환경 변수
 
 ```env
