@@ -98,6 +98,8 @@ export default function Home() {
           totalIncome={totalIncome}
           totalExpense={totalExpense}
           balance={balance}
+          year={selectedYear}
+          month={selectedMonth}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
         />

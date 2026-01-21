@@ -23,15 +23,17 @@ model Category {
 
 // 수입/지출 거래
 model Transaction {
-  id          String   @id @default(cuid())
-  type        String   // "income" | "expense"
-  amount      Float
-  description String?
-  date        DateTime
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  type          String   // "income" | "expense"
+  amount        Float
+  description   String?
+  date          DateTime
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  paymentMethod String?  // "현대카드" | "신한카드" | "계좌이체" | "현금" 등
+  user          String?  // "지완" | "지아"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 // 고정 지출 템플릿
