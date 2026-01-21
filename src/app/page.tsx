@@ -68,7 +68,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
         <LNB />
-        <main className="ml-60 flex min-h-screen items-center justify-center">
+        <main className="ml-16 flex min-h-screen items-center justify-center">
           <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
         </main>
       </div>
@@ -79,7 +79,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
         <LNB />
-        <main className="ml-60 flex min-h-screen items-center justify-center">
+        <main className="ml-16 flex min-h-screen items-center justify-center">
           <div className="text-rose-600 dark:text-rose-400">{error ?? 'Failed to load data'}</div>
         </main>
       </div>
@@ -92,7 +92,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <LNB />
-      <main className="ml-60 px-8 py-8">
+      <main className="ml-16 px-8 py-8">
         <MonthlySummary
           currentMonth={currentMonthDisplay}
           totalIncome={totalIncome}

@@ -16,7 +16,7 @@ export default function YearlySummaryPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <LNB />
-      <main className="ml-60 px-8 py-8">
+      <main className="ml-16 px-8 py-8">
         <div className="mb-8 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">연간 요약</h2>
           <div className="flex items-center gap-4">
