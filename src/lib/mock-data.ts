@@ -10,17 +10,26 @@ export interface MockTransaction {
   amount: number;
   category: string;
   description?: string;
-  date: string;
+  date: Date;
 }
 
-// 현재 월의 날짜 생성 헬퍼
-function getDateString(daysAgo: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().split('T')[0];
+// 날짜 생성 헬퍼 (YYYYMMDD 형식 입력 -> Date 반환)
+function createDate(dateStr: string): Date {
+  const year = parseInt(dateStr.substring(0, 4), 10);
+  const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+  const day = parseInt(dateStr.substring(6, 8), 10);
+  return new Date(year, month, day);
 }
 
-// Mock 거래 데이터
+// Date를 YYYYMMDD 문자열로 변환
+function formatDateToString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+// Mock 거래 데이터 (2026년 1월)
 export const mockTransactions: MockTransaction[] = [
   // 수입
   {
@@ -29,7 +38,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 4500000,
     category: '급여',
     description: '1월 급여',
-    date: getDateString(10),
+    date: createDate('20260110'),
   },
   {
     id: '2',
@@ -37,7 +46,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 200000,
     category: '부수입',
     description: '프리랜서 작업',
-    date: getDateString(5),
+    date: createDate('20260115'),
   },
   // 지출
   {
@@ -46,7 +55,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 1200000,
     category: '주거비',
     description: '월세',
-    date: getDateString(15),
+    date: createDate('20260105'),
   },
   {
     id: '4',
@@ -54,7 +63,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 450000,
     category: '식비',
     description: '식료품 및 외식',
-    date: getDateString(12),
+    date: createDate('20260108'),
   },
   {
     id: '5',
@@ -62,7 +71,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 150000,
     category: '교통비',
     description: '대중교통 및 주유',
-    date: getDateString(10),
+    date: createDate('20260110'),
   },
   {
     id: '6',
@@ -70,7 +79,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 80000,
     category: '통신비',
     description: '핸드폰 요금',
-    date: getDateString(8),
+    date: createDate('20260112'),
   },
   {
     id: '7',
@@ -78,7 +87,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 200000,
     category: '문화생활',
     description: '영화, 공연',
-    date: getDateString(6),
+    date: createDate('20260114'),
   },
   {
     id: '8',
@@ -86,7 +95,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 350000,
     category: '쇼핑',
     description: '의류 구매',
-    date: getDateString(4),
+    date: createDate('20260116'),
   },
   {
     id: '9',
@@ -94,7 +103,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 120000,
     category: '의료비',
     description: '병원 진료',
-    date: getDateString(2),
+    date: createDate('20260118'),
   },
   {
     id: '10',
@@ -102,7 +111,7 @@ export const mockTransactions: MockTransaction[] = [
     amount: 300000,
     category: '저축',
     description: '적금 이체',
-    date: getDateString(0),
+    date: createDate('20260120'),
   },
 ];
 
@@ -160,7 +169,7 @@ export function getMockDashboardData(): DashboardData {
     amount: t.amount,
     category: t.category,
     description: t.description,
-    date: t.date,
+    date: formatDateToString(t.date),
   }));
 
   return {
