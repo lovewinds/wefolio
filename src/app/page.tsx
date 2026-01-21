@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
 import {
   DashboardHeader,
@@ -10,21 +10,50 @@ import {
   RecentTransactions,
 } from '@/components/features/dashboard';
 
+function getCurrentYearMonth() {
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+function formatMonthDisplay(year: number, month: number): string {
+  const date = new Date(year, month - 1);
+  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
+}
+
 export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState(() => getCurrentYearMonth().year);
+  const [selectedMonth, setSelectedMonth] = useState(() => getCurrentYearMonth().month);
 
-  const currentMonth = new Date().toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-  });
+  const currentMonthDisplay = formatMonthDisplay(selectedYear, selectedMonth);
+
+  const handlePrevMonth = useCallback(() => {
+    setSelectedMonth(prev => {
+      if (prev === 1) {
+        setSelectedYear(y => y - 1);
+        return 12;
+      }
+      return prev - 1;
+    });
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setSelectedMonth(prev => {
+      if (prev === 12) {
+        setSelectedYear(y => y + 1);
+        return 1;
+      }
+      return prev + 1;
+    });
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const dashboardData = await fetchDashboardData();
+        const dashboardData = await fetchDashboardData(selectedYear, selectedMonth);
         setData(dashboardData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -33,7 +62,7 @@ export default function Home() {
       }
     };
     loadData();
-  }, []);
+  }, [selectedYear, selectedMonth]);
 
   if (loading) {
     return (
@@ -60,10 +89,12 @@ export default function Home() {
         <DashboardHeader />
 
         <MonthlySummary
-          currentMonth={currentMonth}
+          currentMonth={currentMonthDisplay}
           totalIncome={totalIncome}
           totalExpense={totalExpense}
           balance={balance}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
         />
 
         <div className="grid gap-6 lg:grid-cols-2">
