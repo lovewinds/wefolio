@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
 import {
-  DashboardHeader,
   MonthlySummary,
   IncomeExpenseChart,
   ExpenseByCategoryChart,
   RecentTransactions,
 } from '@/components/features/dashboard';
+import { LNB } from '@/components/features/layout';
 
 function getCurrentYearMonth() {
   const now = new Date();
@@ -66,16 +66,22 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
+        <LNB />
+        <main className="ml-60 flex min-h-screen items-center justify-center">
+          <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+        </main>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-        <div className="text-rose-600 dark:text-rose-400">{error ?? 'Failed to load data'}</div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
+        <LNB />
+        <main className="ml-60 flex min-h-screen items-center justify-center">
+          <div className="text-rose-600 dark:text-rose-400">{error ?? 'Failed to load data'}</div>
+        </main>
       </div>
     );
   }
@@ -85,9 +91,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <DashboardHeader />
-
+      <LNB />
+      <main className="ml-60 px-8 py-8">
         <MonthlySummary
           currentMonth={currentMonthDisplay}
           totalIncome={totalIncome}
