@@ -1,11 +1,81 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { formatAmount, type DashboardTransaction } from '@/lib/mock-data';
 
 type TransactionTypeFilter = 'all' | 'income' | 'expense';
 type SortOrder = 'none' | 'asc' | 'desc';
+
+interface FilterDropdownOption {
+  value: string;
+  label: string;
+}
+
+interface FilterDropdownProps {
+  value: string;
+  options: FilterDropdownOption[];
+  onChange: (value: string) => void;
+}
+
+function FilterDropdown({ value, options, onChange }: FilterDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedLabel = options.find(opt => opt.value === value)?.label ?? '';
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 rounded-lg border-0 bg-gradient-to-b from-zinc-50 to-zinc-100 px-4 py-1.5 text-sm font-medium text-zinc-700 shadow-sm outline-none transition-all hover:from-zinc-100 hover:to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 dark:text-zinc-300 dark:hover:from-zinc-700 dark:hover:to-zinc-800"
+      >
+        {selectedLabel}
+        <svg
+          className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 z-10 mt-1 min-w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          {options.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full whitespace-nowrap px-4 py-2 text-left text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+                value === option.value
+                  ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
+                  : 'text-zinc-600 dark:text-zinc-300'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface RecentTransactionsProps {
   transactions: DashboardTransaction[];
@@ -48,38 +118,34 @@ export function RecentTransactions({ transactions, limit = 5 }: RecentTransactio
         <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">최근 거래 내역</h3>
 
         <div className="flex flex-wrap gap-2">
-          <select
+          <FilterDropdown
             value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value as TransactionTypeFilter)}
-            className="rounded-full border-0 bg-zinc-100 px-4 py-1.5 text-sm font-medium text-zinc-600 outline-none transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            <option value="all">전체</option>
-            <option value="income">수입</option>
-            <option value="expense">지출</option>
-          </select>
+            onChange={v => setTypeFilter(v as TransactionTypeFilter)}
+            options={[
+              { value: 'all', label: '전체' },
+              { value: 'income', label: '수입' },
+              { value: 'expense', label: '지출' },
+            ]}
+          />
 
-          <select
+          <FilterDropdown
             value={categoryFilter}
-            onChange={e => setCategoryFilter(e.target.value)}
-            className="rounded-full border-0 bg-zinc-100 px-4 py-1.5 text-sm font-medium text-zinc-600 outline-none transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            <option value="all">전체 카테고리</option>
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
+            onChange={setCategoryFilter}
+            options={[
+              { value: 'all', label: '전체 카테고리' },
+              ...categories.map(category => ({ value: category, label: category })),
+            ]}
+          />
 
-          <select
+          <FilterDropdown
             value={sortOrder}
-            onChange={e => setSortOrder(e.target.value as SortOrder)}
-            className="rounded-full border-0 bg-zinc-100 px-4 py-1.5 text-sm font-medium text-zinc-600 outline-none transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            <option value="none">정렬 없음</option>
-            <option value="asc">금액 오름차순</option>
-            <option value="desc">금액 내림차순</option>
-          </select>
+            onChange={v => setSortOrder(v as SortOrder)}
+            options={[
+              { value: 'none', label: '정렬 없음' },
+              { value: 'asc', label: '금액 오름차순' },
+              { value: 'desc', label: '금액 내림차순' },
+            ]}
+          />
         </div>
       </div>
 
