@@ -25,6 +25,9 @@ export function MonthlySummary({
 }: MonthlySummaryProps) {
   const addTransactionUrl =
     year && month ? `/transactions/new?year=${year}&month=${month}` : '/transactions/new';
+  const totalFlow = totalIncome + totalExpense;
+  const incomeRatio = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 50;
+  const expenseRatio = totalFlow > 0 ? (totalExpense / totalFlow) * 100 : 50;
 
   return (
     <section className="mb-8">
@@ -96,28 +99,65 @@ export function MonthlySummary({
           거래 추가
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">총 수입</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {formatAmount(totalIncome)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">총 지출</p>
-          <p className="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">
-            {formatAmount(totalExpense)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">잔액</p>
-          <p
-            className={`mt-1 text-2xl font-bold ${
-              balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            {formatAmount(balance)}
-          </p>
+      <div className="grid gap-4">
+        <Card className="border border-zinc-100/80 bg-gradient-to-br from-white to-zinc-50/80 shadow-sm dark:border-zinc-700/60 dark:from-zinc-900 dark:to-zinc-800">
+          <div className="flex flex-col gap-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/80 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/40">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/80">
+                  수입
+                </p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+                  {formatAmount(totalIncome)}
+                </p>
+                <p className="mt-1 text-xs text-emerald-700/70 dark:text-emerald-300/70">
+                  전체의 {Math.round(incomeRatio)}%
+                </p>
+              </div>
+              <div className="rounded-2xl border border-rose-200/60 bg-rose-50/80 p-4 dark:border-rose-900/60 dark:bg-rose-950/40">
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-700/80 dark:text-rose-300/80">
+                  지출
+                </p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-rose-700 dark:text-rose-300">
+                  {formatAmount(totalExpense)}
+                </p>
+                <p className="mt-1 text-xs text-rose-700/70 dark:text-rose-300/70">
+                  전체의 {Math.round(expenseRatio)}%
+                </p>
+              </div>
+              <div className="rounded-2xl border border-blue-200/50 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  잔액
+                </p>
+                <p
+                  className={`mt-1 text-2xl font-semibold tracking-tight ${
+                    balance >= 0
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {formatAmount(balance)}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  수입 - 지출
+                </p>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                <span>수입/지출 비중</span>
+                <span>
+                  {Math.round(incomeRatio)}% / {Math.round(expenseRatio)}%
+                </span>
+              </div>
+              <div className="mt-2 h-2.5 w-full rounded-full bg-zinc-200/70 dark:bg-zinc-700/60">
+                <div className="flex h-full w-full overflow-hidden rounded-full">
+                  <div className="h-full bg-emerald-500" style={{ width: `${incomeRatio}%` }} />
+                  <div className="h-full bg-rose-500" style={{ width: `${expenseRatio}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
     </section>
