@@ -138,9 +138,7 @@ export function MonthlySummary({
                 >
                   {formatAmount(balance)}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  수입 - 지출
-                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">수입 - 지출</p>
               </div>
             </div>
             <div>

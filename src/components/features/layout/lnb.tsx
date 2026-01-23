@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CalendarRange, type LucideIcon } from 'lucide-react';
+import { useCallback, useSyncExternalStore } from 'react';
+import { Calendar, CalendarRange, Moon, Sun, type LucideIcon } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -15,8 +16,46 @@ const navItems: NavItem[] = [
   { href: '/statistics/yearly', label: '연간 요약', icon: CalendarRange },
 ];
 
+function useTheme() {
+  const subscribe = useCallback((callback: () => void) => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', callback);
+    window.addEventListener('storage', callback);
+    return () => {
+      mediaQuery.removeEventListener('change', callback);
+      window.removeEventListener('storage', callback);
+    };
+  }, []);
+
+  const getSnapshot = useCallback(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark') return true;
+    if (stored === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }, []);
+
+  const getServerSnapshot = useCallback(() => false, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 export function LNB() {
   const pathname = usePathname();
+  const isDark = useTheme();
+
+  const toggleDarkMode = () => {
+    const newIsDark = !isDark;
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    }
+    window.dispatchEvent(new Event('storage'));
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-16 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
@@ -48,6 +87,16 @@ export function LNB() {
             })}
           </ul>
         </nav>
+
+        <footer className="pb-4">
+          <button
+            onClick={toggleDarkMode}
+            title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+          >
+            {isDark ? <Sun size={20} strokeWidth={1.5} /> : <Moon size={20} strokeWidth={1.5} />}
+          </button>
+        </footer>
       </div>
     </aside>
   );
