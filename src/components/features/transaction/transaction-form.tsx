@@ -94,8 +94,13 @@ export function TransactionForm({ defaultDate }: TransactionFormProps) {
       const result = await response.json();
 
       if (result.success) {
-        router.push('/');
+        setAmount('');
+        setCategoryId('');
+        setPaymentMethod('');
+        setUser('');
+        setDescription('');
         router.refresh();
+        amountRef.current?.focus();
       } else {
         setError(result.error || '거래 저장에 실패했습니다.');
       }
