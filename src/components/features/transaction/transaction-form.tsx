@@ -97,7 +97,7 @@ export function TransactionForm({ defaultDate }: TransactionFormProps) {
         setAmount('');
         setCategoryId('');
         setPaymentMethod('');
-        setUser('');
+        // setUser('');  // Keep user field as is for convenience
         setDescription('');
         router.refresh();
         amountRef.current?.focus();
