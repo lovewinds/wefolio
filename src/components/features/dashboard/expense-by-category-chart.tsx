@@ -23,20 +23,25 @@ export function ExpenseByCategoryChart({ data }: ExpenseByCategoryChartProps) {
       <div className="h-64">
         <ResponsivePie
           data={data}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+          margin={{ top: 24, right: 48, bottom: 28, left: 48 }}
           innerRadius={0.5}
           padAngle={0.7}
           cornerRadius={3}
           activeOuterRadiusOffset={8}
-          colors={{ scheme: 'paired' }}
+          colors={{ scheme: 'set3' }}
           borderWidth={1}
           borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
           arcLinkLabelsSkipAngle={10}
-          arcLinkLabelsTextColor="#71717a"
+          arcLinkLabelsTextColor="#52525b"
           arcLinkLabelsThickness={2}
+          arcLinkLabelsDiagonalLength={14}
+          arcLinkLabelsStraightLength={12}
+          arcLinkLabelsTextOffset={6}
+          arcLinkLabel={datum => formatAmount(datum.value)}
           arcLinkLabelsColor={{ from: 'color' }}
-          arcLabelsSkipAngle={10}
-          arcLabelsTextColor="#ffffff"
+          arcLabelsSkipAngle={14}
+          arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2.6]] }}
+          arcLabel="label"
           valueFormat={v => formatAmount(v)}
         />
       </div>
