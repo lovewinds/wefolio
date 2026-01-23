@@ -60,8 +60,8 @@ function TransactionNewContent() {
       <main className="ml-16 px-8 py-8">
         <h1 className="mb-6 text-2xl font-bold text-zinc-800 dark:text-zinc-100">거래 추가</h1>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-1">
+          <div>
             {loading ? (
               <Card>
                 <div className="flex h-64 items-center justify-center">
@@ -69,13 +69,13 @@ function TransactionNewContent() {
                 </div>
               </Card>
             ) : data ? (
-              <>
+              <div className="grid gap-6 md:grid-cols-2">
                 <IncomeExpenseChart
                   totalIncome={data.totalIncome}
                   totalExpense={data.totalExpense}
                 />
                 <ExpenseByCategoryChart data={data.expenseByCategory} />
-              </>
+              </div>
             ) : null}
           </div>
 

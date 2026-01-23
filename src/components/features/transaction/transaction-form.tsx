@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo, useRef } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button, Tabs, TabsList, TabsTrigger } from '@/components/ui';
 import type { TransactionType, TransactionFormData, CategoryBase } from '@/types';
@@ -33,6 +34,12 @@ export function TransactionForm({ defaultDate }: TransactionFormProps) {
   const [categories, setCategories] = useState<CategoryBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const amountRef = useRef<HTMLInputElement | null>(null);
+  const categoryRef = useRef<HTMLSelectElement | null>(null);
+  const dateRef = useRef<HTMLInputElement | null>(null);
+  const paymentRef = useRef<HTMLSelectElement | null>(null);
+  const userRef = useRef<HTMLSelectElement | null>(null);
+  const descriptionRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -105,6 +112,58 @@ export function TransactionForm({ defaultDate }: TransactionFormProps) {
     label: `${cat.icon || ''} ${cat.name}`.trim(),
   }));
 
+  const formattedAmount = useMemo(() => {
+    if (!amount) return '';
+    const numeric = Number(amount);
+    if (Number.isNaN(numeric)) return '';
+    return numeric.toLocaleString('ko-KR');
+  }, [amount]);
+
+  const handleAmountChange = (value: string) => {
+    const digits = value.replace(/[^\d]/g, '');
+    setAmount(digits);
+  };
+
+  const handleCellNavigation = (index: number, direction: 'left' | 'right') => {
+    const cells = [
+      amountRef.current,
+      categoryRef.current,
+      dateRef.current,
+      paymentRef.current,
+      userRef.current,
+      descriptionRef.current,
+    ];
+    const nextIndex = direction === 'right' ? index + 1 : index - 1;
+    const target = cells[nextIndex];
+    if (target) {
+      target.focus();
+    }
+  };
+
+  const createCellKeyDownHandler =
+    (index: number) => (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
+      if (
+        event.key === 'ArrowRight' &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        handleCellNavigation(index, 'right');
+      }
+      if (
+        event.key === 'ArrowLeft' &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        handleCellNavigation(index, 'left');
+      }
+    };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Tabs defaultValue="expense" onChange={handleTypeChange}>
@@ -118,57 +177,93 @@ export function TransactionForm({ defaultDate }: TransactionFormProps) {
         </TabsList>
       </Tabs>
 
-      <Input
-        type="number"
-        label="금액"
-        placeholder="금액을 입력하세요"
-        value={amount}
-        onChange={e => setAmount(e.target.value)}
-        min="0"
-        step="1"
-        required
-      />
-
-      <Select
-        label="카테고리"
-        options={categoryOptions}
-        placeholder="카테고리 선택"
-        value={categoryId}
-        onChange={e => setCategoryId(e.target.value)}
-        required
-      />
-
-      <Input
-        type="date"
-        label="날짜"
-        value={date}
-        onChange={e => setDate(e.target.value)}
-        required
-      />
-
-      <Select
-        label="결제 수단"
-        options={PAYMENT_METHODS}
-        placeholder="결제 수단 선택"
-        value={paymentMethod}
-        onChange={e => setPaymentMethod(e.target.value)}
-      />
-
-      <Select
-        label="사용자"
-        options={FAMILY_MEMBERS}
-        placeholder="사용자 선택"
-        value={user}
-        onChange={e => setUser(e.target.value)}
-      />
-
-      <Input
-        type="text"
-        label="메모"
-        placeholder="메모를 입력하세요 (선택)"
-        value={description}
-        onChange={e => setDescription(e.target.value)}
-      />
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="grid grid-cols-6 border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <div className="px-3 py-2">금액</div>
+          <div className="px-3 py-2">카테고리</div>
+          <div className="px-3 py-2">날짜</div>
+          <div className="px-3 py-2">결제 수단</div>
+          <div className="px-3 py-2">사용자</div>
+          <div className="px-3 py-2">메모</div>
+        </div>
+        <div className="grid grid-cols-6 gap-0">
+          <div className="border-r border-zinc-200 px-2 py-2 dark:border-zinc-700">
+            <Input
+              ref={amountRef}
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={formattedAmount}
+              onChange={e => handleAmountChange(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(0)}
+              aria-label="금액"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-right text-base dark:border-zinc-600"
+              required
+            />
+          </div>
+          <div className="border-r border-zinc-200 px-2 py-2 dark:border-zinc-700">
+            <Select
+              ref={categoryRef}
+              options={categoryOptions}
+              placeholder="카테고리 선택"
+              value={categoryId}
+              onChange={e => setCategoryId(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(1)}
+              aria-label="카테고리"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-base dark:border-zinc-600"
+              required
+            />
+          </div>
+          <div className="border-r border-zinc-200 px-2 py-2 dark:border-zinc-700">
+            <Input
+              ref={dateRef}
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(2)}
+              aria-label="날짜"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-base dark:border-zinc-600"
+              required
+            />
+          </div>
+          <div className="border-r border-zinc-200 px-2 py-2 dark:border-zinc-700">
+            <Select
+              ref={paymentRef}
+              options={PAYMENT_METHODS}
+              placeholder="결제 수단 선택"
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(3)}
+              aria-label="결제 수단"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-base dark:border-zinc-600"
+            />
+          </div>
+          <div className="border-r border-zinc-200 px-2 py-2 dark:border-zinc-700">
+            <Select
+              ref={userRef}
+              options={FAMILY_MEMBERS}
+              placeholder="사용자 선택"
+              value={user}
+              onChange={e => setUser(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(4)}
+              aria-label="사용자"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-base dark:border-zinc-600"
+            />
+          </div>
+          <div className="px-2 py-2">
+            <Input
+              ref={descriptionRef}
+              type="text"
+              placeholder="메모 (선택)"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              onKeyDown={createCellKeyDownHandler(5)}
+              aria-label="메모"
+              className="w-full rounded-md border-zinc-200 bg-transparent px-2 py-2 text-base dark:border-zinc-600"
+            />
+          </div>
+        </div>
+      </div>
 
       {error && <p className="text-sm text-rose-500">{error}</p>}
 
