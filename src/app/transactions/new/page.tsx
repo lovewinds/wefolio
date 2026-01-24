@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { LNB } from '@/components/features/layout';
-import { TransactionForm } from '@/components/features/transaction';
+import { MultiRowForm } from '@/components/features/transaction';
 import { RecentTransactions } from '@/components/features/dashboard';
 import { Card } from '@/components/ui';
 import { fetchDashboardData, type DashboardTransaction } from '@/lib/mock-data';
@@ -42,7 +42,7 @@ function TransactionNewContent() {
             <h2 className="mb-6 text-lg font-semibold text-zinc-800 dark:text-zinc-100">
               새 거래 입력
             </h2>
-            <TransactionForm defaultDate={defaultDate} />
+            <MultiRowForm defaultDate={defaultDate} />
           </Card>
 
           <RecentTransactions transactions={transactions} />
