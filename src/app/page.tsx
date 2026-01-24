@@ -86,8 +86,10 @@ export default function Home() {
     );
   }
 
-  const { stats, transactions, expenseByCategory } = data;
+  const { stats, transactions, expenseByCategory, expenseByParentCategory } = data;
   const { totalIncome, totalExpense, balance } = stats;
+  // 계층 구조 데이터가 있으면 사용, 없으면 기존 데이터 사용
+  const categoryChartData = expenseByParentCategory ?? expenseByCategory;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
@@ -106,7 +108,7 @@ export default function Home() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
-          <ExpenseByCategoryChart data={expenseByCategory} />
+          <ExpenseByCategoryChart data={categoryChartData} />
         </div>
 
         <RecentTransactions transactions={transactions} />

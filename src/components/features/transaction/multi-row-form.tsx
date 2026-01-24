@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui';
-import type { TransactionType, CategoryBase, TransactionFormData } from '@/types';
+import type { TransactionType, CategoryGroup, TransactionFormData } from '@/types';
 import { TransactionRowComponent, type TransactionRowRef } from './transaction-row';
 import type { TransactionRow, CellPosition } from './types';
 
@@ -44,7 +44,7 @@ function canSaveRow(row: TransactionRow): boolean {
 export function MultiRowForm({ defaultDate, defaultUser = '' }: MultiRowFormProps) {
   const router = useRouter();
   const [type, setType] = useState<TransactionType>('expense');
-  const [categories, setCategories] = useState<CategoryBase[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [currentUser, setCurrentUser] = useState(defaultUser);
 
   const today = defaultDate || new Date().toISOString().split('T')[0];
@@ -62,10 +62,10 @@ export function MultiRowForm({ defaultDate, defaultUser = '' }: MultiRowFormProp
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`/api/categories?type=${type}`);
+        const response = await fetch(`/api/categories?type=${type}&grouped=true`);
         const result = await response.json();
         if (result.success) {
-          setCategories(result.data);
+          setCategoryGroups(result.data);
           setRows(prev => prev.map(row => (row.categoryId ? { ...row, categoryId: '' } : row)));
         }
       } catch (err) {
@@ -300,7 +300,7 @@ export function MultiRowForm({ defaultDate, defaultUser = '' }: MultiRowFormProp
               ref={ref => setRowRef(index, ref)}
               row={row}
               rowIndex={index}
-              categories={categories}
+              categoryGroups={categoryGroups}
               onCellChange={handleCellChange}
               onCellKeyDown={handleCellKeyDown}
               onCellFocus={handleCellFocus}

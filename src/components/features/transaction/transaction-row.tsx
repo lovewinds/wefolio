@@ -3,7 +3,7 @@
 import { memo, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { Input, Select } from '@/components/ui';
-import type { CategoryBase } from '@/types';
+import type { CategoryGroup } from '@/types';
 import type { TransactionRow as TransactionRowType, RowStatus } from './types';
 
 const PAYMENT_METHODS = [
@@ -21,7 +21,7 @@ const FAMILY_MEMBERS = [
 interface TransactionRowProps {
   row: TransactionRowType;
   rowIndex: number;
-  categories: CategoryBase[];
+  categoryGroups: CategoryGroup[];
   onCellChange: (rowIndex: number, field: keyof TransactionRowType, value: string) => void;
   onCellKeyDown: (rowIndex: number, colIndex: number, event: KeyboardEvent) => void;
   onCellFocus: (rowIndex: number, colIndex: number) => void;
@@ -59,7 +59,7 @@ const getRowBackgroundClass = (status: RowStatus): string => {
 
 export const TransactionRowComponent = memo(
   forwardRef<TransactionRowRef, TransactionRowProps>(
-    ({ row, rowIndex, categories, onCellChange, onCellKeyDown, onCellFocus }, ref) => {
+    ({ row, rowIndex, categoryGroups, onCellChange, onCellKeyDown, onCellFocus }, ref) => {
       const amountRef = useRef<HTMLInputElement>(null);
       const categoryRef = useRef<HTMLSelectElement>(null);
       const dateRef = useRef<HTMLInputElement>(null);
@@ -75,13 +75,18 @@ export const TransactionRowComponent = memo(
         },
       }));
 
-      const categoryOptions = useMemo(
+      // 대분류별로 그룹화된 옵션 생성
+      const groupedCategoryOptions = useMemo(
         () =>
-          categories.map(cat => ({
-            value: cat.id,
-            label: `${cat.icon || ''} ${cat.name}`.trim(),
+          categoryGroups.map(group => ({
+            label: `${group.icon || ''} ${group.name}`.trim(),
+            options:
+              group.children?.map(child => ({
+                value: child.id,
+                label: `${child.icon || ''} ${child.name}`.trim(),
+              })) || [],
           })),
-        [categories]
+        [categoryGroups]
       );
 
       const formattedAmount = useMemo(() => {
@@ -128,7 +133,7 @@ export const TransactionRowComponent = memo(
           <div className="border-r border-zinc-200 px-2 py-1.5 dark:border-zinc-700">
             <Select
               ref={categoryRef}
-              options={categoryOptions}
+              groupedOptions={groupedCategoryOptions}
               placeholder="선택"
               value={row.categoryId}
               onChange={e => onCellChange(rowIndex, 'categoryId', e.target.value)}

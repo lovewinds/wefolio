@@ -24,7 +24,13 @@ export const transactionRepository = {
           lte: endDate,
         },
       },
-      include: { category: true },
+      include: {
+        category: {
+          include: {
+            parent: true,
+          },
+        },
+      },
       orderBy: { date: 'desc' },
     });
   },

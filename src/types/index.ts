@@ -18,6 +18,35 @@ export interface CategoryBase {
   icon?: string | null;
   color?: string | null;
   isDefault: boolean;
+  parentId?: string | null;
+}
+
+// Category with hierarchy (for nested display)
+export interface CategoryWithChildren extends CategoryBase {
+  children?: CategoryBase[];
+  parent?: CategoryBase | null;
+}
+
+// Category with parent info (for form select)
+export interface CategoryWithParent extends CategoryBase {
+  parentName?: string;
+  parentIcon?: string;
+}
+
+// Grouped categories for select
+export interface CategoryGroup {
+  id: string;
+  name: string;
+  icon?: string | null;
+  color?: string | null;
+  children?: {
+    id: string;
+    name: string;
+    icon?: string | null;
+    color?: string | null;
+    parentId: string;
+    parentName: string;
+  }[];
 }
 
 // Transaction with optional relations
@@ -89,10 +118,23 @@ export interface CategoryExpense {
   id: string;
   label: string;
   value: number;
+  parentId?: string | null;
+  parentLabel?: string;
+  color?: string;
+}
+
+// Hierarchical category expense for sunburst chart
+export interface HierarchicalCategoryExpense {
+  id: string;
+  label: string;
+  value: number;
+  color?: string;
+  children?: HierarchicalCategoryExpense[];
 }
 
 export interface DashboardData {
   stats: DashboardStats;
   transactions: DashboardTransaction[];
   expenseByCategory: CategoryExpense[];
+  expenseByParentCategory?: HierarchicalCategoryExpense[];
 }

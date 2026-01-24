@@ -5,15 +5,21 @@ interface SelectOption {
   label: string;
 }
 
+interface SelectOptionGroup {
+  label: string;
+  options: SelectOption[];
+}
+
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
-  options: SelectOption[];
+  options?: SelectOption[];
+  groupedOptions?: SelectOptionGroup[];
   error?: string;
   placeholder?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, error, placeholder, className = '', ...props }, ref) => {
+  ({ label, options, groupedOptions, error, placeholder, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -29,11 +35,21 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               {placeholder}
             </option>
           )}
-          {options.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {groupedOptions
+            ? groupedOptions.map(group => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            : options?.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
         </select>
         {error && <p className="text-sm text-rose-500">{error}</p>}
       </div>
