@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { transactionService } from '@/services/transaction-service';
+import { categoryRepository } from '@/repositories/category-repository';
 import type {
   DashboardData,
   DashboardTransaction,
@@ -27,6 +28,14 @@ interface TransactionWithCategory {
   };
 }
 
+interface CategoryNode {
+  id: string;
+  name: string;
+  color: string | null;
+  parentId: string | null;
+  children?: CategoryNode[];
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -38,6 +47,10 @@ export async function GET(request: Request) {
       year,
       month
     )) as unknown as TransactionWithCategory[];
+    const [expenseCategories, incomeCategories] = await Promise.all([
+      categoryRepository.findParentsByType('expense'),
+      categoryRepository.findParentsByType('income'),
+    ]);
 
     // Transform to dashboard format
     const transactions: DashboardTransaction[] = dbTransactions.map(tx => {
@@ -60,31 +73,16 @@ export async function GET(request: Request) {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Calculate expense by category (flat list with parent info)
-    const expenseByCategory: CategoryExpense[] = dbTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((acc, t) => {
-        const categoryName = t.category?.name ?? 'Unknown';
-        const parentName = t.category?.parent?.name;
-        const existing = acc.find(item => item.id === categoryName);
-        if (existing) {
-          existing.value += t.amount;
-        } else {
-          acc.push({
-            id: categoryName,
-            label: categoryName,
-            value: t.amount,
-            parentId: t.category?.parentId ?? null,
-            parentLabel: parentName,
-            color: t.category?.color ?? undefined,
-          });
-        }
-        return acc;
-      }, [] as CategoryExpense[])
-      .sort((a, b) => b.value - a.value);
-
-    // Build hierarchical structure for sunburst chart
-    const expenseByParentCategory = buildHierarchicalExpense(dbTransactions);
+    const expenseBreakdown = buildCategoryBreakdown(
+      dbTransactions,
+      expenseCategories as CategoryNode[],
+      'expense'
+    );
+    const incomeBreakdown = buildCategoryBreakdown(
+      dbTransactions,
+      incomeCategories as CategoryNode[],
+      'income'
+    );
 
     const availableRange: DashboardMonthRange | undefined =
       dateRange.min && dateRange.max
@@ -100,15 +98,17 @@ export async function GET(request: Request) {
           }
         : undefined;
 
-    const data: DashboardData & { expenseByParentCategory: HierarchicalCategoryExpense[] } = {
+    const data: DashboardData = {
       stats: {
         totalIncome,
         totalExpense,
         balance: totalIncome - totalExpense,
       },
       transactions,
-      expenseByCategory,
-      expenseByParentCategory,
+      expenseByCategory: expenseBreakdown.flat,
+      incomeByCategory: incomeBreakdown.flat,
+      expenseByParentCategory: expenseBreakdown.hierarchical,
+      incomeByParentCategory: incomeBreakdown.hierarchical,
       availableRange,
     };
 
@@ -122,84 +122,87 @@ export async function GET(request: Request) {
   }
 }
 
-function buildHierarchicalExpense(
-  transactions: TransactionWithCategory[]
-): HierarchicalCategoryExpense[] {
-  const parentMap = new Map<
-    string,
-    {
-      id: string;
-      label: string;
-      color: string | undefined;
-      children: Map<
-        string,
-        { id: string; label: string; value: number; color: string | undefined }
-      >;
-    }
-  >();
+function buildCategoryBreakdown(
+  transactions: TransactionWithCategory[],
+  categories: CategoryNode[],
+  type: 'income' | 'expense'
+): { flat: CategoryExpense[]; hierarchical: HierarchicalCategoryExpense[] } {
+  const totals = new Map<string, number>();
 
-  // Filter expense transactions
-  const expenseTransactions = transactions.filter(t => t.type === 'expense');
-
-  for (const tx of expenseTransactions) {
-    const category = tx.category;
+  for (const transaction of transactions.filter(tx => tx.type === type)) {
+    const category = transaction.category;
     if (!category) continue;
+    totals.set(category.id, (totals.get(category.id) ?? 0) + transaction.amount);
+  }
 
-    // Determine parent category
-    const parentId = category.parent?.id ?? category.id;
-    const parentName = category.parent?.name ?? category.name;
-    const parentColor = category.parent?.color ?? category.color ?? undefined;
+  const metaById = new Map<string, CategoryNode>();
+  const parentById = new Map<string, CategoryNode>();
 
-    // Get or create parent entry
-    if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, {
-        id: parentId,
-        label: parentName,
-        color: parentColor,
-        children: new Map(),
-      });
-    }
-
-    const parent = parentMap.get(parentId)!;
-
-    // If this is a child category, add to children
-    if (category.parent) {
-      const childId = category.id;
-      const childName = category.name;
-      const childColor = category.color ?? undefined;
-
-      if (!parent.children.has(childId)) {
-        parent.children.set(childId, {
-          id: childId,
-          label: childName,
-          value: 0,
-          color: childColor,
-        });
-      }
-      parent.children.get(childId)!.value += tx.amount;
+  for (const parent of categories) {
+    parentById.set(parent.id, parent);
+    metaById.set(parent.id, parent);
+    for (const child of parent.children ?? []) {
+      metaById.set(child.id, { ...child, parentId: parent.id });
     }
   }
 
-  // Convert to array format
-  const result: HierarchicalCategoryExpense[] = [];
+  const flat = Array.from(totals.entries())
+    .map(([id, value]) => {
+      const meta = metaById.get(id);
+      if (!meta) return null;
+      const parent = meta.parentId ? parentById.get(meta.parentId) : undefined;
+      return {
+        id,
+        label: meta.name,
+        value,
+        parentId: meta.parentId ?? null,
+        parentLabel: parent?.name,
+        color: meta.color ?? parent?.color ?? undefined,
+      } as CategoryExpense;
+    })
+    .filter((item): item is CategoryExpense => !!item && item.value > 0)
+    .sort((a, b) => b.value - a.value);
 
-  for (const [, parent] of parentMap) {
-    const children = Array.from(parent.children.values())
-      .filter(c => c.value > 0)
+  const hierarchical: HierarchicalCategoryExpense[] = [];
+
+  for (const parent of categories) {
+    const children = (parent.children ?? [])
+      .map(child => ({
+        id: child.id,
+        label: child.name,
+        value: totals.get(child.id) ?? 0,
+        color: child.color ?? undefined,
+      }))
+      .filter(child => child.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    const totalValue = children.reduce((sum, c) => sum + c.value, 0);
+    if (children.length > 0) {
+      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
+      if (totalValue > 0) {
+        hierarchical.push({
+          id: parent.id,
+          label: parent.name,
+          value: totalValue,
+          color: parent.color ?? undefined,
+          children,
+        });
+      }
+      continue;
+    }
 
-    if (totalValue > 0) {
-      result.push({
+    const parentValue = totals.get(parent.id) ?? 0;
+    if (parentValue > 0) {
+      hierarchical.push({
         id: parent.id,
-        label: parent.label,
-        value: totalValue,
-        color: parent.color,
-        children: children.length > 0 ? children : undefined,
+        label: parent.name,
+        value: parentValue,
+        color: parent.color ?? undefined,
       });
     }
   }
 
-  return result.sort((a, b) => b.value - a.value);
+  return {
+    flat,
+    hierarchical: hierarchical.sort((a, b) => b.value - a.value),
+  };
 }

@@ -146,6 +146,8 @@ export interface DashboardData {
   stats: DashboardStats;
   transactions: DashboardTransaction[];
   expenseByCategory: CategoryExpense[];
+  incomeByCategory: CategoryExpense[];
   expenseByParentCategory?: HierarchicalCategoryExpense[];
+  incomeByParentCategory?: HierarchicalCategoryExpense[];
   availableRange?: DashboardMonthRange;
 }

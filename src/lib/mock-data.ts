@@ -5,6 +5,7 @@ import type {
   DashboardStats,
   CategoryExpense,
   DashboardMonthRange,
+  HierarchicalCategoryExpense,
 } from '@/types';
 
 // Mock 데이터 사용 여부 확인
@@ -18,6 +19,27 @@ export interface MockTransaction {
   description?: string;
   date: Date;
 }
+
+type MockCategory = {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  parentId?: string | null;
+  color?: string;
+};
+
+const mockCategories: MockCategory[] = [
+  { id: '급여', name: '급여', type: 'income', color: '#22c55e' },
+  { id: '부수입', name: '부수입', type: 'income', color: '#14b8a6' },
+  { id: '주거비', name: '주거비', type: 'expense', color: '#eab308' },
+  { id: '식비', name: '식비', type: 'expense', color: '#ef4444' },
+  { id: '교통비', name: '교통비', type: 'expense', color: '#f97316' },
+  { id: '통신비', name: '통신비', type: 'expense', color: '#84cc16' },
+  { id: '문화생활', name: '문화생활', type: 'expense', color: '#8b5cf6' },
+  { id: '쇼핑', name: '쇼핑', type: 'expense', color: '#ec4899' },
+  { id: '의료비', name: '의료비', type: 'expense', color: '#06b6d4' },
+  { id: '저축', name: '저축', type: 'expense', color: '#3b82f6' },
+];
 
 // 날짜 생성 헬퍼 (YYYYMMDD 형식 입력 -> Date 반환)
 function createDate(dateStr: string): Date {
@@ -155,6 +177,96 @@ export function getExpenseByCategory(transactions: MockTransaction[]) {
     .sort((a, b) => b.value - a.value);
 }
 
+function buildMockCategoryBreakdown(
+  transactions: MockTransaction[],
+  type: 'income' | 'expense'
+): {
+  flat: CategoryExpense[];
+  hierarchical: HierarchicalCategoryExpense[];
+} {
+  const categories = mockCategories.filter(category => category.type === type);
+  const metaByName = new Map<string, MockCategory>();
+  const metaById = new Map<string, MockCategory>();
+
+  for (const category of categories) {
+    metaByName.set(category.name, category);
+    metaById.set(category.id, category);
+  }
+
+  const totals = new Map<string, number>();
+
+  for (const transaction of transactions.filter(tx => tx.type === type)) {
+    const categoryMeta = metaByName.get(transaction.category) ?? {
+      id: transaction.category,
+      name: transaction.category,
+      type,
+    };
+
+    if (!metaById.has(categoryMeta.id)) {
+      metaById.set(categoryMeta.id, categoryMeta);
+    }
+
+    totals.set(categoryMeta.id, (totals.get(categoryMeta.id) ?? 0) + transaction.amount);
+  }
+
+  const flat = Array.from(metaById.values())
+    .map(category => ({
+      id: category.id,
+      label: category.name,
+      value: totals.get(category.id) ?? 0,
+      parentId: category.parentId ?? null,
+      parentLabel: category.parentId ? metaById.get(category.parentId)?.name : undefined,
+      color: category.color,
+    }))
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const hierarchical: HierarchicalCategoryExpense[] = [];
+  const parentCategories = Array.from(metaById.values()).filter(category => !category.parentId);
+
+  for (const parent of parentCategories) {
+    const children = Array.from(metaById.values())
+      .filter(category => category.parentId === parent.id)
+      .map(child => ({
+        id: child.id,
+        label: child.name,
+        value: totals.get(child.id) ?? 0,
+        color: child.color,
+      }))
+      .filter(child => child.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    if (children.length > 0) {
+      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
+      if (totalValue > 0) {
+        hierarchical.push({
+          id: parent.id,
+          label: parent.name,
+          value: totalValue,
+          color: parent.color,
+          children,
+        });
+      }
+      continue;
+    }
+
+    const parentValue = totals.get(parent.id) ?? 0;
+    if (parentValue > 0) {
+      hierarchical.push({
+        id: parent.id,
+        label: parent.name,
+        value: parentValue,
+        color: parent.color,
+      });
+    }
+  }
+
+  return {
+    flat: flat.sort((a, b) => b.value - a.value),
+    hierarchical: hierarchical.sort((a, b) => b.value - a.value),
+  };
+}
+
 // 금액 포맷팅 유틸리티
 export function formatAmount(amount: number): string {
   return new Intl.NumberFormat('ko-KR', {
@@ -167,7 +279,8 @@ export function formatAmount(amount: number): string {
 // Mock 데이터를 DashboardData 형식으로 변환
 export function getMockDashboardData(): DashboardData {
   const stats = calculateStats(mockTransactions);
-  const expenseByCategory = getExpenseByCategory(mockTransactions);
+  const expenseBreakdown = buildMockCategoryBreakdown(mockTransactions, 'expense');
+  const incomeBreakdown = buildMockCategoryBreakdown(mockTransactions, 'income');
   const availableRange = getMockRange(mockTransactions);
 
   const transactions: DashboardTransaction[] = mockTransactions.map(t => ({
@@ -186,7 +299,10 @@ export function getMockDashboardData(): DashboardData {
       balance: stats.balance,
     },
     transactions,
-    expenseByCategory,
+    expenseByCategory: expenseBreakdown.flat,
+    incomeByCategory: incomeBreakdown.flat,
+    expenseByParentCategory: expenseBreakdown.hierarchical,
+    incomeByParentCategory: incomeBreakdown.hierarchical,
     availableRange,
   };
 }
@@ -232,4 +348,10 @@ export async function fetchDashboardData(year?: number, month?: number): Promise
 }
 
 // 타입 재export
-export type { DashboardData, DashboardTransaction, DashboardStats, CategoryExpense };
+export type {
+  DashboardData,
+  DashboardTransaction,
+  DashboardStats,
+  CategoryExpense,
+  HierarchicalCategoryExpense,
+};

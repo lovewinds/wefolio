@@ -1,31 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import { ResponsivePie } from '@nivo/pie';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/mock-data';
+import type { HierarchicalCategoryExpense } from '@/types';
 
-interface CategoryData {
-  id: string;
-  label: string;
-  value: number;
-  color?: string;
-  children?: CategoryData[];
-}
+type CategoryType = 'income' | 'expense';
+
+type CategoryChartData = HierarchicalCategoryExpense;
 
 interface ExpenseByCategoryChartProps {
-  data: CategoryData[];
+  dataByType: Record<CategoryType, CategoryChartData[]>;
+  value?: CategoryType;
+  defaultValue?: CategoryType;
+  onValueChange?: (value: CategoryType) => void;
+  typeOptions?: Array<{ value: CategoryType; label: string }>;
 }
 
-// 대분류별 색상 팔레트
+// 지출 카테고리 색상 팔레트
 const categoryColors: Record<string, string> = {
-  생활비: '#f43f5e',
-  '교통/차량': '#f97316',
-  식비: '#fb7185',
-  '문화/여가': '#a855f7',
+  식비: '#ef4444',
+  교통비: '#f97316',
+  주거비: '#eab308',
+  통신비: '#84cc16',
+  의료비: '#06b6d4',
+  문화생활: '#8b5cf6',
   쇼핑: '#ec4899',
-  '건강/의료': '#06b6d4',
-  금융: '#3b82f6',
-  기타: '#71717a',
+  저축: '#3b82f6',
+  기타: '#6b7280',
 };
 
 // 소분류 색상 (대분류 색상보다 밝게)
@@ -45,7 +48,25 @@ function adjustColorLightness(hex: string, amount: number): string {
   return `#${(0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
-export function ExpenseByCategoryChart({ data }: ExpenseByCategoryChartProps) {
+const defaultTypeOptions: Array<{ value: CategoryType; label: string }> = [
+  { value: 'expense', label: '지출' },
+  { value: 'income', label: '수입' },
+];
+
+export function ExpenseByCategoryChart({
+  dataByType,
+  value,
+  defaultValue = 'expense',
+  onValueChange,
+  typeOptions = defaultTypeOptions,
+}: ExpenseByCategoryChartProps) {
+  const [internalValue, setInternalValue] = useState<CategoryType>(defaultValue);
+  const currentValue = value ?? internalValue;
+  const data = dataByType[currentValue] ?? [];
+  const currentLabel =
+    typeOptions.find(option => option.value === currentValue)?.label ??
+    (currentValue === 'expense' ? '지출' : '수입');
+
   // 대분류 데이터 (내부 도넛)
   const parentData = data.map(item => ({
     id: item.id,
@@ -70,7 +91,7 @@ export function ExpenseByCategoryChart({ data }: ExpenseByCategoryChartProps) {
           id: child.id,
           label: child.label,
           value: child.value,
-          color: getChildColor(parentColor, index),
+          color: child.color ?? getChildColor(parentColor, index),
           parentLabel: parent.label,
         });
       });
@@ -90,9 +111,33 @@ export function ExpenseByCategoryChart({ data }: ExpenseByCategoryChartProps) {
 
   return (
     <Card>
-      <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">
-        카테고리별 지출
-      </h3>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">
+          카테고리별 {currentLabel}
+        </h3>
+        <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+          {typeOptions.map(option => {
+            const isActive = option.value === currentValue;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`rounded-full px-3 py-1.5 transition ${
+                  isActive
+                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                }`}
+                onClick={() => {
+                  if (!value) setInternalValue(option.value);
+                  onValueChange?.(option.value);
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="relative h-72">
         {/* 외부 도넛 (소분류) */}
         <div className="absolute inset-0">
