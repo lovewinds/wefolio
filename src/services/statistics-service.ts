@@ -1,5 +1,6 @@
 import { transactionRepository } from '@/repositories/transaction-repository';
 import { assetRepository } from '@/repositories/asset-repository';
+import { getMonthRangeUTC } from '@/lib/date-utils';
 
 interface MonthlySummary {
   income: number;
@@ -16,8 +17,7 @@ interface CategorySummary {
 
 export const statisticsService = {
   async getMonthlySummary(year: number, month: number): Promise<MonthlySummary> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const { start: startDate, end: endDate } = getMonthRangeUTC(year, month);
     const transactions = await transactionRepository.findByDateRange(startDate, endDate);
 
     let income = 0;
@@ -54,8 +54,7 @@ export const statisticsService = {
     month: number,
     type: 'income' | 'expense'
   ): Promise<CategorySummary[]> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const { start: startDate, end: endDate } = getMonthRangeUTC(year, month);
     const transactions = await transactionRepository.findByDateRange(startDate, endDate);
 
     const filtered = transactions.filter(tx => tx.type === type);

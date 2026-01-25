@@ -41,19 +41,19 @@ const mockCategories: MockCategory[] = [
   { id: '저축', name: '저축', type: 'expense', color: '#3b82f6' },
 ];
 
-// 날짜 생성 헬퍼 (YYYYMMDD 형식 입력 -> Date 반환)
+// 날짜 생성 헬퍼 (YYYYMMDD 형식 입력 -> Date 반환, UTC 자정)
 function createDate(dateStr: string): Date {
   const year = parseInt(dateStr.substring(0, 4), 10);
-  const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+  const month = parseInt(dateStr.substring(4, 6), 10);
   const day = parseInt(dateStr.substring(6, 8), 10);
-  return new Date(year, month, day);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
-// Date를 YYYYMMDD 문자열로 변환
+// Date를 YYYYMMDD 문자열로 변환 (UTC 기준)
 function formatDateToString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
@@ -321,8 +321,8 @@ function getMockRange(transactions: MockTransaction[]): DashboardMonthRange | un
   if (!minDate || !maxDate) return undefined;
 
   return {
-    min: { year: minDate.getFullYear(), month: minDate.getMonth() + 1 },
-    max: { year: maxDate.getFullYear(), month: maxDate.getMonth() + 1 },
+    min: { year: minDate.getUTCFullYear(), month: minDate.getUTCMonth() + 1 },
+    max: { year: maxDate.getUTCFullYear(), month: maxDate.getUTCMonth() + 1 },
   };
 }
 

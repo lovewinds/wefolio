@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
+import { parseLocalDate } from '@/lib/date-utils';
 import { MonthlySummary } from '@/components/features/dashboard';
 import { MonthlyDetailTable } from '@/components/features/transaction';
 import { LNB } from '@/components/features/layout';
@@ -59,11 +60,17 @@ function shiftDate(target: YearMonth, unit: 'month' | 'year', direction: 1 | -1)
 }
 
 function parseTransactionDate(value: string) {
+  // YYYYMMDD 포맷 처리
   if (/^\d{8}$/.test(value)) {
     const year = Number(value.slice(0, 4));
     const month = Number(value.slice(4, 6));
     const day = Number(value.slice(6, 8));
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  // YYYY-MM-DD 포맷 처리
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return parseLocalDate(value);
   }
 
   const parsed = new Date(value);
@@ -87,8 +94,8 @@ function getTransactionRange(transactions: DashboardData['transactions']): Month
   if (!minDate || !maxDate) return null;
 
   return {
-    min: { year: minDate.getFullYear(), month: minDate.getMonth() + 1 },
-    max: { year: maxDate.getFullYear(), month: maxDate.getMonth() + 1 },
+    min: { year: minDate.getUTCFullYear(), month: minDate.getUTCMonth() + 1 },
+    max: { year: maxDate.getUTCFullYear(), month: maxDate.getUTCMonth() + 1 },
   };
 }
 

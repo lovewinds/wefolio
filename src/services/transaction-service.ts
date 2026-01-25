@@ -1,5 +1,6 @@
 import { transactionRepository } from '@/repositories/transaction-repository';
 import { recurringTemplateRepository } from '@/repositories/recurring-template-repository';
+import { getMonthRangeUTC } from '@/lib/date-utils';
 import type { Transaction, Prisma } from '@prisma/client';
 
 export const transactionService = {
@@ -12,9 +13,8 @@ export const transactionService = {
   },
 
   async getByMonth(year: number, month: number): Promise<Transaction[]> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
-    return transactionRepository.findByDateRange(startDate, endDate);
+    const { start, end } = getMonthRangeUTC(year, month);
+    return transactionRepository.findByDateRange(start, end);
   },
 
   async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { transactionService } from '@/services/transaction-service';
+import { parseLocalDate } from '@/lib/date-utils';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
       type,
       amount: parseFloat(amount),
       description: description || null,
-      date: new Date(date),
+      date: parseLocalDate(date),
       category: { connect: { id: categoryId } },
       paymentMethod: paymentMethod || null,
       user: user || null,

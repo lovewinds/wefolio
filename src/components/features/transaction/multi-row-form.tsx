@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui';
 import type { TransactionType, CategoryGroup, TransactionFormData } from '@/types';
 import { TransactionRowComponent, type TransactionRowRef } from './transaction-row';
 import type { TransactionRow, CellPosition } from './types';
+import { getTodayString } from '@/lib/date-utils';
 
 const COLUMN_COUNT = 6;
 const MIN_EMPTY_ROWS = 3;
@@ -47,7 +48,7 @@ export function MultiRowForm({ defaultDate, defaultUser = '' }: MultiRowFormProp
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [currentUser, setCurrentUser] = useState(defaultUser);
 
-  const today = defaultDate || new Date().toISOString().split('T')[0];
+  const today = defaultDate || getTodayString();
 
   const [rows, setRows] = useState<TransactionRow[]>(() =>
     Array.from({ length: MIN_EMPTY_ROWS }, () => createEmptyRow(today, currentUser))

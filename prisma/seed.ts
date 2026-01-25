@@ -17,6 +17,13 @@ const prisma = new PrismaClient();
 
 const DEFAULT_FILE_PATH = path.join(process.cwd(), 'prisma', '자산정리v2.xlsx');
 
+function formatUtcDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function printFirstMonthRecords(transactions: SeedTransactionInput[], label: string) {
   if (transactions.length === 0) {
     console.log(`   첫번째 월 데이터 (${label}): 없음`);
@@ -31,12 +38,7 @@ function printFirstMonthRecords(transactions: SeedTransactionInput[], label: str
     const description = tx.description ? `, ${tx.description}` : '';
     const paymentMethod = tx.paymentMethod ? `, ${tx.paymentMethod}` : '';
     const user = tx.user ? `, ${tx.user}` : '';
-    const displayTime = tx.date.toLocaleString('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    const displayTime = formatUtcDate(tx.date);
     console.log(
       `     - ${displayTime} | ${tx.type} | ${tx.categoryName} | ${tx.amount}${description}${paymentMethod}${user}`
     );
@@ -53,12 +55,7 @@ function printSampleRecord(sampleRecord: Record<string, unknown> | null, label: 
     sampleRecord,
     (_key, value) => {
       if (value instanceof Date) {
-        return `${value.toLocaleString('ko-KR', {
-          timeZone: 'Asia/Seoul',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        })};`;
+        return formatUtcDate(value);
       }
       return value;
     },

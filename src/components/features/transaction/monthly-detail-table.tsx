@@ -36,7 +36,11 @@ const parseDateValue = (value: string): Date | null => {
     const year = Number(value.slice(0, 4));
     const month = Number(value.slice(4, 6));
     const day = Number(value.slice(6, 8));
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
   }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;

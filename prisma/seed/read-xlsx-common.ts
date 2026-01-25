@@ -1,8 +1,7 @@
 import * as XLSX from 'xlsx';
 
+// Excel 날짜 파싱 시 한국 시간 기준으로 해석하기 위한 설정
 const DEFAULT_TIMEZONE = 'Asia/Seoul';
-const DEFAULT_TIMEZONE_OFFSET_MINUTES = 9 * 60;
-const DEFAULT_TIMEZONE_SUFFIX = '+09';
 
 if (!process.env.TZ) {
   process.env.TZ = DEFAULT_TIMEZONE;
@@ -92,20 +91,22 @@ export function pickCell(row: unknown[], index: number) {
 }
 
 export function parseExcelDate(value: unknown): Date | null {
-  const applyDefaultTimezone = (date: Date) =>
-    new Date(date.getTime() + DEFAULT_TIMEZONE_OFFSET_MINUTES * 60 * 1000);
-
-  const toUtcDate = (year: number, month: number, day: number) =>
-    applyDefaultTimezone(new Date(Date.UTC(year, month - 1, day)));
+  // UTC 자정으로 날짜 생성
+  const toUtcMidnight = (year: number, month: number, day: number) =>
+    new Date(Date.UTC(year, month - 1, day));
 
   if (value instanceof Date) {
-    return applyDefaultTimezone(value);
+    // XLSX가 반환하는 Date는 자정 근처일 때 날짜 경계 문제가 발생할 수 있음
+    // 3시간 버퍼를 추가하여 자정 직전(예: 23:59)도 올바른 날짜로 처리
+    const BUFFER_MS = 3 * 60 * 60 * 1000;
+    const adjusted = new Date(value.getTime() + BUFFER_MS);
+    return toUtcMidnight(adjusted.getFullYear(), adjusted.getMonth() + 1, adjusted.getDate());
   }
 
   if (typeof value === 'number') {
     const parsed = XLSX.SSF.parse_date_code(value);
     if (!parsed) return null;
-    return toUtcDate(parsed.y, parsed.m, parsed.d);
+    return toUtcMidnight(parsed.y, parsed.m, parsed.d);
   }
 
   if (typeof value === 'string') {
@@ -115,19 +116,24 @@ export function parseExcelDate(value: unknown): Date | null {
     const compactMatch = trimmed.match(/^(\d{4})(\d{2})(\d{2})$/);
     if (compactMatch) {
       const [, y, m, d] = compactMatch;
-      return toUtcDate(Number(y), Number(m), Number(d));
+      return toUtcMidnight(Number(y), Number(m), Number(d));
     }
 
     const normalized = trimmed.replace(/\./g, '-').replace(/\//g, '-');
     const dateMatch = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (dateMatch) {
       const [, y, m, d] = dateMatch;
-      return toUtcDate(Number(y), Number(m), Number(d));
+      return toUtcMidnight(Number(y), Number(m), Number(d));
     }
 
     const parsedDate = new Date(normalized);
     if (!Number.isNaN(parsedDate.getTime())) {
-      return applyDefaultTimezone(parsedDate);
+      // 문자열에서 파싱된 날짜도 UTC 자정으로 변환
+      return toUtcMidnight(
+        parsedDate.getFullYear(),
+        parsedDate.getMonth() + 1,
+        parsedDate.getDate()
+      );
     }
   }
 
@@ -162,14 +168,14 @@ export function isRowEmpty(row: unknown[]): boolean {
   return row.every(cell => cell === null || cell === undefined || cell === '');
 }
 
-function formatDateWithTimezone(date: Date) {
-  return `${date.toISOString()}${DEFAULT_TIMEZONE_SUFFIX}`;
+function formatDateISO(date: Date) {
+  return date.toISOString();
 }
 
 export function formatRawRow(row: unknown[]) {
   return JSON.stringify(row, (_key, value) => {
     if (value instanceof Date) {
-      return formatDateWithTimezone(value);
+      return formatDateISO(value);
     }
     return value;
   });
@@ -180,8 +186,8 @@ export function formatWarning(message: string, row: unknown[]) {
 }
 
 export function formatMonthKey(date: Date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${date.getFullYear()}-${month}`;
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${month}`;
 }
 
 export function summarizeMonthlyCounts(transactions: SeedTransactionInput[]) {

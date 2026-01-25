@@ -7,6 +7,7 @@ import { MultiRowForm } from '@/components/features/transaction';
 import { RecentTransactions } from '@/components/features/dashboard';
 import { Card } from '@/components/ui';
 import { fetchDashboardData, type DashboardTransaction } from '@/lib/mock-data';
+import { getTodayString } from '@/lib/date-utils';
 
 function TransactionNewContent() {
   const searchParams = useSearchParams();
@@ -18,7 +19,7 @@ function TransactionNewContent() {
   const defaultDate =
     year && month
       ? `${year}-${month.padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}`
-      : new Date().toISOString().split('T')[0];
+      : getTodayString();
 
   useEffect(() => {
     const loadTransactions = async () => {
