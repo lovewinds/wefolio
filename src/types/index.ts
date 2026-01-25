@@ -106,6 +106,8 @@ export interface DashboardTransaction {
   category: string;
   description?: string;
   date: string;
+  paymentMethod?: string | null;
+  user?: string | null;
 }
 
 export interface DashboardStats {

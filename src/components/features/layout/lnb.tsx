@@ -12,7 +12,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/', label: '월별 요약', icon: Calendar },
+  { href: '/summary/monthly', label: '월별 요약', icon: Calendar },
   { href: '/statistics/yearly', label: '연간 요약', icon: CalendarRange },
 ];
 
@@ -67,7 +67,7 @@ export function LNB() {
         <nav className="flex-1 py-4">
           <ul className="space-y-2">
             {navItems.map(item => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
               return (
                 <li key={item.href}>

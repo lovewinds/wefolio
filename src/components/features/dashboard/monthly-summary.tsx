@@ -9,6 +9,9 @@ interface MonthlySummaryProps {
   balance: number;
   year?: number;
   month?: number;
+  titleSuffix?: string;
+  detailUrl?: string;
+  detailLabel?: string;
   navigationUnit?: 'month' | 'year';
   onToggleNavigationUnit?: () => void;
   canPrev?: boolean;
@@ -24,6 +27,9 @@ export function MonthlySummary({
   balance,
   year,
   month,
+  titleSuffix = '요약',
+  detailUrl,
+  detailLabel = '상세 보기',
   navigationUnit = 'month',
   onToggleNavigationUnit,
   canPrev = true,
@@ -45,7 +51,7 @@ export function MonthlySummary({
 
   return (
     <section className="mb-8">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {onPrevMonth && (
             <button
@@ -86,7 +92,7 @@ export function MonthlySummary({
             ) : (
               yearLabel
             )}
-            {monthDisplay ? ` ${monthDisplay}` : ''} 요약
+            {monthDisplay ? ` ${monthDisplay}` : ''} {titleSuffix}
           </h2>
           {onNextMonth && (
             <button
@@ -111,25 +117,35 @@ export function MonthlySummary({
             </button>
           )}
         </div>
-        <Link
-          href={addTransactionUrl}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex flex-wrap items-center gap-2">
+          {detailUrl && (
+            <Link
+              href={detailUrl}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              {detailLabel}
+            </Link>
+          )}
+          <Link
+            href={addTransactionUrl}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          거래 추가
-        </Link>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            거래 추가
+          </Link>
+        </div>
       </div>
       <div className="grid gap-4">
         <Card className="border border-zinc-100/80 bg-gradient-to-br from-white to-zinc-50/80 shadow-sm dark:border-zinc-700/60 dark:from-zinc-900 dark:to-zinc-800">

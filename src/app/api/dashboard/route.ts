@@ -15,6 +15,8 @@ interface TransactionWithCategory {
   amount: number;
   description: string | null;
   date: Date;
+  paymentMethod: string | null;
+  user: string | null;
   category: {
     id: string;
     name: string;
@@ -61,6 +63,8 @@ export async function GET(request: Request) {
         category: tx.category?.name ?? 'Unknown',
         description: tx.description ?? undefined,
         date: tx.date.toISOString().split('T')[0],
+        paymentMethod: tx.paymentMethod ?? undefined,
+        user: tx.user ?? undefined,
       };
     });
 

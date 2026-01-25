@@ -1,0 +1,576 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type FilterFn,
+  type SortingState,
+  type VisibilityState,
+} from '@tanstack/react-table';
+import { ArrowDown, ArrowUp, ChevronsUpDown, Download, RotateCcw } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Button } from '@/components/ui/button';
+import { formatAmount, type DashboardTransaction } from '@/lib/mock-data';
+import type { CategoryGroup } from '@/types';
+
+type DateFilter = { date?: string };
+
+type ColumnMeta = {
+  filter?: 'text' | 'select' | 'date';
+  options?: string[];
+  groupedOptions?: Array<{ label: string; options: Array<{ value: string; label: string }> }>;
+  placeholder?: string;
+  align?: 'left' | 'right' | 'center';
+};
+
+const parseDateValue = (value: string): Date | null => {
+  if (!value) return null;
+  if (/^\d{8}$/.test(value)) {
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(4, 6));
+    const day = Number(value.slice(6, 8));
+    return new Date(year, month - 1, day);
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+};
+
+const dateFilter: FilterFn<DashboardTransaction> = (row, columnId, filterValue) => {
+  const value = row.getValue<string>(columnId);
+  const filter = filterValue as DateFilter | undefined;
+  if (!filter?.date) return true;
+  const date = parseDateValue(value);
+  const target = parseDateValue(filter.date);
+  if (!date || !target) return false;
+  return (
+    date.getFullYear() === target.getFullYear() &&
+    date.getMonth() === target.getMonth() &&
+    date.getDate() === target.getDate()
+  );
+};
+
+const selectFilter: FilterFn<DashboardTransaction> = (row, columnId, filterValue) => {
+  const value = row.getValue<string | undefined>(columnId);
+  if (!filterValue) return true;
+  return value === filterValue;
+};
+
+const textFilter: FilterFn<DashboardTransaction> = (row, columnId, filterValue) => {
+  const value = row.getValue<string | undefined>(columnId) ?? '';
+  const input = String(filterValue ?? '').trim();
+  if (!input) return true;
+  return value.toLowerCase().includes(input.toLowerCase());
+};
+
+const globalTextFilter: FilterFn<DashboardTransaction> = (row, _columnId, filterValue) => {
+  const input = String(filterValue ?? '')
+    .trim()
+    .toLowerCase();
+  if (!input) return true;
+  const { category, description, paymentMethod, user, type, date } = row.original;
+  const combined = [category, description, paymentMethod, user, type, date]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return combined.includes(input);
+};
+
+const baseInputClass =
+  'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+
+interface MonthlyDetailTableProps {
+  transactions: DashboardTransaction[];
+}
+
+export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const [expenseResponse, incomeResponse] = await Promise.all([
+          fetch('/api/categories?type=expense&grouped=true'),
+          fetch('/api/categories?type=income&grouped=true'),
+        ]);
+        const [expenseResult, incomeResult] = await Promise.all([
+          expenseResponse.json(),
+          incomeResponse.json(),
+        ]);
+        const nextGroups: CategoryGroup[] = [];
+
+        if (expenseResult?.success && Array.isArray(expenseResult.data)) {
+          nextGroups.push(...expenseResult.data);
+        }
+        if (incomeResult?.success && Array.isArray(incomeResult.data)) {
+          nextGroups.push(...incomeResult.data);
+        }
+
+        setCategoryGroups(nextGroups);
+      } catch (error) {
+        console.error('Failed to fetch category groups:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(transactions.map(t => t.category))).sort();
+  }, [transactions]);
+
+  const groupedCategoryOptions = useMemo(() => {
+    if (categoryGroups.length === 0) return [];
+    return categoryGroups
+      .map(group => ({
+        label: `${group.icon || ''} ${group.name}`.trim(),
+        options:
+          group.children?.map(child => ({
+            value: child.name,
+            label: `${child.icon || ''} ${child.name}`.trim(),
+          })) ?? [],
+      }))
+      .filter(group => group.options.length > 0);
+  }, [categoryGroups]);
+
+  const paymentMethods = useMemo(() => {
+    return Array.from(
+      new Set(transactions.map(t => t.paymentMethod).filter((value): value is string => !!value))
+    ).sort();
+  }, [transactions]);
+
+  const users = useMemo(() => {
+    return Array.from(
+      new Set(transactions.map(t => t.user).filter((value): value is string => !!value))
+    ).sort();
+  }, [transactions]);
+
+  const columns = useMemo<ColumnDef<DashboardTransaction>[]>(
+    () => [
+      {
+        accessorKey: 'date',
+        header: '날짜',
+        cell: ({ getValue }) => {
+          const raw = getValue<string>();
+          if (/^\d{8}$/.test(raw)) {
+            return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+          }
+          return raw;
+        },
+        sortingFn: (rowA, rowB, columnId) => {
+          const a = parseDateValue(rowA.getValue(columnId));
+          const b = parseDateValue(rowB.getValue(columnId));
+          if (!a || !b) return 0;
+          return a.getTime() - b.getTime();
+        },
+        filterFn: dateFilter,
+        meta: { filter: 'date', align: 'left' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'category',
+        header: '카테고리',
+        filterFn: selectFilter,
+        meta: {
+          filter: 'select',
+          options: categories,
+          groupedOptions: groupedCategoryOptions,
+          align: 'left',
+        } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'type',
+        header: '유형',
+        cell: ({ getValue }) => (getValue<string>() === 'income' ? '수입' : '지출'),
+        filterFn: selectFilter,
+        meta: {
+          filter: 'select',
+          options: ['income', 'expense'],
+          align: 'left',
+        } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'paymentMethod',
+        header: '결제 수단',
+        cell: ({ getValue }) => getValue<string>() ?? '-',
+        filterFn: selectFilter,
+        meta: { filter: 'select', options: paymentMethods, align: 'left' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'user',
+        header: '사용자',
+        cell: ({ getValue }) => getValue<string>() ?? '-',
+        filterFn: selectFilter,
+        meta: { filter: 'select', options: users, align: 'left' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'description',
+        header: '메모',
+        cell: ({ getValue }) => getValue<string>() ?? '-',
+        filterFn: textFilter,
+        meta: { filter: 'text', placeholder: '메모 검색', align: 'left' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'amount',
+        header: '금액',
+        cell: ({ getValue, row }) => {
+          const amount = getValue<number>();
+          const type = row.original.type;
+          return (
+            <span
+              className={
+                type === 'income'
+                  ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                  : 'font-semibold text-rose-600 dark:text-rose-400'
+              }
+            >
+              {type === 'income' ? '+' : '-'}
+              {formatAmount(amount)}
+            </span>
+          );
+        },
+        sortingFn: 'basic',
+        meta: { align: 'right' } satisfies ColumnMeta,
+      },
+    ],
+    [categories, paymentMethods, users]
+  );
+
+  const table = useReactTable({
+    data: transactions,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      globalFilter,
+    },
+    filterFns: {
+      dateFilter,
+      selectFilter,
+      textFilter,
+    },
+    globalFilterFn: globalTextFilter,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const filteredRows = table.getFilteredRowModel().rows;
+  const filteredSummary = useMemo(() => {
+    return filteredRows.reduce(
+      (acc, row) => {
+        const amount = row.original.amount;
+        if (row.original.type === 'income') {
+          acc.income += amount;
+        } else {
+          acc.expense += amount;
+        }
+        return acc;
+      },
+      { income: 0, expense: 0 }
+    );
+  }, [filteredRows]);
+
+  const exportRows = () => {
+    const rows = filteredRows.map(row => row.original);
+    const sheetData = rows.map(item => ({
+      날짜: item.date,
+      카테고리: item.category,
+      유형: item.type === 'income' ? '수입' : '지출',
+      결제수단: item.paymentMethod ?? '-',
+      사용자: item.user ?? '-',
+      메모: item.description ?? '-',
+      금액: item.amount,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(sheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Detail');
+    XLSX.writeFile(workbook, 'monthly-transactions.xlsx');
+  };
+
+  const resetFilters = () => {
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    setGlobalFilter('');
+  };
+
+  const rowPadding = density === 'compact' ? 'py-2' : 'py-3';
+
+  return (
+    <section className="mt-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={globalFilter ?? ''}
+            onChange={event => setGlobalFilter(event.target.value)}
+            placeholder="검색: 카테고리/메모/사용자"
+            className="h-9 min-w-[220px] rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          />
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <RotateCcw size={14} />
+            필터 초기화
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+            <button
+              type="button"
+              onClick={() => setDensity('comfortable')}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                density === 'comfortable'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              기본
+            </button>
+            <button
+              type="button"
+              onClick={() => setDensity('compact')}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                density === 'compact'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              촘촘
+            </button>
+          </div>
+
+          <details className="relative">
+            <summary className="list-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
+              컬럼 보기
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-zinc-200 bg-white p-2 text-xs text-zinc-600 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              {table.getAllLeafColumns().map(column => (
+                <label key={column.id} className="flex items-center gap-2 px-2 py-1">
+                  <input
+                    type="checkbox"
+                    checked={column.getIsVisible()}
+                    onChange={column.getToggleVisibilityHandler()}
+                    className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600"
+                  />
+                  <span>{String(column.columnDef.header)}</span>
+                </label>
+              ))}
+            </div>
+          </details>
+
+          <Button variant="secondary" size="sm" onClick={exportRows}>
+            <Download size={14} />
+            엑셀 저장
+          </Button>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="max-h-[520px] overflow-auto">
+          <table className="w-full border-separate border-spacing-0 text-sm">
+            <thead className="sticky top-0 z-10 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => {
+                    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                    const alignClass =
+                      meta?.align === 'right'
+                        ? 'text-right'
+                        : meta?.align === 'center'
+                          ? 'text-center'
+                          : 'text-left';
+                    return (
+                      <th
+                        key={header.id}
+                        className={`border-b border-r border-zinc-200 px-3 py-2 align-top dark:border-zinc-700 ${alignClass}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="flex w-full items-center justify-between gap-2 text-left"
+                        >
+                          <span>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </span>
+                          {header.column.getIsSorted() ? (
+                            header.column.getIsSorted() === 'asc' ? (
+                              <ArrowUp size={14} />
+                            ) : (
+                              <ArrowDown size={14} />
+                            )
+                          ) : (
+                            <ChevronsUpDown size={14} className="text-zinc-300" />
+                          )}
+                        </button>
+                        <div className="mt-2">{renderColumnFilter(header.column)}</div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={table.getVisibleLeafColumns().length}
+                    className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                  >
+                    조건에 맞는 거래가 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map(row => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+                  >
+                    {row.getVisibleCells().map(cell => {
+                      const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
+                      const alignClass =
+                        meta?.align === 'right'
+                          ? 'text-right'
+                          : meta?.align === 'center'
+                            ? 'text-center'
+                            : 'text-left';
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`border-r border-zinc-200 px-3 ${rowPadding} text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 ${alignClass}`}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <div className="flex flex-wrap items-center gap-3">
+            <span>건수 {filteredRows.length}건</span>
+            <span>수입 {formatAmount(filteredSummary.income)}</span>
+            <span>지출 {formatAmount(filteredSummary.expense)}</span>
+            <span>순액 {formatAmount(filteredSummary.income - filteredSummary.expense)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={table.getState().pagination.pageSize}
+              onChange={event => table.setPageSize(Number(event.target.value))}
+              className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            >
+              {[10, 20, 50].map(size => (
+                <option key={size} value={size}>
+                  {size}개
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="rounded-md border border-zinc-200 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+            >
+              이전
+            </button>
+            <button
+              type="button"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="rounded-md border border-zinc-200 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+            >
+              다음
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+  function renderColumnFilter(column: ReturnType<typeof table.getAllColumns>[number]) {
+    const meta = column.columnDef.meta as ColumnMeta | undefined;
+    if (!meta?.filter) return null;
+
+    if (meta.filter === 'text') {
+      return (
+        <input
+          className={baseInputClass}
+          value={(column.getFilterValue() as string) ?? ''}
+          onChange={event => column.setFilterValue(event.target.value || undefined)}
+          placeholder={meta.placeholder ?? '검색'}
+        />
+      );
+    }
+
+    if (meta.filter === 'select') {
+      if (meta.groupedOptions && meta.groupedOptions.length > 0) {
+        return (
+          <select
+            className={baseInputClass}
+            value={(column.getFilterValue() as string) ?? ''}
+            onChange={event => column.setFilterValue(event.target.value || undefined)}
+          >
+            <option value="">전체</option>
+            {meta.groupedOptions.map(group => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        );
+      }
+
+      return (
+        <select
+          className={baseInputClass}
+          value={(column.getFilterValue() as string) ?? ''}
+          onChange={event => column.setFilterValue(event.target.value || undefined)}
+        >
+          <option value="">전체</option>
+          {meta.options?.map(option => (
+            <option key={option} value={option}>
+              {option === 'income' ? '수입' : option === 'expense' ? '지출' : option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (meta.filter === 'date') {
+      const value = (column.getFilterValue() as DateFilter) ?? {};
+      return (
+        <input
+          type="date"
+          className={baseInputClass}
+          value={value.date ?? ''}
+          onChange={event => column.setFilterValue({ date: event.target.value || undefined })}
+        />
+      );
+    }
+
+    return null;
+  }
+}
