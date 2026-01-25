@@ -266,6 +266,7 @@ export default function MonthlyDetailPage() {
           onToggleNavigationUnit={toggleNavigationUnit}
           canPrev={canMovePrev}
           canNext={canMoveNext}
+          simplify={true}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
         />
