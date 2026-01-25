@@ -28,9 +28,11 @@ export function IncomeExpenseChart({ totalIncome, totalExpense }: IncomeExpenseC
           indexBy="category"
           margin={{ top: 20, right: 20, bottom: 40, left: 80 }}
           padding={0.3}
+          innerPadding={16}
           groupMode="grouped"
           colors={['#10b981', '#f43f5e']}
           borderRadius={4}
+          gridYValues={5}
           axisBottom={{
             tickSize: 0,
             tickPadding: 10,
@@ -38,6 +40,7 @@ export function IncomeExpenseChart({ totalIncome, totalExpense }: IncomeExpenseC
           axisLeft={{
             tickSize: 0,
             tickPadding: 10,
+            tickValues: 5,
             format: v => `${(Number(v) / 10000).toFixed(0)}만`,
           }}
           labelSkipWidth={12}
