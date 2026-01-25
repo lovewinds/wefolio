@@ -173,20 +173,6 @@ export function MonthlySummary({
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">수입 - 지출</p>
               </div>
             </div>
-            <div>
-              <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                <span>수입/지출 비중</span>
-                <span>
-                  {Math.round(incomeRatio)}% / {Math.round(expenseRatio)}%
-                </span>
-              </div>
-              <div className="mt-2 h-2.5 w-full rounded-full bg-zinc-200/70 dark:bg-zinc-700/60">
-                <div className="flex h-full w-full overflow-hidden rounded-full">
-                  <div className="h-full bg-emerald-500" style={{ width: `${incomeRatio}%` }} />
-                  <div className="h-full bg-rose-500" style={{ width: `${expenseRatio}%` }} />
-                </div>
-              </div>
-            </div>
           </div>
         </Card>
       </div>
