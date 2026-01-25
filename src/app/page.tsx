@@ -5,7 +5,7 @@ import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
 import {
   MonthlySummary,
   IncomeExpenseChart,
-  ExpenseByCategoryChart,
+  CategoryBreakdownChart,
   RecentTransactions,
 } from '@/components/features/dashboard';
 import { LNB } from '@/components/features/layout';
@@ -234,7 +234,7 @@ export default function Home() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
-          <ExpenseByCategoryChart dataByType={categoryChartData} />
+          <CategoryBreakdownChart dataByType={categoryChartData} />
         </div>
 
         <RecentTransactions transactions={transactions} />

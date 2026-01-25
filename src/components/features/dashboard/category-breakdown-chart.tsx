@@ -10,7 +10,7 @@ type CategoryType = 'income' | 'expense';
 
 type CategoryChartData = HierarchicalCategoryExpense;
 
-interface ExpenseByCategoryChartProps {
+interface CategoryBreakdownChartProps {
   dataByType: Record<CategoryType, CategoryChartData[]>;
   value?: CategoryType;
   defaultValue?: CategoryType;
@@ -18,17 +18,19 @@ interface ExpenseByCategoryChartProps {
   typeOptions?: Array<{ value: CategoryType; label: string }>;
 }
 
-// 지출 카테고리 색상 팔레트
-const categoryColors: Record<string, string> = {
-  식비: '#ef4444',
-  교통비: '#f97316',
-  주거비: '#eab308',
-  통신비: '#84cc16',
-  의료비: '#06b6d4',
-  문화생활: '#8b5cf6',
-  쇼핑: '#ec4899',
-  저축: '#3b82f6',
-  기타: '#6b7280',
+const categoryColorPalettes: Record<CategoryType, string[]> = {
+  expense: [
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#84cc16',
+    '#06b6d4',
+    '#8b5cf6',
+    '#ec4899',
+    '#3b82f6',
+    '#6b7280',
+  ],
+  income: ['#22c55e', '#16a34a', '#14b8a6', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6'],
 };
 
 // 소분류 색상 (대분류 색상보다 밝게)
@@ -48,18 +50,36 @@ function adjustColorLightness(hex: string, amount: number): string {
   return `#${(0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
+function buildCategoryColorMap(items: CategoryChartData[], palette: string[]) {
+  const colorMap = new Map<string, string>();
+  let paletteIndex = 0;
+
+  for (const item of items) {
+    if (item.color) {
+      colorMap.set(item.id, item.color);
+      continue;
+    }
+
+    const fallback = palette[paletteIndex % palette.length] ?? '#71717a';
+    colorMap.set(item.id, fallback);
+    paletteIndex += 1;
+  }
+
+  return colorMap;
+}
+
 const defaultTypeOptions: Array<{ value: CategoryType; label: string }> = [
   { value: 'expense', label: '지출' },
   { value: 'income', label: '수입' },
 ];
 
-export function ExpenseByCategoryChart({
+export function CategoryBreakdownChart({
   dataByType,
   value,
   defaultValue = 'expense',
   onValueChange,
   typeOptions = defaultTypeOptions,
-}: ExpenseByCategoryChartProps) {
+}: CategoryBreakdownChartProps) {
   const [internalValue, setInternalValue] = useState<CategoryType>(defaultValue);
   const currentValue = value ?? internalValue;
   const data = dataByType[currentValue] ?? [];
@@ -67,12 +87,14 @@ export function ExpenseByCategoryChart({
     typeOptions.find(option => option.value === currentValue)?.label ??
     (currentValue === 'expense' ? '지출' : '수입');
 
+  const parentColorMap = buildCategoryColorMap(data, categoryColorPalettes[currentValue]);
+
   // 대분류 데이터 (내부 도넛)
   const parentData = data.map(item => ({
     id: item.id,
     label: item.label,
     value: item.value,
-    color: item.color ?? categoryColors[item.label] ?? '#71717a',
+    color: parentColorMap.get(item.id) ?? '#71717a',
   }));
 
   // 소분류 데이터 (외부 도넛)
@@ -84,7 +106,7 @@ export function ExpenseByCategoryChart({
     parentLabel: string;
   }[] = [];
   data.forEach(parent => {
-    const parentColor = parent.color ?? categoryColors[parent.label] ?? '#71717a';
+    const parentColor = parentColorMap.get(parent.id) ?? '#71717a';
     if (parent.children && parent.children.length > 0) {
       parent.children.forEach((child, index) => {
         childData.push({
