@@ -113,7 +113,7 @@ function isSameRange(current: MonthRange, next: MonthRange) {
 
 export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<YearMonth>(() => getCurrentYearMonth());
   const [availableRange, setAvailableRange] = useState<MonthRange | null>(null);
@@ -152,13 +152,13 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true);
+        setIsFetching(true);
         const dashboardData = await fetchDashboardData(selectedYear, selectedMonth);
         setData(dashboardData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
-        setLoading(false);
+        setIsFetching(false);
       }
     };
     loadData();
@@ -184,7 +184,8 @@ export default function Home() {
     }
   }, [availableRange, currentYearMonth, data]);
 
-  if (loading) {
+  // Initial loading - show loading screen only when no data exists yet
+  if (!data && isFetching) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
         <LNB />
@@ -195,12 +196,25 @@ export default function Home() {
     );
   }
 
-  if (error || !data) {
+  // Error state - only show error screen when no data to display
+  if (error && !data) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
         <LNB />
         <main className="ml-16 flex min-h-screen items-center justify-center">
-          <div className="text-rose-600 dark:text-rose-400">{error ?? 'Failed to load data'}</div>
+          <div className="text-rose-600 dark:text-rose-400">{error}</div>
+        </main>
+      </div>
+    );
+  }
+
+  // No data and not fetching - shouldn't happen but handle gracefully
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
+        <LNB />
+        <main className="ml-16 flex min-h-screen items-center justify-center">
+          <div className="text-rose-600 dark:text-rose-400">Failed to load data</div>
         </main>
       </div>
     );
@@ -216,7 +230,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <LNB />
-      <main className="ml-16 px-8 py-8">
+      <main
+        className={`ml-16 px-8 py-8 transition-opacity duration-150 ${isFetching ? 'pointer-events-none opacity-50' : ''}`}
+      >
         <MonthlySummary
           currentMonth={currentMonthDisplay}
           totalIncome={totalIncome}
