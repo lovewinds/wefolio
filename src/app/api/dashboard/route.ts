@@ -5,6 +5,7 @@ import type {
   DashboardTransaction,
   CategoryExpense,
   HierarchicalCategoryExpense,
+  DashboardMonthRange,
 } from '@/types';
 
 interface TransactionWithCategory {
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
     const year = parseInt(searchParams.get('year') ?? String(new Date().getFullYear()), 10);
     const month = parseInt(searchParams.get('month') ?? String(new Date().getMonth() + 1), 10);
 
+    const dateRange = await transactionService.getDateRange();
     const dbTransactions = (await transactionService.getByMonth(
       year,
       month
@@ -84,6 +86,20 @@ export async function GET(request: Request) {
     // Build hierarchical structure for sunburst chart
     const expenseByParentCategory = buildHierarchicalExpense(dbTransactions);
 
+    const availableRange: DashboardMonthRange | undefined =
+      dateRange.min && dateRange.max
+        ? {
+            min: {
+              year: dateRange.min.getFullYear(),
+              month: dateRange.min.getMonth() + 1,
+            },
+            max: {
+              year: dateRange.max.getFullYear(),
+              month: dateRange.max.getMonth() + 1,
+            },
+          }
+        : undefined;
+
     const data: DashboardData & { expenseByParentCategory: HierarchicalCategoryExpense[] } = {
       stats: {
         totalIncome,
@@ -93,6 +109,7 @@ export async function GET(request: Request) {
       transactions,
       expenseByCategory,
       expenseByParentCategory,
+      availableRange,
     };
 
     return NextResponse.json({ success: true, data });

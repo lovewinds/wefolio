@@ -1,5 +1,11 @@
 // 클라이언트 사이드 Mock 데이터 (개발/테스트용)
-import type { DashboardData, DashboardTransaction, DashboardStats, CategoryExpense } from '@/types';
+import type {
+  DashboardData,
+  DashboardTransaction,
+  DashboardStats,
+  CategoryExpense,
+  DashboardMonthRange,
+} from '@/types';
 
 // Mock 데이터 사용 여부 확인
 export const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
@@ -162,6 +168,7 @@ export function formatAmount(amount: number): string {
 export function getMockDashboardData(): DashboardData {
   const stats = calculateStats(mockTransactions);
   const expenseByCategory = getExpenseByCategory(mockTransactions);
+  const availableRange = getMockRange(mockTransactions);
 
   const transactions: DashboardTransaction[] = mockTransactions.map(t => ({
     id: t.id,
@@ -180,6 +187,26 @@ export function getMockDashboardData(): DashboardData {
     },
     transactions,
     expenseByCategory,
+    availableRange,
+  };
+}
+
+function getMockRange(transactions: MockTransaction[]): DashboardMonthRange | undefined {
+  if (transactions.length === 0) return undefined;
+
+  let minDate = transactions[0]?.date ?? null;
+  let maxDate = transactions[0]?.date ?? null;
+
+  for (const transaction of transactions) {
+    if (!minDate || transaction.date < minDate) minDate = transaction.date;
+    if (!maxDate || transaction.date > maxDate) maxDate = transaction.date;
+  }
+
+  if (!minDate || !maxDate) return undefined;
+
+  return {
+    min: { year: minDate.getFullYear(), month: minDate.getMonth() + 1 },
+    max: { year: maxDate.getFullYear(), month: maxDate.getMonth() + 1 },
   };
 }
 

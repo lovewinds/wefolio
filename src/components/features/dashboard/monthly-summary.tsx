@@ -9,6 +9,10 @@ interface MonthlySummaryProps {
   balance: number;
   year?: number;
   month?: number;
+  navigationUnit?: 'month' | 'year';
+  onToggleNavigationUnit?: () => void;
+  canPrev?: boolean;
+  canNext?: boolean;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
 }
@@ -20,6 +24,10 @@ export function MonthlySummary({
   balance,
   year,
   month,
+  navigationUnit = 'month',
+  onToggleNavigationUnit,
+  canPrev = true,
+  canNext = true,
   onPrevMonth,
   onNextMonth,
 }: MonthlySummaryProps) {
@@ -28,6 +36,12 @@ export function MonthlySummary({
   const totalFlow = totalIncome + totalExpense;
   const incomeRatio = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 50;
   const expenseRatio = totalFlow > 0 ? (totalExpense / totalFlow) * 100 : 50;
+  const yearLabel = year ? `${year}년` : null;
+  const monthLabel = month ? `${month}월` : null;
+  const isYearMode = navigationUnit === 'year';
+  const showSeparatedDate = Boolean(yearLabel && monthLabel);
+  const showClickableYear = Boolean(showSeparatedDate && onToggleNavigationUnit);
+  const monthDisplay = showSeparatedDate ? monthLabel : currentMonth;
 
   return (
     <section className="mb-8">
@@ -36,8 +50,9 @@ export function MonthlySummary({
           {onPrevMonth && (
             <button
               onClick={onPrevMonth}
-              className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-700"
               aria-label="이전 달"
+              disabled={!canPrev}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -55,13 +70,30 @@ export function MonthlySummary({
             </button>
           )}
           <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
-            {currentMonth} 요약
+            {showClickableYear ? (
+              <button
+                type="button"
+                onClick={onToggleNavigationUnit}
+                className={`rounded-md px-1 py-0.5 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
+                  isYearMode
+                    ? 'text-blue-600 dark:text-blue-300'
+                    : 'text-zinc-800 dark:text-zinc-100'
+                }`}
+                aria-pressed={isYearMode}
+              >
+                {yearLabel}
+              </button>
+            ) : (
+              yearLabel
+            )}
+            {monthDisplay ? ` ${monthDisplay}` : ''} 요약
           </h2>
           {onNextMonth && (
             <button
               onClick={onNextMonth}
-              className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-700"
               aria-label="다음 달"
+              disabled={!canNext}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

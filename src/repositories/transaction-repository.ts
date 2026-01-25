@@ -35,6 +35,18 @@ export const transactionRepository = {
     });
   },
 
+  async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {
+    const result = await prisma.transaction.aggregate({
+      _min: { date: true },
+      _max: { date: true },
+    });
+
+    return {
+      min: result._min.date ?? null,
+      max: result._max.date ?? null,
+    };
+  },
+
   async create(data: Prisma.TransactionCreateInput): Promise<Transaction> {
     return prisma.transaction.create({
       data,

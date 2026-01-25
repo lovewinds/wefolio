@@ -114,6 +114,16 @@ export interface DashboardStats {
   balance: number;
 }
 
+export interface DashboardYearMonth {
+  year: number;
+  month: number;
+}
+
+export interface DashboardMonthRange {
+  min: DashboardYearMonth;
+  max: DashboardYearMonth;
+}
+
 export interface CategoryExpense {
   id: string;
   label: string;
@@ -137,4 +147,5 @@ export interface DashboardData {
   transactions: DashboardTransaction[];
   expenseByCategory: CategoryExpense[];
   expenseByParentCategory?: HierarchicalCategoryExpense[];
+  availableRange?: DashboardMonthRange;
 }

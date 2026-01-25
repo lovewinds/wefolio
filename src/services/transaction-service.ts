@@ -17,6 +17,10 @@ export const transactionService = {
     return transactionRepository.findByDateRange(startDate, endDate);
   },
 
+  async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {
+    return transactionRepository.getDateRange();
+  },
+
   async create(data: Prisma.TransactionCreateInput): Promise<Transaction> {
     return transactionRepository.create(data);
   },
