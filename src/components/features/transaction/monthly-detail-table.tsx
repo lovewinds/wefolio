@@ -14,11 +14,14 @@ import {
   type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ChevronsUpDown, Download, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronsUpDown, Download, RotateCcw, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { formatAmount, type DashboardTransaction } from '@/lib/mock-data';
-import type { CategoryGroup } from '@/types';
+import type { CategoryGroup, TransactionType } from '@/types';
+import { useInputRows } from '@/hooks';
+import { InputTableRow } from './input-table-row';
+import type { InputTableRowRef } from './types';
 
 type DateFilter = { date?: string };
 
@@ -92,15 +95,61 @@ const baseInputClass =
 
 interface MonthlyDetailTableProps {
   transactions: DashboardTransaction[];
+  year: number;
+  month: number;
+  onDataChange?: () => void;
 }
 
-export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
+export function MonthlyDetailTable({
+  transactions,
+  year,
+  month,
+  onDataChange,
+}: MonthlyDetailTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState('');
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+  const [inputTransactionType, setInputTransactionType] = useState<TransactionType>('expense');
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Default date for input rows (first day of selected month)
+  const defaultDate = useMemo(() => {
+    const paddedMonth = String(month).padStart(2, '0');
+    const today = new Date();
+    // If it's the current month, use today's date; otherwise use the first of the month
+    if (today.getFullYear() === year && today.getMonth() + 1 === month) {
+      const paddedDay = String(today.getDate()).padStart(2, '0');
+      return `${year}-${paddedMonth}-${paddedDay}`;
+    }
+    return `${year}-${paddedMonth}-01`;
+  }, [year, month]);
+
+  // Filter category groups by transaction type for input rows
+  const inputCategoryGroups = useMemo(() => {
+    return categoryGroups.filter(group => {
+      const groupType = (group as CategoryGroup & { _type?: string })._type;
+      return groupType === inputTransactionType && group.children && group.children.length > 0;
+    });
+  }, [categoryGroups, inputTransactionType]);
+
+  const {
+    rows: inputRows,
+    handleCellChange,
+    handleCellKeyDown,
+    handleCellFocus,
+    handleSaveRow,
+    canSaveRow,
+    rowRefs,
+  } = useInputRows({
+    defaultDate,
+    transactionType: inputTransactionType,
+    onSaved: () => {
+      onDataChange?.();
+    },
+  });
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -116,10 +165,20 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
         const nextGroups: CategoryGroup[] = [];
 
         if (expenseResult?.success && Array.isArray(expenseResult.data)) {
-          nextGroups.push(...expenseResult.data);
+          // Mark expense groups
+          expenseResult.data.forEach((g: CategoryGroup) => {
+            nextGroups.push({ ...g, id: `expense-${g.id}`, _type: 'expense' } as CategoryGroup & {
+              _type: string;
+            });
+          });
         }
         if (incomeResult?.success && Array.isArray(incomeResult.data)) {
-          nextGroups.push(...incomeResult.data);
+          // Mark income groups
+          incomeResult.data.forEach((g: CategoryGroup) => {
+            nextGroups.push({ ...g, id: `income-${g.id}`, _type: 'income' } as CategoryGroup & {
+              _type: string;
+            });
+          });
         }
 
         setCategoryGroups(nextGroups);
@@ -130,6 +189,28 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
 
     fetchCategories();
   }, []);
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('이 거래를 삭제하시겠습니까?')) return;
+
+    setIsDeleting(id);
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete transaction');
+      }
+
+      onDataChange?.();
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('거래 삭제에 실패했습니다.');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const categories = useMemo(() => {
     return Array.from(new Set(transactions.map(t => t.category))).sort();
@@ -161,7 +242,10 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
     return map;
   }, [categoryGroups]);
 
-  const formatCategoryLabel = (category: string) => categoryLabelMap.get(category) ?? category;
+  const formatCategoryLabel = useMemo(
+    () => (category: string) => categoryLabelMap.get(category) ?? category,
+    [categoryLabelMap]
+  );
 
   const paymentMethods = useMemo(() => {
     return Array.from(
@@ -263,7 +347,7 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
         meta: { align: 'right' } satisfies ColumnMeta,
       },
     ],
-    [categories, categoryLabelMap, paymentMethods, users]
+    [categories, formatCategoryLabel, groupedCategoryOptions, paymentMethods, users]
   );
 
   const table = useReactTable({
@@ -403,11 +487,15 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="max-h-[520px] overflow-auto">
+        <div className="max-h-[600px] overflow-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead className="sticky top-0 z-10 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
+                  {/* Action column header */}
+                  <th className="w-10 border-b border-r border-zinc-200 px-2 py-2 text-center align-top dark:border-zinc-700">
+                    <span className="sr-only">액션</span>
+                  </th>
                   {headerGroup.headers.map(header => {
                     const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                     const alignClass =
@@ -447,10 +535,12 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
+              {/* Data rows */}
+              {table.getRowModel().rows.length === 0 &&
+              inputRows.every(r => r.status === 'empty') ? (
                 <tr>
                   <td
-                    colSpan={table.getVisibleLeafColumns().length}
+                    colSpan={table.getVisibleLeafColumns().length + 1}
                     className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400"
                   >
                     조건에 맞는 거래가 없습니다.
@@ -462,6 +552,20 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
                     key={row.id}
                     className="border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
                   >
+                    {/* Delete button cell */}
+                    <td
+                      className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTransaction(row.original.id)}
+                        disabled={isDeleting === row.original.id}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-rose-100 hover:text-rose-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400"
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
                     {row.getVisibleCells().map(cell => {
                       const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
                       const alignClass =
@@ -482,6 +586,67 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
                   </tr>
                 ))
               )}
+
+              {/* Separator row with type toggle */}
+              <tr className="border-b-2 border-dashed border-zinc-300 bg-zinc-100/50 dark:border-zinc-600 dark:bg-zinc-800/50">
+                <td colSpan={table.getVisibleLeafColumns().length + 1} className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      새 거래 입력:
+                    </span>
+                    <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-900">
+                      <button
+                        type="button"
+                        onClick={() => setInputTransactionType('expense')}
+                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                          inputTransactionType === 'expense'
+                            ? 'bg-rose-500 text-white'
+                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        지출
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputTransactionType('income')}
+                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                          inputTransactionType === 'income'
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        수입
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              {/* Input rows */}
+              {inputRows.map((row, idx) => (
+                <InputTableRow
+                  key={row.id}
+                  ref={(ref: InputTableRowRef | null) => {
+                    if (ref) {
+                      rowRefs.current.set(idx, ref);
+                    } else {
+                      rowRefs.current.delete(idx);
+                    }
+                  }}
+                  row={row}
+                  rowIndex={idx}
+                  categoryGroups={inputCategoryGroups}
+                  transactionType={inputTransactionType}
+                  paymentMethods={paymentMethods}
+                  users={users}
+                  rowPadding={rowPadding}
+                  onCellChange={handleCellChange}
+                  onCellKeyDown={handleCellKeyDown}
+                  onCellFocus={handleCellFocus}
+                  onSave={handleSaveRow}
+                  canSave={canSaveRow(idx)}
+                />
+              ))}
             </tbody>
           </table>
         </div>

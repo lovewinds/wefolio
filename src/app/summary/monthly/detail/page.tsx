@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
@@ -9,7 +9,7 @@ import { MonthlyDetailTable } from '@/components/features/transaction';
 import { LNB } from '@/components/features/layout';
 import { useMonthNavigation } from '@/hooks';
 
-export default function MonthlyDetailPage() {
+function MonthlyDetailContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isFetching, setIsFetching] = useState(true);
@@ -33,20 +33,21 @@ export default function MonthlyDetailPage() {
     allowFutureNavigation: true,
   });
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsFetching(true);
-        const dashboardData = await fetchDashboardData(selectedYear, selectedMonth);
-        setData(dashboardData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setIsFetching(false);
-      }
-    };
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      setIsFetching(true);
+      const dashboardData = await fetchDashboardData(selectedYear, selectedMonth);
+      setData(dashboardData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setIsFetching(false);
+    }
   }, [selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
     if (!data) return;
@@ -55,34 +56,25 @@ export default function MonthlyDetailPage() {
 
   if (!data && isFetching) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-        <LNB />
-        <main className="ml-16 flex min-h-screen items-center justify-center">
-          <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
-        </main>
-      </div>
+      <main className="ml-16 flex min-h-screen items-center justify-center">
+        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      </main>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-        <LNB />
-        <main className="ml-16 flex min-h-screen items-center justify-center">
-          <div className="text-rose-600 dark:text-rose-400">{error}</div>
-        </main>
-      </div>
+      <main className="ml-16 flex min-h-screen items-center justify-center">
+        <div className="text-rose-600 dark:text-rose-400">{error}</div>
+      </main>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-        <LNB />
-        <main className="ml-16 flex min-h-screen items-center justify-center">
-          <div className="text-rose-600 dark:text-rose-400">Failed to load data</div>
-        </main>
-      </div>
+      <main className="ml-16 flex min-h-screen items-center justify-center">
+        <div className="text-rose-600 dark:text-rose-400">Failed to load data</div>
+      </main>
     );
   }
 
@@ -119,28 +111,47 @@ export default function MonthlyDetailPage() {
   );
 
   return (
+    <main
+      className={`ml-16 px-8 py-8 transition-opacity duration-150 ${
+        isFetching ? 'pointer-events-none opacity-50' : ''
+      }`}
+    >
+      <MonthSelector
+        year={selectedYear}
+        month={selectedMonth}
+        navigationUnit={navigationUnit}
+        titleSuffix="상세"
+        canPrev={canMovePrev}
+        canNext={canMoveNext}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onToggleNavigationUnit={toggleNavigationUnit}
+        actions={actions}
+      />
+
+      <MonthlyDetailTable
+        transactions={transactions}
+        year={selectedYear}
+        month={selectedMonth}
+        onDataChange={loadData}
+      />
+    </main>
+  );
+}
+
+export default function MonthlyDetailPage() {
+  return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <LNB />
-      <main
-        className={`ml-16 px-8 py-8 transition-opacity duration-150 ${
-          isFetching ? 'pointer-events-none opacity-50' : ''
-        }`}
+      <Suspense
+        fallback={
+          <main className="ml-16 flex min-h-screen items-center justify-center">
+            <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+          </main>
+        }
       >
-        <MonthSelector
-          year={selectedYear}
-          month={selectedMonth}
-          navigationUnit={navigationUnit}
-          titleSuffix="상세"
-          canPrev={canMovePrev}
-          canNext={canMoveNext}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          onToggleNavigationUnit={toggleNavigationUnit}
-          actions={actions}
-        />
-
-        <MonthlyDetailTable transactions={transactions} />
-      </main>
+        <MonthlyDetailContent />
+      </Suspense>
     </div>
   );
 }

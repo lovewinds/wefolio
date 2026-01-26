@@ -14,6 +14,18 @@ export interface TransactionRow {
   errorMessage?: string;
 }
 
+export interface InputRow {
+  id: string;
+  date: string;
+  categoryId: string;
+  paymentMethod: string;
+  user: string;
+  description: string;
+  amount: string;
+  status: RowStatus;
+  errorMessage?: string;
+}
+
 export interface CellPosition {
   rowIndex: number;
   colIndex: number;
@@ -24,4 +36,8 @@ export interface MultiRowFormProps {
   defaultUser?: string;
   type: TransactionType;
   onTypeChange: (type: TransactionType) => void;
+}
+
+export interface InputTableRowRef {
+  focusCell: (colIndex: number) => void;
 }
