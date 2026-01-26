@@ -149,6 +149,20 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
       .filter(group => group.options.length > 0);
   }, [categoryGroups]);
 
+  const categoryLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categoryGroups.forEach(group => {
+      const parentLabel = group.name;
+      group.children?.forEach(child => {
+        const parentName = child.parentName || parentLabel;
+        map.set(child.name, `${parentName} > ${child.name}`);
+      });
+    });
+    return map;
+  }, [categoryGroups]);
+
+  const formatCategoryLabel = (category: string) => categoryLabelMap.get(category) ?? category;
+
   const paymentMethods = useMemo(() => {
     return Array.from(
       new Set(transactions.map(t => t.paymentMethod).filter((value): value is string => !!value))
@@ -185,6 +199,7 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
       {
         accessorKey: 'category',
         header: '카테고리',
+        cell: ({ getValue }) => formatCategoryLabel(getValue<string>()),
         filterFn: selectFilter,
         meta: {
           filter: 'select',
@@ -248,7 +263,7 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
         meta: { align: 'right' } satisfies ColumnMeta,
       },
     ],
-    [categories, paymentMethods, users]
+    [categories, categoryLabelMap, paymentMethods, users]
   );
 
   const table = useReactTable({
@@ -296,7 +311,7 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
     const rows = filteredRows.map(row => row.original);
     const sheetData = rows.map(item => ({
       날짜: item.date,
-      카테고리: item.category,
+      카테고리: formatCategoryLabel(item.category),
       유형: item.type === 'income' ? '수입' : '지출',
       결제수단: item.paymentMethod ?? '-',
       사용자: item.user ?? '-',
