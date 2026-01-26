@@ -307,6 +307,8 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
     );
   }, [filteredRows]);
 
+  const netAmount = filteredSummary.income - filteredSummary.expense;
+
   const exportRows = () => {
     const rows = filteredRows.map(row => row.original);
     const sheetData = rows.map(item => ({
@@ -486,10 +488,39 @@ export function MonthlyDetailTable({ transactions }: MonthlyDetailTableProps) {
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           <div className="flex flex-wrap items-center gap-3">
-            <span>건수 {filteredRows.length}건</span>
-            <span>수입 {formatAmount(filteredSummary.income)}</span>
-            <span>지출 {formatAmount(filteredSummary.expense)}</span>
-            <span>순액 {formatAmount(filteredSummary.income - filteredSummary.expense)}</span>
+            <span>
+              건수{' '}
+              <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                {filteredRows.length}
+              </span>
+              건
+            </span>
+            <span>
+              수입{' '}
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {formatAmount(filteredSummary.income)}
+              </span>
+            </span>
+            <span>
+              지출{' '}
+              <span className="font-semibold text-rose-600 dark:text-rose-400">
+                {formatAmount(filteredSummary.expense)}
+              </span>
+            </span>
+            <span>
+              순액{' '}
+              <span
+                className={`font-semibold ${
+                  {
+                    positive: 'text-emerald-600 dark:text-emerald-400',
+                    negative: 'text-rose-600 dark:text-rose-400',
+                    neutral: 'text-zinc-700 dark:text-zinc-200',
+                  }[netAmount > 0 ? 'positive' : netAmount < 0 ? 'negative' : 'neutral']
+                }`}
+              >
+                {formatAmount(netAmount)}
+              </span>
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <select
