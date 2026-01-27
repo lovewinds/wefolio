@@ -47,10 +47,10 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
     const categoryRef = useRef<HTMLSelectElement>(null);
     const paymentMethodRef = useRef<HTMLSelectElement>(null);
     const userRef = useRef<HTMLSelectElement>(null);
-    const descriptionRef = useRef<HTMLInputElement>(null);
     const amountRef = useRef<HTMLInputElement>(null);
+    const descriptionRef = useRef<HTMLInputElement>(null);
 
-    const cellRefs = [dateRef, categoryRef, paymentMethodRef, userRef, descriptionRef, amountRef];
+    const cellRefs = [dateRef, categoryRef, paymentMethodRef, userRef, amountRef, descriptionRef];
 
     useImperativeHandle(ref, () => ({
       focusCell: (colIndex: number) => {
@@ -219,6 +219,22 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
           </select>
         </td>
 
+        {/* Amount */}
+        <td className={`px-2 ${rowPadding}`} style={{ width: columnWidths.amount }}>
+          <input
+            ref={amountRef}
+            type="number"
+            value={row.amount}
+            onChange={e => onCellChange(rowIndex, 'amount', e.target.value)}
+            onKeyDown={e => onCellKeyDown(rowIndex, 5, e)}
+            onFocus={() => onCellFocus(rowIndex, 5)}
+            placeholder="금액"
+            className={`${baseInputClass} text-right`}
+            min="0"
+            step="100"
+          />
+        </td>
+
         {/* Description */}
         <td
           className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
@@ -233,22 +249,6 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
             onFocus={() => onCellFocus(rowIndex, 4)}
             placeholder="메모"
             className={baseInputClass}
-          />
-        </td>
-
-        {/* Amount */}
-        <td className={`px-2 ${rowPadding}`} style={{ width: columnWidths.amount }}>
-          <input
-            ref={amountRef}
-            type="number"
-            value={row.amount}
-            onChange={e => onCellChange(rowIndex, 'amount', e.target.value)}
-            onKeyDown={e => onCellKeyDown(rowIndex, 5, e)}
-            onFocus={() => onCellFocus(rowIndex, 5)}
-            placeholder="금액"
-            className={`${baseInputClass} text-right`}
-            min="0"
-            step="100"
           />
         </td>
       </tr>

@@ -3,14 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
-import {
-  MonthSelector,
-  SummaryCards,
-  IncomeExpenseChart,
-  CategoryBreakdownChart,
-  RecentTransactions,
-} from '@/components/features/dashboard';
-import { LNB } from '@/components/features/layout';
+import { MonthSelector, LNB } from '@/components/features/navigation';
+import { SummaryCardGroup } from '@/components/features/summary';
+import { IncomeExpenseChart, CategoryBreakdownChart } from '@/components/features/charts';
+import { RecentTransactions } from '@/components/features/transaction';
 import { useMonthNavigation } from '@/hooks';
 
 export default function MonthlySummaryPage() {
@@ -141,7 +137,11 @@ export default function MonthlySummaryPage() {
             onToggleNavigationUnit={toggleNavigationUnit}
             actions={actions}
           />
-          <SummaryCards totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />
+          <SummaryCardGroup
+            totalIncome={totalIncome}
+            totalExpense={totalExpense}
+            balance={balance}
+          />
         </section>
 
         <div className="grid gap-6 lg:grid-cols-2">

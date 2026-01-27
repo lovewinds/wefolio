@@ -101,8 +101,8 @@ const columnWidths = {
   type: '72px',
   paymentMethod: '130px',
   user: '90px',
-  description: '240px',
   amount: '130px',
+  description: '240px',
 } as const;
 
 interface MonthlyDetailTableProps {
@@ -355,18 +355,6 @@ export function MonthlyDetailTable({
         } satisfies ColumnMeta,
       },
       {
-        accessorKey: 'description',
-        header: '메모',
-        cell: ({ getValue }) => getValue<string>() ?? '-',
-        filterFn: textFilter,
-        meta: {
-          filter: 'text',
-          placeholder: '메모 검색',
-          align: 'left',
-          width: columnWidths.description,
-        } satisfies ColumnMeta,
-      },
-      {
         accessorKey: 'amount',
         header: '금액',
         cell: ({ getValue, row }) => {
@@ -387,6 +375,18 @@ export function MonthlyDetailTable({
         },
         sortingFn: 'basic',
         meta: { align: 'right', width: columnWidths.amount } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'description',
+        header: '메모',
+        cell: ({ getValue }) => getValue<string>() ?? '-',
+        filterFn: textFilter,
+        meta: {
+          filter: 'text',
+          placeholder: '메모 검색',
+          align: 'left',
+          width: columnWidths.description,
+        } satisfies ColumnMeta,
       },
     ],
     [categories, formatCategoryLabel, groupedCategoryOptions, paymentMethods, users]
@@ -443,8 +443,8 @@ export function MonthlyDetailTable({
       유형: item.type === 'income' ? '수입' : '지출',
       결제수단: item.paymentMethod ?? '-',
       사용자: item.user ?? '-',
-      메모: item.description ?? '-',
       금액: item.amount,
+      메모: item.description ?? '-',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(sheetData);
@@ -713,8 +713,8 @@ export function MonthlyDetailTable({
               <col style={{ width: columnWidths.type }} />
               <col style={{ width: columnWidths.paymentMethod }} />
               <col style={{ width: columnWidths.user }} />
-              <col style={{ width: columnWidths.description }} />
               <col style={{ width: columnWidths.amount }} />
+              <col style={{ width: columnWidths.description }} />
             </colgroup>
             <tbody>
               {/* Separator row with type toggle */}

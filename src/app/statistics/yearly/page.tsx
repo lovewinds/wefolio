@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LNB } from '@/components/features/layout';
+import { LNB } from '@/components/features/navigation';
 
 function getCurrentYear() {
   return new Date().getFullYear();

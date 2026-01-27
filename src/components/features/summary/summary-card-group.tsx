@@ -1,19 +1,19 @@
 import { Card } from '@/components/ui/card';
 import { SummaryCard } from './summary-card';
 
-interface SummaryCardsProps {
+interface SummaryCardGroupProps {
   totalIncome: number;
   totalExpense: number;
   balance: number;
   simplify?: boolean;
 }
 
-export function SummaryCards({
+export function SummaryCardGroup({
   totalIncome,
   totalExpense,
   balance,
   simplify = false,
-}: SummaryCardsProps) {
+}: SummaryCardGroupProps) {
   const totalFlow = totalIncome + totalExpense;
   const incomeRatio = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 50;
   const expenseRatio = totalFlow > 0 ? (totalExpense / totalFlow) * 100 : 50;

@@ -4,9 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
-import { MonthSelector } from '@/components/features/dashboard';
+import { MonthSelector, LNB } from '@/components/features/navigation';
 import { MonthlyDetailTable } from '@/components/features/transaction';
-import { LNB } from '@/components/features/layout';
 import { useMonthNavigation } from '@/hooks';
 
 const DEFAULT_PAYMENT_METHODS: string[] = [];

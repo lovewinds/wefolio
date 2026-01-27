@@ -2,9 +2,8 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
-import { LNB } from '@/components/features/layout';
-import { MultiRowForm } from '@/components/features/transaction';
-import { RecentTransactions } from '@/components/features/dashboard';
+import { LNB } from '@/components/features/navigation';
+import { MultiRowForm, RecentTransactions } from '@/components/features/transaction';
 import { Card } from '@/components/ui';
 import { fetchDashboardData, type DashboardTransaction } from '@/lib/mock-data';
 import { getTodayString } from '@/lib/date-utils';
