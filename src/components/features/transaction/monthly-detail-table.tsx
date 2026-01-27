@@ -155,6 +155,7 @@ export function MonthlyDetailTable({
     handleSaveRow,
     canSaveRow,
     rowRefs,
+    resetRows,
   } = useInputRows({
     defaultDate,
     transactionType: inputTransactionType,
@@ -162,6 +163,10 @@ export function MonthlyDetailTable({
       onDataChange?.();
     },
   });
+
+  useEffect(() => {
+    resetRows();
+  }, [year, month, resetRows]);
 
   useEffect(() => {
     const fetchCategories = async () => {

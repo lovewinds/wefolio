@@ -55,6 +55,7 @@ export interface UseInputRowsReturn {
   handleSaveRow: (rowIndex: number) => Promise<void>;
   canSaveRow: (rowIndex: number) => boolean;
   rowRefs: React.MutableRefObject<Map<number, InputTableRowRef>>;
+  resetRows: () => void;
 }
 
 export function useInputRows({
@@ -281,6 +282,12 @@ export function useInputRows({
     setCurrentPosition({ rowIndex, colIndex });
   }, []);
 
+  const resetRows = useCallback(() => {
+    setRows(Array.from({ length: MIN_ROWS }, () => createEmptyRow(defaultDate)));
+    setCurrentPosition({ rowIndex: 0, colIndex: 0 });
+    rowRefs.current.clear();
+  }, [defaultDate]);
+
   return {
     rows,
     currentPosition,
@@ -290,5 +297,6 @@ export function useInputRows({
     handleSaveRow,
     canSaveRow,
     rowRefs,
+    resetRows,
   };
 }
