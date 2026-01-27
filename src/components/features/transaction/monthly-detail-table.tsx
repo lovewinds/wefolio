@@ -31,6 +31,7 @@ type ColumnMeta = {
   groupedOptions?: Array<{ label: string; options: Array<{ value: string; label: string }> }>;
   placeholder?: string;
   align?: 'left' | 'right' | 'center';
+  width?: string;
 };
 
 const parseDateValue = (value: string): Date | null => {
@@ -93,6 +94,17 @@ const globalTextFilter: FilterFn<DashboardTransaction> = (row, _columnId, filter
 const baseInputClass =
   'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
 
+const columnWidths = {
+  action: '40px',
+  date: '120px',
+  category: '180px',
+  type: '72px',
+  paymentMethod: '130px',
+  user: '90px',
+  description: '240px',
+  amount: '130px',
+} as const;
+
 interface MonthlyDetailTableProps {
   transactions: DashboardTransaction[];
   year: number;
@@ -110,7 +122,7 @@ export function MonthlyDetailTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState('');
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('compact');
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [inputTransactionType, setInputTransactionType] = useState<TransactionType>('expense');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -278,7 +290,7 @@ export function MonthlyDetailTable({
           return a.getTime() - b.getTime();
         },
         filterFn: dateFilter,
-        meta: { filter: 'date', align: 'left' } satisfies ColumnMeta,
+        meta: { filter: 'date', align: 'left', width: columnWidths.date } satisfies ColumnMeta,
       },
       {
         accessorKey: 'category',
@@ -290,6 +302,7 @@ export function MonthlyDetailTable({
           options: categories,
           groupedOptions: groupedCategoryOptions,
           align: 'left',
+          width: columnWidths.category,
         } satisfies ColumnMeta,
       },
       {
@@ -301,6 +314,7 @@ export function MonthlyDetailTable({
           filter: 'select',
           options: ['income', 'expense'],
           align: 'left',
+          width: columnWidths.type,
         } satisfies ColumnMeta,
       },
       {
@@ -308,21 +322,36 @@ export function MonthlyDetailTable({
         header: '결제 수단',
         cell: ({ getValue }) => getValue<string>() ?? '-',
         filterFn: selectFilter,
-        meta: { filter: 'select', options: paymentMethods, align: 'left' } satisfies ColumnMeta,
+        meta: {
+          filter: 'select',
+          options: paymentMethods,
+          align: 'left',
+          width: columnWidths.paymentMethod,
+        } satisfies ColumnMeta,
       },
       {
         accessorKey: 'user',
         header: '사용자',
         cell: ({ getValue }) => getValue<string>() ?? '-',
         filterFn: selectFilter,
-        meta: { filter: 'select', options: users, align: 'left' } satisfies ColumnMeta,
+        meta: {
+          filter: 'select',
+          options: users,
+          align: 'left',
+          width: columnWidths.user,
+        } satisfies ColumnMeta,
       },
       {
         accessorKey: 'description',
         header: '메모',
         cell: ({ getValue }) => getValue<string>() ?? '-',
         filterFn: textFilter,
-        meta: { filter: 'text', placeholder: '메모 검색', align: 'left' } satisfies ColumnMeta,
+        meta: {
+          filter: 'text',
+          placeholder: '메모 검색',
+          align: 'left',
+          width: columnWidths.description,
+        } satisfies ColumnMeta,
       },
       {
         accessorKey: 'amount',
@@ -344,7 +373,7 @@ export function MonthlyDetailTable({
           );
         },
         sortingFn: 'basic',
-        meta: { align: 'right' } satisfies ColumnMeta,
+        meta: { align: 'right', width: columnWidths.amount } satisfies ColumnMeta,
       },
     ],
     [categories, formatCategoryLabel, groupedCategoryOptions, paymentMethods, users]
@@ -488,12 +517,15 @@ export function MonthlyDetailTable({
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
         <div className="max-h-[600px] overflow-auto">
-          <table className="w-full border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-10 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+          <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+            <thead className="sticky top-0 z-10 bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {/* Action column header */}
-                  <th className="w-10 border-b border-r border-zinc-200 px-2 py-2 text-center align-top dark:border-zinc-700">
+                  <th
+                    className="border-b border-r border-zinc-200 px-2 py-2 text-center align-top dark:border-zinc-700"
+                    style={{ width: columnWidths.action }}
+                  >
                     <span className="sr-only">액션</span>
                   </th>
                   {headerGroup.headers.map(header => {
@@ -508,6 +540,7 @@ export function MonthlyDetailTable({
                       <th
                         key={header.id}
                         className={`border-b border-r border-zinc-200 px-3 py-2 align-top dark:border-zinc-700 ${alignClass}`}
+                        style={meta?.width ? { width: meta.width } : undefined}
                       >
                         <button
                           type="button"
@@ -555,6 +588,7 @@ export function MonthlyDetailTable({
                     {/* Delete button cell */}
                     <td
                       className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
+                      style={{ width: columnWidths.action }}
                     >
                       <button
                         type="button"
@@ -578,6 +612,7 @@ export function MonthlyDetailTable({
                         <td
                           key={cell.id}
                           className={`border-r border-zinc-200 px-3 ${rowPadding} text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 ${alignClass}`}
+                          style={meta?.width ? { width: meta.width } : undefined}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -586,72 +621,11 @@ export function MonthlyDetailTable({
                   </tr>
                 ))
               )}
-
-              {/* Separator row with type toggle */}
-              <tr className="border-b-2 border-dashed border-zinc-300 bg-zinc-100/50 dark:border-zinc-600 dark:bg-zinc-800/50">
-                <td colSpan={table.getVisibleLeafColumns().length + 1} className="px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      새 거래 입력:
-                    </span>
-                    <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-900">
-                      <button
-                        type="button"
-                        onClick={() => setInputTransactionType('expense')}
-                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                          inputTransactionType === 'expense'
-                            ? 'bg-rose-500 text-white'
-                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        지출
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setInputTransactionType('income')}
-                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                          inputTransactionType === 'income'
-                            ? 'bg-emerald-500 text-white'
-                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        수입
-                      </button>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-
-              {/* Input rows */}
-              {inputRows.map((row, idx) => (
-                <InputTableRow
-                  key={row.id}
-                  ref={(ref: InputTableRowRef | null) => {
-                    if (ref) {
-                      rowRefs.current.set(idx, ref);
-                    } else {
-                      rowRefs.current.delete(idx);
-                    }
-                  }}
-                  row={row}
-                  rowIndex={idx}
-                  categoryGroups={inputCategoryGroups}
-                  transactionType={inputTransactionType}
-                  paymentMethods={paymentMethods}
-                  users={users}
-                  rowPadding={rowPadding}
-                  onCellChange={handleCellChange}
-                  onCellKeyDown={handleCellKeyDown}
-                  onCellFocus={handleCellFocus}
-                  onSave={handleSaveRow}
-                  canSave={canSaveRow(idx)}
-                />
-              ))}
             </tbody>
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-200 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           <div className="flex flex-wrap items-center gap-3">
             <span>
               건수{' '}
@@ -716,6 +690,83 @@ export function MonthlyDetailTable({
               다음
             </button>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-white text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+          <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+            <colgroup>
+              <col style={{ width: columnWidths.action }} />
+              <col style={{ width: columnWidths.date }} />
+              <col style={{ width: columnWidths.category }} />
+              <col style={{ width: columnWidths.type }} />
+              <col style={{ width: columnWidths.paymentMethod }} />
+              <col style={{ width: columnWidths.user }} />
+              <col style={{ width: columnWidths.description }} />
+              <col style={{ width: columnWidths.amount }} />
+            </colgroup>
+            <tbody>
+              {/* Separator row with type toggle */}
+              <tr className="border-b-2 border-dashed border-zinc-300 bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800">
+                <td colSpan={table.getVisibleLeafColumns().length + 1} className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      새 거래 입력:
+                    </span>
+                    <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-900">
+                      <button
+                        type="button"
+                        onClick={() => setInputTransactionType('expense')}
+                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                          inputTransactionType === 'expense'
+                            ? 'bg-rose-500 text-white'
+                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        지출
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputTransactionType('income')}
+                        className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                          inputTransactionType === 'income'
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        수입
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              {/* Input rows */}
+              {inputRows.map((row, idx) => (
+                <InputTableRow
+                  key={row.id}
+                  ref={(ref: InputTableRowRef | null) => {
+                    if (ref) {
+                      rowRefs.current.set(idx, ref);
+                    } else {
+                      rowRefs.current.delete(idx);
+                    }
+                  }}
+                  row={row}
+                  rowIndex={idx}
+                  categoryGroups={inputCategoryGroups}
+                  transactionType={inputTransactionType}
+                  paymentMethods={paymentMethods}
+                  users={users}
+                  rowPadding={rowPadding}
+                  onCellChange={handleCellChange}
+                  onCellKeyDown={handleCellKeyDown}
+                  onCellFocus={handleCellFocus}
+                  onSave={handleSaveRow}
+                  canSave={canSaveRow(idx)}
+                  columnWidths={columnWidths}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>

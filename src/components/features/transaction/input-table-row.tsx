@@ -16,6 +16,7 @@ interface InputTableRowProps {
   paymentMethods: string[];
   users: string[];
   rowPadding: string;
+  columnWidths: Record<string, string>;
   onCellChange: (rowIndex: number, field: string, value: string) => void;
   onCellKeyDown: (rowIndex: number, colIndex: number, event: React.KeyboardEvent) => void;
   onCellFocus: (rowIndex: number, colIndex: number) => void;
@@ -33,6 +34,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
       paymentMethods,
       users,
       rowPadding,
+      columnWidths,
       onCellChange,
       onCellKeyDown,
       onCellFocus,
@@ -117,12 +119,16 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         {/* Action column - Save button */}
         <td
           className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
+          style={{ width: columnWidths.action }}
         >
           {renderSaveButton()}
         </td>
 
         {/* Date */}
-        <td className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}>
+        <td
+          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          style={{ width: columnWidths.date }}
+        >
           <input
             ref={dateRef}
             type="date"
@@ -135,7 +141,10 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         </td>
 
         {/* Category */}
-        <td className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}>
+        <td
+          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          style={{ width: columnWidths.category }}
+        >
           <select
             ref={categoryRef}
             value={row.categoryId}
@@ -161,12 +170,16 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         {/* Type - readonly display */}
         <td
           className={`border-r border-zinc-200 px-2 ${rowPadding} text-zinc-500 dark:border-zinc-700 dark:text-zinc-400`}
+          style={{ width: columnWidths.type }}
         >
           <span className="text-xs">{transactionType === 'income' ? '수입' : '지출'}</span>
         </td>
 
         {/* Payment Method */}
-        <td className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}>
+        <td
+          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          style={{ width: columnWidths.paymentMethod }}
+        >
           <select
             ref={paymentMethodRef}
             value={row.paymentMethod}
@@ -185,7 +198,10 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         </td>
 
         {/* User */}
-        <td className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}>
+        <td
+          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          style={{ width: columnWidths.user }}
+        >
           <select
             ref={userRef}
             value={row.user}
@@ -204,7 +220,10 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         </td>
 
         {/* Description */}
-        <td className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}>
+        <td
+          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          style={{ width: columnWidths.description }}
+        >
           <input
             ref={descriptionRef}
             type="text"
@@ -218,7 +237,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
         </td>
 
         {/* Amount */}
-        <td className={`px-2 ${rowPadding}`}>
+        <td className={`px-2 ${rowPadding}`} style={{ width: columnWidths.amount }}>
           <input
             ref={amountRef}
             type="number"
