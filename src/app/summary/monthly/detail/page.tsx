@@ -9,11 +9,18 @@ import { MonthlyDetailTable } from '@/components/features/transaction';
 import { LNB } from '@/components/features/layout';
 import { useMonthNavigation } from '@/hooks';
 
+const DEFAULT_PAYMENT_METHODS: string[] = [];
+const DEFAULT_USERS: string[] = [];
+
 function MonthlyDetailContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [optionCache, setOptionCache] = useState(() => ({
+    paymentMethods: DEFAULT_PAYMENT_METHODS,
+    users: DEFAULT_USERS,
+  }));
 
   const {
     selectedYear,
@@ -53,6 +60,24 @@ function MonthlyDetailContent() {
     if (!data) return;
     updateRangeFromData(data.availableRange ?? null, data.transactions);
   }, [data, updateRangeFromData]);
+
+  useEffect(() => {
+    if (!data) return;
+    setOptionCache(prev => {
+      const paymentMethods = new Set(prev.paymentMethods);
+      const users = new Set(prev.users);
+
+      data.transactions.forEach(transaction => {
+        if (transaction.paymentMethod) paymentMethods.add(transaction.paymentMethod);
+        if (transaction.user) users.add(transaction.user);
+      });
+
+      return {
+        paymentMethods: Array.from(paymentMethods),
+        users: Array.from(users),
+      };
+    });
+  }, [data]);
 
   if (!data && isFetching) {
     return (
@@ -133,6 +158,8 @@ function MonthlyDetailContent() {
         transactions={transactions}
         year={selectedYear}
         month={selectedMonth}
+        paymentMethods={optionCache.paymentMethods}
+        users={optionCache.users}
         onDataChange={loadData}
       />
     </main>

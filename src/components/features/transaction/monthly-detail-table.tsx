@@ -109,6 +109,8 @@ interface MonthlyDetailTableProps {
   transactions: DashboardTransaction[];
   year: number;
   month: number;
+  paymentMethods?: string[];
+  users?: string[];
   onDataChange?: () => void;
 }
 
@@ -116,6 +118,8 @@ export function MonthlyDetailTable({
   transactions,
   year,
   month,
+  paymentMethods: paymentMethodOverrides,
+  users: userOverrides,
   onDataChange,
 }: MonthlyDetailTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
@@ -265,16 +269,20 @@ export function MonthlyDetailTable({
   );
 
   const paymentMethods = useMemo(() => {
-    return Array.from(
-      new Set(transactions.map(t => t.paymentMethod).filter((value): value is string => !!value))
-    ).sort();
-  }, [transactions]);
+    const values = new Set(paymentMethodOverrides ?? []);
+    transactions.forEach(transaction => {
+      if (transaction.paymentMethod) values.add(transaction.paymentMethod);
+    });
+    return Array.from(values).sort();
+  }, [paymentMethodOverrides, transactions]);
 
   const users = useMemo(() => {
-    return Array.from(
-      new Set(transactions.map(t => t.user).filter((value): value is string => !!value))
-    ).sort();
-  }, [transactions]);
+    const values = new Set(userOverrides ?? []);
+    transactions.forEach(transaction => {
+      if (transaction.user) values.add(transaction.user);
+    });
+    return Array.from(values).sort();
+  }, [transactions, userOverrides]);
 
   const columns = useMemo<ColumnDef<DashboardTransaction>[]>(
     () => [
