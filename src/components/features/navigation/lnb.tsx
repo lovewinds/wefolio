@@ -80,7 +80,7 @@ export function LNB() {
                         : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
                     }`}
                   >
-                    <Icon size={20} strokeWidth={1.5} />
+                    <Icon size={20} strokeWidth={1.5} suppressHydrationWarning />
                   </Link>
                 </li>
               );
@@ -94,7 +94,11 @@ export function LNB() {
             title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
             className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
           >
-            {isDark ? <Sun size={20} strokeWidth={1.5} /> : <Moon size={20} strokeWidth={1.5} />}
+            {isDark ? (
+              <Sun size={20} strokeWidth={1.5} suppressHydrationWarning />
+            ) : (
+              <Moon size={20} strokeWidth={1.5} suppressHydrationWarning />
+            )}
           </button>
         </footer>
       </div>
