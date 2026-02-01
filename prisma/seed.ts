@@ -12,6 +12,7 @@ import {
 } from './seed/read-xlsx-common';
 import { buildExpenseTransactionsFromXlsx } from './seed/read-xlsx-expense';
 import { buildIncomeTransactionsFromXlsx } from './seed/read-xlsx-income';
+import { buildAssetSnapshotsFromXlsx } from './seed/read-xlsx-asset';
 import { loadPredefinedCategories } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -243,8 +244,43 @@ export async function runSeed() {
 
   await insertSeedData(prisma, categories, allTransactions, allPredefinedCategories);
 
-  // 자산 관리 시드 데이터 삽입
-  await insertAssetSeedData(prisma);
+  // 자산 스냅샷 데이터 로드 (시트 7)
+  console.log('📊 자산 스냅샷 데이터 로드 중... (시트 7)');
+  const assetResult = buildAssetSnapshotsFromXlsx({
+    ...baseOptions,
+    filePath,
+    sheetNumber: 7,
+  });
+  console.log(`   ✅ ${assetResult.snapshots.length}건 로드됨 (시트: ${assetResult.sheetName})`);
+
+  // 자산 경고 출력
+  if (assetResult.warnings.length > 0) {
+    console.log(`⚠️ 자산 데이터 경고 ${assetResult.warnings.length}건`);
+    assetResult.warnings.slice(0, 10).forEach(warning => console.log(`   - ${warning}`));
+    if (assetResult.warnings.length > 10) {
+      console.log(`   ... ${assetResult.warnings.length - 10}건 더 있음`);
+    }
+    console.log('');
+  }
+
+  if (baseOptions.verbose && assetResult.sampleRecord) {
+    const formatted = JSON.stringify(
+      assetResult.sampleRecord,
+      (_key, value) => {
+        if (value instanceof Date) {
+          return formatUtcDate(value);
+        }
+        return value;
+      },
+      2
+    );
+    console.log('   샘플 자산 데이터:');
+    formatted.split('\n').forEach(line => console.log(`     ${line}`));
+    console.log('');
+  }
+
+  // 자산 관리 시드 데이터 삽입 (엑셀 데이터 전달)
+  await insertAssetSeedData(prisma, assetResult.snapshots);
 
   console.log('🎉 시드 데이터 삽입이 완료되었습니다!');
 }
