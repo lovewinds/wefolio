@@ -5,3 +5,7 @@ export * from './transaction-repository';
 export * from './category-repository';
 export * from './asset-repository';
 export * from './recurring-template-repository';
+
+// 자산 관리 시스템 (신규)
+export * from './account-repository';
+export * from './holding-repository';

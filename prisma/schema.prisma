@@ -52,7 +52,7 @@ model RecurringTemplate {
   updatedAt   DateTime @updatedAt
 }
 
-// 자산
+// 자산 (레거시 - 마이그레이션 후 제거 예정)
 model Asset {
   id        String   @id @default(cuid())
   name      String
@@ -61,4 +61,178 @@ model Asset {
   note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// 자산 관리 시스템 (신규)
+// ============================================
+
+// 금융기관
+model Institution {
+  id        String    @id @default(cuid())
+  name      String    @unique // "농협은행", "나무증권"
+  type      String    // "bank" | "brokerage"
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  accounts  Account[]
+}
+
+// 가족 구성원
+model FamilyMember {
+  id        String    @id @default(cuid())
+  name      String    @unique // "지완", "지아"
+  color     String?   // UI 표시용
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  accounts  Account[]
+}
+
+// 자산 마스터 (종목 정의)
+model AssetMaster {
+  id         String    @id @default(cuid())
+  symbol     String?   // 티커: "005930", "SPY"
+  name       String    // "삼성전자", "S&P 500 ETF"
+
+  // 분류 (컬럼으로 관리 - 자주 조회/그룹화)
+  assetClass String    // "stock" | "bond" | "deposit" | "gold" | "fund" | "etf"
+  subClass   String?   // "growth" | "dividend" | "government" | "corporate"
+  riskLevel  String    @default("moderate") // "conservative" | "moderate" | "aggressive"
+  currency   String    @default("KRW") // "KRW" | "USD"
+
+  // 확장 메타데이터 (JSON으로 관리 - 드물게 조회)
+  metadata   String?   // {"isin": "...", "exchange": "KRX", "sector": "..."}
+
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  holdings     Holding[]
+  priceHistory AssetPrice[]
+
+  @@unique([symbol, currency])
+}
+
+// 자산 가격 이력 (API 연동용)
+model AssetPrice {
+  id            String      @id @default(cuid())
+  assetMasterId String
+  assetMaster   AssetMaster @relation(fields: [assetMasterId], references: [id])
+
+  date          DateTime    // 가격 기준일
+  priceOriginal Float       // 원통화 가격
+  exchangeRate  Float?      // 환율 (원화면 null)
+  priceKRW      Float       // 원화 환산 가격
+  source        String?     // "api" | "manual"
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([assetMasterId, date])
+  @@index([date])
+}
+
+// 계좌
+model Account {
+  id            String       @id @default(cuid())
+  memberId      String
+  member        FamilyMember @relation(fields: [memberId], references: [id])
+  institutionId String
+  institution   Institution  @relation(fields: [institutionId], references: [id])
+
+  name          String       // "급여통장", "연금저축 나무"
+  accountType   String       // "savings" | "time_deposit" | "cma" | "regular" | "pension_savings" | "irp" | "isa"
+  currency      String       @default("KRW")
+  cashBalance   Float        @default(0)
+
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  holdings         Holding[]
+  snapshots        AccountSnapshot[]
+
+  @@index([memberId])
+  @@index([institutionId])
+}
+
+// 계좌 스냅샷 (월별 추이용)
+model AccountSnapshot {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id])
+  date          DateTime
+  cashBalance   Float
+  holdingsValue Float
+  totalValue    Float
+  createdAt     DateTime @default(now())
+
+  @@unique([accountId, date])
+  @@index([date])
+}
+
+// 보유 종목
+model Holding {
+  id                  String      @id @default(cuid())
+  accountId           String
+  account             Account     @relation(fields: [accountId], references: [id])
+  assetMasterId       String
+  assetMaster         AssetMaster @relation(fields: [assetMasterId], references: [id])
+
+  quantity            Float       @default(0)
+  averageCostOriginal Float?      // 원통화 평균단가
+  averageCostKRW      Float       @default(0) // 원화 평균단가
+
+  dataSource          String      @default("transaction") // "snapshot" | "transaction"
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  transactions   HoldingTransaction[]
+  valueSnapshots HoldingValueSnapshot[]
+
+  @@unique([accountId, assetMasterId])
+  @@index([accountId])
+}
+
+// 매수/매도 거래
+model HoldingTransaction {
+  id              String   @id @default(cuid())
+  holdingId       String
+  holding         Holding  @relation(fields: [holdingId], references: [id])
+
+  transactionType String   // "buy" | "sell" | "dividend" | "transfer_in" | "transfer_out"
+  date            DateTime
+  quantity        Float    // 매수 +, 매도 -
+  priceOriginal   Float
+  exchangeRate    Float?
+  priceKRW        Float
+  totalKRW        Float
+  fees            Float?
+  notes           String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([holdingId])
+  @@index([date])
+}
+
+// 보유 종목 스냅샷 (기존 데이터 + 주기적 추적)
+model HoldingValueSnapshot {
+  id            String   @id @default(cuid())
+  holdingId     String
+  holding       Holding  @relation(fields: [holdingId], references: [id])
+
+  date          DateTime
+  quantity      Float
+  priceOriginal Float
+  exchangeRate  Float?
+  priceKRW      Float
+  totalValueKRW Float
+  source        String   @default("manual") // "manual" | "import" | "api"
+
+  createdAt     DateTime @default(now())
+
+  @@unique([holdingId, date])
+  @@index([date])
 }

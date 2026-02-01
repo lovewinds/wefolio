@@ -2,6 +2,7 @@ import path from 'node:path';
 import readline from 'node:readline/promises';
 import { PrismaClient } from '@prisma/client';
 import { insertSeedData, type SeedCategoryInput } from './seed/insert-data';
+import { insertAssetSeedData } from './seed/insert-asset-data';
 import {
   formatMonthKey,
   parseSeedOptions,
@@ -241,6 +242,10 @@ export async function runSeed() {
   const allPredefinedCategories = [...expenseCategories, ...incomeCategories];
 
   await insertSeedData(prisma, categories, allTransactions, allPredefinedCategories);
+
+  // 자산 관리 시드 데이터 삽입
+  await insertAssetSeedData(prisma);
+
   console.log('🎉 시드 데이터 삽입이 완료되었습니다!');
 }
 

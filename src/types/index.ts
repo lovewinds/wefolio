@@ -1,8 +1,11 @@
 // Transaction Types
 export type TransactionType = 'income' | 'expense';
 
-// Asset Types
+// Legacy Asset Types (마이그레이션 후 제거 예정)
 export type AssetType = 'cash' | 'bank' | 'investment' | 'property' | 'other';
+
+// New Asset Types
+export * from './asset';
 
 // Payment Method Types
 export type PaymentMethod = '현대카드' | '신한카드' | '계좌이체' | '현금';

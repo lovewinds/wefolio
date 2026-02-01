@@ -34,6 +34,52 @@ export interface SeedRecurringTemplate {
   description: string;
 }
 
+// ============================================
+// 자산 관리 시스템 시드 데이터 타입
+// ============================================
+
+export interface SeedInstitution {
+  id: string;
+  name: string;
+  type: 'bank' | 'brokerage';
+}
+
+export interface SeedFamilyMember {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface SeedAssetMaster {
+  id: string;
+  symbol?: string;
+  name: string;
+  assetClass: 'stock' | 'bond' | 'deposit' | 'gold' | 'fund' | 'etf';
+  subClass?: 'growth' | 'dividend' | 'government' | 'corporate';
+  riskLevel: 'conservative' | 'moderate' | 'aggressive';
+  currency: 'KRW' | 'USD';
+}
+
+export interface SeedAccount {
+  id: string;
+  memberId: string;
+  institutionId: string;
+  name: string;
+  accountType: 'savings' | 'time_deposit' | 'cma' | 'regular' | 'pension_savings' | 'irp' | 'isa';
+  currency: 'KRW' | 'USD';
+  cashBalance: number;
+}
+
+export interface SeedHolding {
+  id: string;
+  accountId: string;
+  assetMasterId: string;
+  quantity: number;
+  averageCostKRW: number;
+  averageCostOriginal?: number;
+  dataSource: 'snapshot' | 'transaction';
+}
+
 // Excel에서 로드된 사전 정의 카테고리 타입
 export type PredefinedCategory = {
   subcategoryName: string; // 소분류명 (L열)
