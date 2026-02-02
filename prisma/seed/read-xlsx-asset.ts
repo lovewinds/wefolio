@@ -329,6 +329,8 @@ export function buildAssetSnapshotsFromXlsx(options: SeedOptions): AssetBuildRes
     // 캐시 예금/자동운용 처리: quantity와 price가 null이면 totalValueKRW를 사용
     const isCashLikeAsset =
       assetName.includes('예금') ||
+      assetName.includes('청약') ||
+      assetName.includes('포인트') ||
       assetName.includes('현금') ||
       assetName.includes('캐시') ||
       assetName.includes('자동운용') ||
