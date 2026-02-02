@@ -93,32 +93,35 @@ function inferCurrency(exchangeRate: number | null): 'KRW' | 'USD' {
 /**
  * 계좌 유형 변환
  * - 투자 → regular 또는 cma
- * - 연금 → pension_savings 또는 irp
+ * - 연금 → 연금저축 또는 irp
  * - 계좌명에서 추가 힌트 (IRP, ISA, CMA 등)
  */
 export function normalizeAccountType(
   accountTypeRaw: string,
   accountName: string
-): 'savings' | 'time_deposit' | 'cma' | 'regular' | 'pension_savings' | 'irp' | 'isa' {
+): '예금' | '적금' | '청약' | '종합' | 'CMA' | 'IRP' | 'ISA' | '연금저축' | '코인' | '금현물' {
   const type = accountTypeRaw?.trim().toLowerCase() ?? '';
   const name = accountName?.trim().toUpperCase() ?? '';
 
   // 계좌명에서 힌트 추출
-  if (name.includes('IRP')) return 'irp';
-  if (name.includes('ISA')) return 'isa';
-  if (name.includes('CMA')) return 'cma';
-  if (name.includes('연금저축') || name.includes('연금')) return 'pension_savings';
+  if (name.includes('IRP')) return 'IRP';
+  if (name.includes('ISA')) return 'ISA';
+  if (name.includes('CMA')) return 'CMA';
+  if (name.includes('업비트')) return '코인';
+  if (name.includes('연금저축') || name.includes('연금')) return '연금저축';
+  if (name.includes('금현물')) return '금현물';
+  if (name.includes('환전')) return '예금';
 
   // 계좌 유형 기반 판단
   if (type.includes('연금')) {
-    return 'pension_savings';
+    return '연금저축';
   }
   if (type.includes('투자')) {
-    return 'regular';
+    return '종합';
   }
 
   // 기본값
-  return 'regular';
+  return '종합';
 }
 
 /**
@@ -127,18 +130,16 @@ export function normalizeAccountType(
  * - 안전, 보수적 → conservative
  * - 기타 → moderate
  */
-export function normalizeRiskLevel(
-  riskLevelRaw: string
-): 'conservative' | 'moderate' | 'aggressive' {
+export function normalizeRiskLevel(riskLevelRaw: string): '위험자산' | '안전자산' {
   const level = riskLevelRaw?.trim().toLowerCase() ?? '';
 
   if (level.includes('위험') || level.includes('공격')) {
-    return 'aggressive';
+    return '위험자산';
   }
   if (level.includes('안전') || level.includes('보수')) {
-    return 'conservative';
+    return '안전자산';
   }
-  return 'moderate';
+  return '안전자산';
 }
 
 /**
@@ -152,17 +153,16 @@ export function normalizeRiskLevel(
  */
 export function normalizeAssetClass(
   assetClassRaw: string
-): 'stock' | 'bond' | 'deposit' | 'gold' | 'fund' | 'etf' {
+): '주식' | '채권' | '예금' | '금' | '코인' {
   const cls = assetClassRaw?.trim().toLowerCase() ?? '';
 
-  if (cls.includes('주식')) return 'stock';
-  if (cls.includes('예금') || cls.includes('정기') || cls.includes('적금')) return 'deposit';
-  if (cls.includes('금')) return 'gold';
-  if (cls.includes('채권')) return 'bond';
-  if (cls.includes('etf') || cls.includes('펀드')) return 'etf';
-  if (cls.includes('코인') || cls.includes('암호화폐') || cls.includes('가상화폐')) return 'stock'; // 스키마에 crypto 없음
+  if (cls.includes('주식')) return '주식';
+  if (cls.includes('예금') || cls.includes('정기') || cls.includes('적금')) return '예금';
+  if (cls.includes('금')) return '금';
+  if (cls.includes('채권')) return '채권';
+  if (cls.includes('코인') || cls.includes('암호화폐') || cls.includes('가상화폐')) return '코인';
 
-  return 'stock'; // 기본값
+  return '주식'; // 기본값
 }
 
 /**
@@ -174,13 +174,13 @@ export function normalizeAssetClass(
  */
 export function normalizeSubClass(
   subClassRaw: string
-): 'growth' | 'dividend' | 'government' | 'corporate' | undefined {
+): '성장' | '배당' | '국채' | '회사채' | undefined {
   const sub = subClassRaw?.trim().toLowerCase() ?? '';
 
-  if (sub.includes('성장')) return 'growth';
-  if (sub.includes('배당')) return 'dividend';
-  if (sub.includes('국채') || sub.includes('국고')) return 'government';
-  if (sub.includes('회사') || sub.includes('기업')) return 'corporate';
+  if (sub.includes('성장')) return '성장';
+  if (sub.includes('배당')) return '배당';
+  if (sub.includes('국채') || sub.includes('국고')) return '국채';
+  if (sub.includes('회사') || sub.includes('기업')) return '회사채';
 
   return undefined;
 }

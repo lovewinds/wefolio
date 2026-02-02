@@ -41,7 +41,7 @@ export interface SeedRecurringTemplate {
 export interface SeedInstitution {
   id: string;
   name: string;
-  type: 'bank' | 'brokerage';
+  type: '은행' | '증권';
 }
 
 export interface SeedFamilyMember {
@@ -54,9 +54,9 @@ export interface SeedAssetMaster {
   id: string;
   symbol?: string;
   name: string;
-  assetClass: 'stock' | 'bond' | 'deposit' | 'gold' | 'fund' | 'etf';
-  subClass?: 'growth' | 'dividend' | 'government' | 'corporate';
-  riskLevel: 'conservative' | 'moderate' | 'aggressive';
+  assetClass: '주식' | '채권' | '예금' | '금' | '펀드' | 'ETF' | '코인';
+  subClass?: '성장' | '배당' | '국채' | '회사채';
+  riskLevel: '안전자산' | '중립자산' | '위험자산';
   currency: 'KRW' | 'USD';
 }
 
@@ -65,7 +65,17 @@ export interface SeedAccount {
   memberId: string;
   institutionId: string;
   name: string;
-  accountType: 'savings' | 'time_deposit' | 'cma' | 'regular' | 'pension_savings' | 'irp' | 'isa';
+  accountType:
+    | '예금'
+    | '적금'
+    | '청약'
+    | '종합'
+    | 'CMA'
+    | 'IRP'
+    | 'ISA'
+    | '연금저축'
+    | '코인'
+    | '금현물';
   currency: 'KRW' | 'USD';
   cashBalance: number;
 }
@@ -77,7 +87,7 @@ export interface SeedHolding {
   quantity: number;
   averageCostKRW: number;
   averageCostOriginal?: number;
-  dataSource: 'snapshot' | 'transaction';
+  dataSource: '스냅샷' | '거래';
 }
 
 // Excel에서 로드된 사전 정의 카테고리 타입

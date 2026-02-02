@@ -3,56 +3,60 @@
 // ============================================
 
 // 금융기관 타입
-export type InstitutionType = 'bank' | 'brokerage';
+export type InstitutionType = '은행' | '증권';
 
 // 계좌 타입
 export type AccountType =
-  | 'savings' // 저축예금
-  | 'time_deposit' // 정기예금
-  | 'cma' // CMA
-  | 'regular' // 일반 증권계좌
-  | 'pension_savings' // 연금저축
-  | 'irp' // IRP
-  | 'isa'; // ISA
+  | '예금' // 저축예금
+  | '적금' // 정기예금
+  | '청약' // 청약
+  | '종합' // 일반 증권계좌
+  | 'CMA' // CMA
+  | '연금저축' // 연금저축
+  | 'IRP' // IRP
+  | 'ISA' // ISA
+  | '코인' // 코인
+  | '금현물'; // 금현물
 
 // 자산 분류
 export type AssetClass =
-  | 'stock' // 주식
-  | 'bond' // 채권
-  | 'deposit' // 예금
-  | 'gold' // 금
-  | 'fund' // 펀드
-  | 'etf'; // ETF
+  | '주식' // 주식
+  | '채권' // 채권
+  | '예금' // 예금
+  | '금' // 금
+  | '펀드' // 펀드
+  | 'ETF' // ETF
+  | '코인'; // 코인
 
 // 자산 세부 분류
 export type AssetSubClass =
-  | 'growth' // 성장
-  | 'dividend' // 배당
-  | 'government' // 국채
-  | 'corporate'; // 회사채
+  | '성장' // 성장
+  | '배당' // 배당
+  | '국채' // 국채
+  | '회사채'; // 회사채
 
 // 위험 수준
-export type RiskLevel = 'conservative' | 'moderate' | 'aggressive';
+export type RiskLevel = '안전자산' | '중립자산' | '위험자산';
 
 // 통화
 export type Currency = 'KRW' | 'USD';
 
 // 거래 유형
 export type HoldingTransactionType =
-  | 'buy' // 매수
-  | 'sell' // 매도
-  | 'dividend' // 배당
-  | 'transfer_in' // 이체입고
-  | 'transfer_out'; // 이체출고
+  | '매수' // 매수
+  | '매도' // 매도
+  | '배당' // 배당
+  | '이체입고' // 이체입고
+  | '이체출고'; // 이체출고
 
 // 데이터 소스
-export type DataSource = 'snapshot' | 'transaction';
+export type DataSource = '스냅샷' | '거래';
 
 // 가격 소스
-export type PriceSource = 'api' | 'manual';
+export type PriceSource = 'API' | '수기';
 
 // 스냅샷 소스
-export type SnapshotSource = 'manual' | 'import' | 'api';
+export type SnapshotSource = '수기' | '가져오기' | 'API';
 
 // ============================================
 // 기본 인터페이스

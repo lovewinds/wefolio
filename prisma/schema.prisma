@@ -96,8 +96,8 @@ model AssetMaster {
   name       String    // "삼성전자", "S&P 500 ETF"
 
   // 분류 (컬럼으로 관리 - 자주 조회/그룹화)
-  assetClass String    // "stock" | "bond" | "deposit" | "gold" | "fund" | "etf"
-  subClass   String?   // "growth" | "dividend" | "government" | "corporate"
+  assetClass String    // "주식" | "채권" | "예금" | "금" | "코인"
+  subClass   String?   // "성장" | "배당" | "국채" | "회사채"
   riskLevel  String    @default("moderate") // "conservative" | "moderate" | "aggressive"
   currency   String    @default("KRW") // "KRW" | "USD"
 
