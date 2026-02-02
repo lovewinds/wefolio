@@ -17,12 +17,15 @@ export type SeedTransactionInput = {
   user?: string;
 };
 
+export type SeedType = 'expense' | 'income' | 'asset' | 'all';
+
 export type SeedOptions = {
   filePath: string;
   sheetNumber: number;
   skipRows: number;
   autoApprove: boolean;
   verbose: boolean;
+  seedType: SeedType;
 };
 
 export type BuildResult = {
@@ -37,6 +40,7 @@ const DEFAULT_SEED_OPTIONS: Omit<SeedOptions, 'sheetNumber'> = {
   skipRows: 3,
   autoApprove: false,
   verbose: false,
+  seedType: 'all',
 };
 
 export function parseSeedOptions(): Omit<SeedOptions, 'sheetNumber'> {
@@ -72,6 +76,22 @@ export function parseSeedOptions(): Omit<SeedOptions, 'sheetNumber'> {
 
     if (key === '--verbose') {
       options.verbose = true;
+    }
+
+    if (key === '--type') {
+      const typeValue = value?.toLowerCase();
+      if (
+        typeValue === 'expense' ||
+        typeValue === 'income' ||
+        typeValue === 'asset' ||
+        typeValue === 'all'
+      ) {
+        options.seedType = typeValue;
+        if (!inlineValue) i += 1;
+      } else {
+        throw new Error(`유효하지 않은 시드 타입: ${value}. (expense|income|asset|all 중 선택)`);
+      }
+      continue;
     }
   }
 
