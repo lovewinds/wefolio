@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useSyncExternalStore } from 'react';
-import { Calendar, CalendarRange, Moon, Sun, type LucideIcon } from 'lucide-react';
+import { Calendar, CalendarRange, Moon, PieChart, Sun, type LucideIcon } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -14,6 +14,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/summary/monthly', label: '월별 요약', icon: Calendar },
   { href: '/statistics/yearly', label: '연간 요약', icon: CalendarRange },
+  { href: '/asset/monthly', label: '자산 현황', icon: PieChart },
 ];
 
 function useTheme() {
