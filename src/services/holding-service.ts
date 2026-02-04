@@ -5,6 +5,8 @@ import {
   holdingTransactionRepository,
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
+import { prisma } from '@/lib/prisma';
+import { RISK_LEVEL_LABELS } from '@/lib/constants';
 import type { AssetMaster, AssetPrice, Holding, HoldingTransaction, Prisma } from '@prisma/client';
 import type {
   AssetClass,
@@ -332,7 +334,151 @@ export const holdingTransactionService = {
 // HoldingValueSnapshot Service
 // ============================================
 
+interface RiskChild {
+  label: string;
+  value: number;
+  percentage: number;
+}
+
+interface RiskGroup {
+  riskLevel: string;
+  totalValue: number;
+  percentage: number;
+  children: RiskChild[];
+}
+
+interface MonthlyHolding {
+  id: string;
+  assetName: string;
+  assetClass: string;
+  subClass: string | null;
+  riskLevel: string;
+  currency: string;
+  quantity: number;
+  priceKRW: number;
+  totalValueKRW: number;
+  percentage: number;
+  memberName: string;
+  accountName: string;
+  institutionName: string;
+}
+
+interface MonthlyAssetData {
+  totalValue: number;
+  byRiskLevel: RiskGroup[];
+  holdings: MonthlyHolding[];
+  availableRange: {
+    min: { year: number; month: number };
+    max: { year: number; month: number };
+  } | null;
+}
+
+function buildRiskGroups(holdings: MonthlyHolding[], totalValue: number): RiskGroup[] {
+  const riskGroupMap = new Map<string, { totalValue: number; children: Map<string, number> }>();
+
+  for (const h of holdings) {
+    if (!riskGroupMap.has(h.riskLevel)) {
+      riskGroupMap.set(h.riskLevel, { totalValue: 0, children: new Map() });
+    }
+    const group = riskGroupMap.get(h.riskLevel)!;
+    group.totalValue += h.totalValueKRW;
+    const childLabel = h.subClass ?? h.assetClass;
+    group.children.set(childLabel, (group.children.get(childLabel) ?? 0) + h.totalValueKRW);
+  }
+
+  return Array.from(riskGroupMap.entries())
+    .map(([riskLevel, group]) => ({
+      riskLevel,
+      totalValue: group.totalValue,
+      percentage: totalValue > 0 ? Math.round((group.totalValue / totalValue) * 10000) / 100 : 0,
+      children: Array.from(group.children.entries())
+        .map(([label, value]) => ({
+          label,
+          value,
+          percentage: totalValue > 0 ? Math.round((value / totalValue) * 10000) / 100 : 0,
+        }))
+        .sort((a, b) => b.value - a.value),
+    }))
+    .sort((a, b) => b.totalValue - a.totalValue);
+}
+
 export const holdingValueSnapshotService = {
+  async getMonthlyAssetData(year: number, month: number): Promise<MonthlyAssetData> {
+    const snapshotDate = new Date(Date.UTC(year, month - 1, 1));
+
+    const snapshots = await prisma.holdingValueSnapshot.findMany({
+      where: { date: snapshotDate },
+      include: {
+        holding: {
+          include: {
+            assetMaster: true,
+            account: {
+              include: {
+                member: true,
+                institution: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const [minSnapshot, maxSnapshot] = await Promise.all([
+      prisma.holdingValueSnapshot.findFirst({
+        orderBy: { date: 'asc' },
+        select: { date: true },
+      }),
+      prisma.holdingValueSnapshot.findFirst({
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      }),
+    ]);
+
+    const availableRange =
+      minSnapshot && maxSnapshot
+        ? {
+            min: {
+              year: minSnapshot.date.getUTCFullYear(),
+              month: minSnapshot.date.getUTCMonth() + 1,
+            },
+            max: {
+              year: maxSnapshot.date.getUTCFullYear(),
+              month: maxSnapshot.date.getUTCMonth() + 1,
+            },
+          }
+        : null;
+
+    if (snapshots.length === 0) {
+      return { totalValue: 0, byRiskLevel: [], holdings: [], availableRange };
+    }
+
+    const totalValue = snapshots.reduce((sum, s) => sum + s.totalValueKRW, 0);
+
+    const holdings: MonthlyHolding[] = snapshots.map(s => {
+      const { holding } = s;
+      const { assetMaster, account } = holding;
+      return {
+        id: s.id,
+        assetName: assetMaster.name,
+        assetClass: assetMaster.assetClass,
+        subClass: assetMaster.subClass,
+        riskLevel: RISK_LEVEL_LABELS[assetMaster.riskLevel] ?? assetMaster.riskLevel,
+        currency: assetMaster.currency,
+        quantity: s.quantity,
+        priceKRW: s.priceKRW,
+        totalValueKRW: s.totalValueKRW,
+        percentage: totalValue > 0 ? Math.round((s.totalValueKRW / totalValue) * 10000) / 100 : 0,
+        memberName: account.member.name,
+        accountName: account.name,
+        institutionName: account.institution.name,
+      };
+    });
+
+    const byRiskLevel = buildRiskGroups(holdings, totalValue);
+
+    return { totalValue, byRiskLevel, holdings, availableRange };
+  },
+
   async getByHoldingId(holdingId: string) {
     return holdingValueSnapshotRepository.findByHoldingId(holdingId);
   },

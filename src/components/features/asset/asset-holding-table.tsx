@@ -15,23 +15,9 @@ import {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { formatAmount } from '@/lib/mock-data';
-
-export interface HoldingRow {
-  id: string;
-  assetName: string;
-  assetClass: string;
-  subClass: string | null;
-  riskLevel: string;
-  currency: string;
-  quantity: number;
-  priceKRW: number;
-  totalValueKRW: number;
-  percentage: number;
-  memberName: string;
-  accountName: string;
-  institutionName: string;
-}
+import { formatAmount } from '@/lib/format-utils';
+import { RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
+import type { HoldingRow } from '@/types';
 
 interface MemberFilterProps {
   members: string[];
@@ -48,12 +34,6 @@ type ColumnMeta = {
   filter?: 'text' | 'select';
   options?: string[];
   align?: 'left' | 'right';
-};
-
-const riskLevelColors: Record<string, string> = {
-  안전자산: 'text-emerald-600 dark:text-emerald-400',
-  중립자산: 'text-blue-600 dark:text-blue-400',
-  위험자산: 'text-rose-600 dark:text-rose-400',
 };
 
 const textFilter: FilterFn<HoldingRow> = (row, columnId, filterValue) => {
@@ -142,7 +122,9 @@ export function AssetHoldingTable({
         cell: ({ getValue }) => {
           const level = getValue<string>();
           return (
-            <span className={`text-xs font-semibold ${riskLevelColors[level] ?? ''}`}>{level}</span>
+            <span className={`text-xs font-semibold ${RISK_LEVEL_TEXT_COLORS[level] ?? ''}`}>
+              {level}
+            </span>
           );
         },
         filterFn: selectFilter,

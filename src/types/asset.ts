@@ -355,3 +355,46 @@ export interface AssetMetadata {
   country?: string;
   [key: string]: string | undefined;
 }
+
+// ============================================
+// 자산 현황 페이지 타입
+// ============================================
+
+export interface HoldingRow {
+  id: string;
+  assetName: string;
+  assetClass: string;
+  subClass: string | null;
+  riskLevel: string;
+  currency: string;
+  quantity: number;
+  priceKRW: number;
+  totalValueKRW: number;
+  percentage: number;
+  memberName: string;
+  accountName: string;
+  institutionName: string;
+}
+
+export interface RiskChild {
+  label: string;
+  value: number;
+  percentage: number;
+}
+
+export interface RiskGroup {
+  riskLevel: string;
+  totalValue: number;
+  percentage: number;
+  children: RiskChild[];
+}
+
+export interface AssetMonthlyData {
+  totalValue: number;
+  byRiskLevel: RiskGroup[];
+  holdings: HoldingRow[];
+  availableRange: {
+    min: { year: number; month: number };
+    max: { year: number; month: number };
+  } | null;
+}

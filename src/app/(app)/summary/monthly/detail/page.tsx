@@ -3,9 +3,11 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { fetchDashboardData, type DashboardData } from '@/lib/mock-data';
-import { MonthSelector, LNB } from '@/components/features/navigation';
+import { fetchDashboardData } from '@/lib/mock-data';
+import type { DashboardData } from '@/types';
+import { MonthSelector } from '@/components/features/navigation';
 import { MonthlyDetailTable } from '@/components/features/transaction';
+import { PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
 
 const DEFAULT_PAYMENT_METHODS: string[] = [];
@@ -80,7 +82,7 @@ function MonthlyDetailContent() {
 
   if (!data && isFetching) {
     return (
-      <main className="ml-16 flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center">
         <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
       </main>
     );
@@ -88,7 +90,7 @@ function MonthlyDetailContent() {
 
   if (error && !data) {
     return (
-      <main className="ml-16 flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center">
         <div className="text-rose-600 dark:text-rose-400">{error}</div>
       </main>
     );
@@ -96,7 +98,7 @@ function MonthlyDetailContent() {
 
   if (!data) {
     return (
-      <main className="ml-16 flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center">
         <div className="text-rose-600 dark:text-rose-400">Failed to load data</div>
       </main>
     );
@@ -135,11 +137,7 @@ function MonthlyDetailContent() {
   );
 
   return (
-    <main
-      className={`ml-16 px-8 py-8 transition-opacity duration-150 ${
-        isFetching ? 'pointer-events-none opacity-50' : ''
-      }`}
-    >
+    <PageContainer isFetching={isFetching}>
       <MonthSelector
         year={selectedYear}
         month={selectedMonth}
@@ -161,23 +159,20 @@ function MonthlyDetailContent() {
         users={optionCache.users}
         onDataChange={loadData}
       />
-    </main>
+    </PageContainer>
   );
 }
 
 export default function MonthlyDetailPage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <LNB />
-      <Suspense
-        fallback={
-          <main className="ml-16 flex min-h-screen items-center justify-center">
-            <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
-          </main>
-        }
-      >
-        <MonthlyDetailContent />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center">
+          <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+        </main>
+      }
+    >
+      <MonthlyDetailContent />
+    </Suspense>
   );
 }

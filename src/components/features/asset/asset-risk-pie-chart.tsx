@@ -2,20 +2,13 @@
 
 import { ResponsivePie } from '@nivo/pie';
 import { Card } from '@/components/ui/card';
-import { formatAmount } from '@/lib/mock-data';
-
-interface RiskChild {
-  label: string;
-  value: number;
-  percentage: number;
-}
-
-interface RiskGroup {
-  riskLevel: string;
-  totalValue: number;
-  percentage: number;
-  children: RiskChild[];
-}
+import { formatAmount } from '@/lib/format-utils';
+import {
+  RISK_LEVEL_COLORS,
+  RISK_LEVEL_CHILD_PALETTES,
+  DEFAULT_CHILD_COLORS,
+} from '@/lib/constants';
+import type { RiskGroup } from '@/types';
 
 interface MemberFilterProps {
   members: string[];
@@ -27,20 +20,6 @@ interface AssetRiskPieChartProps extends MemberFilterProps {
   data: RiskGroup[];
   totalValue: number;
 }
-
-const riskColorMap: Record<string, string> = {
-  안전자산: '#22c55e',
-  중립자산: '#3b82f6',
-  위험자산: '#ef4444',
-};
-
-const childColorPalettes: Record<string, string[]> = {
-  안전자산: ['#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0'],
-  중립자산: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'],
-  위험자산: ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca'],
-};
-
-const defaultChildColors = ['#6b7280', '#9ca3af', '#d1d5db'];
 
 export function AssetRiskPieChart({
   data,
@@ -54,7 +33,7 @@ export function AssetRiskPieChart({
     id: group.riskLevel,
     label: group.riskLevel,
     value: group.totalValue,
-    color: riskColorMap[group.riskLevel] ?? '#6b7280',
+    color: RISK_LEVEL_COLORS[group.riskLevel] ?? '#6b7280',
   }));
 
   // Outer donut: sub-classifications
@@ -67,7 +46,7 @@ export function AssetRiskPieChart({
   }[] = [];
 
   data.forEach(group => {
-    const palette = childColorPalettes[group.riskLevel] ?? defaultChildColors;
+    const palette = RISK_LEVEL_CHILD_PALETTES[group.riskLevel] ?? DEFAULT_CHILD_COLORS;
     group.children.forEach((child, index) => {
       outerData.push({
         id: `${group.riskLevel}-${child.label}`,
@@ -173,7 +152,7 @@ export function AssetRiskPieChart({
           <div key={group.riskLevel} className="flex items-center gap-1.5">
             <div
               className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: riskColorMap[group.riskLevel] ?? '#6b7280' }}
+              style={{ backgroundColor: RISK_LEVEL_COLORS[group.riskLevel] ?? '#6b7280' }}
             />
             <span className="text-xs text-zinc-600 dark:text-zinc-400">
               {group.riskLevel} {group.percentage}%

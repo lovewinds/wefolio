@@ -267,15 +267,6 @@ function buildMockCategoryBreakdown(
   };
 }
 
-// 금액 포맷팅 유틸리티
-export function formatAmount(amount: number): string {
-  return new Intl.NumberFormat('ko-KR', {
-    style: 'currency',
-    currency: 'KRW',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 // Mock 데이터를 DashboardData 형식으로 변환
 export function getMockDashboardData(): DashboardData {
   const stats = calculateStats(mockTransactions);
@@ -332,19 +323,9 @@ export async function fetchDashboardData(year?: number, month?: number): Promise
     return getMockDashboardData();
   }
 
-  const params = new URLSearchParams();
-  if (year) params.set('year', String(year));
-  if (month) params.set('month', String(month));
-
-  const url = `/api/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
-  const response = await fetch(url);
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.error ?? 'Failed to fetch dashboard data');
-  }
-
-  return result.data;
+  const { apiClient } = await import('@/lib/api-client');
+  const now = new Date();
+  return apiClient.dashboard.getMonthly(year ?? now.getFullYear(), month ?? now.getMonth() + 1);
 }
 
 // 타입 재export

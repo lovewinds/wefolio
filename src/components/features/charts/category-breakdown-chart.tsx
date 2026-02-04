@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ResponsivePie } from '@nivo/pie';
 import { Card } from '@/components/ui/card';
-import { formatAmount } from '@/lib/mock-data';
+import { formatAmount } from '@/lib/format-utils';
 import type { HierarchicalCategoryExpense } from '@/types';
 
 type CategoryType = 'income' | 'expense';

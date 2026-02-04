@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 import type { TransactionType } from '@/types';
 import type {
   InputRow,
@@ -138,23 +139,15 @@ export function useInputRows({
       });
 
       try {
-        const response = await fetch('/api/transactions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: transactionType,
-            amount: parseFloat(row.amount),
-            categoryId: row.categoryId,
-            date: row.date,
-            paymentMethod: row.paymentMethod || null,
-            user: row.user || null,
-            description: row.description || null,
-          }),
+        await apiClient.transactions.create({
+          type: transactionType,
+          amount: parseFloat(row.amount),
+          categoryId: row.categoryId,
+          date: row.date,
+          paymentMethod: row.paymentMethod || null,
+          user: row.user || null,
+          description: row.description || null,
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to save transaction');
-        }
 
         // Set status to saved, then reset the row after a brief delay
         setRows(prev => {

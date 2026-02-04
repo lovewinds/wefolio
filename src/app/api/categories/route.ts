@@ -1,14 +1,33 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { categoryRepository } from '@/repositories/category-repository';
+
+const categoriesQuerySchema = z.object({
+  type: z.enum(['income', 'expense']).optional(),
+  grouped: z
+    .string()
+    .optional()
+    .transform(v => v === 'true'),
+});
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') as 'income' | 'expense' | null;
-    const grouped = searchParams.get('grouped') === 'true';
+    const parsed = categoriesQuerySchema.safeParse({
+      type: searchParams.get('type') ?? undefined,
+      grouped: searchParams.get('grouped') ?? undefined,
+    });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid query parameters' },
+        { status: 400 }
+      );
+    }
+
+    const { type, grouped } = parsed.data;
 
     if (grouped && type) {
-      // 대분류별로 그룹화된 소분류 반환
       const parentCategories = await categoryRepository.findParentsByType(type);
 
       const groupedData = parentCategories.map(parent => ({
@@ -29,14 +48,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, data: groupedData });
     }
 
-    // 기본: 소분류만 반환 (parent 정보 포함)
     const allCategories = await categoryRepository.findAllWithHierarchy();
 
     const filteredCategories = type
       ? allCategories.filter(cat => cat.type === type)
       : allCategories;
 
-    // 소분류만 필터링 (parentId가 있는 것)
     const childCategories = filteredCategories
       .filter(cat => cat.parentId !== null)
       .map(cat => ({

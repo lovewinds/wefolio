@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { formatAmount, type DashboardTransaction } from '@/lib/mock-data';
+import { formatAmount } from '@/lib/format-utils';
+import type { DashboardTransaction } from '@/types';
 
 type TransactionTypeFilter = 'all' | 'income' | 'expense';
 type SortOrder = 'none' | 'asc' | 'desc';

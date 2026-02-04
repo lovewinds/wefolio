@@ -1,4 +1,4 @@
-import { formatAmount } from '@/lib/mock-data';
+import { formatAmount } from '@/lib/format-utils';
 
 type CardType = 'income' | 'expense' | 'balance';
 

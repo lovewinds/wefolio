@@ -7,6 +7,9 @@ export type AssetType = 'cash' | 'bank' | 'investment' | 'property' | 'other';
 // New Asset Types
 export * from './asset';
 
+// Dashboard Types
+export * from './dashboard';
+
 // Payment Method Types
 export type PaymentMethod = '현대카드' | '신한카드' | '계좌이체' | '현금';
 
@@ -99,60 +102,4 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
-}
-
-// Dashboard Types
-export interface DashboardTransaction {
-  id: string;
-  type: TransactionType;
-  amount: number;
-  category: string;
-  description?: string;
-  date: string;
-  paymentMethod?: string | null;
-  user?: string | null;
-}
-
-export interface DashboardStats {
-  totalIncome: number;
-  totalExpense: number;
-  balance: number;
-}
-
-export interface DashboardYearMonth {
-  year: number;
-  month: number;
-}
-
-export interface DashboardMonthRange {
-  min: DashboardYearMonth;
-  max: DashboardYearMonth;
-}
-
-export interface CategoryExpense {
-  id: string;
-  label: string;
-  value: number;
-  parentId?: string | null;
-  parentLabel?: string;
-  color?: string;
-}
-
-// Hierarchical category expense for sunburst chart
-export interface HierarchicalCategoryExpense {
-  id: string;
-  label: string;
-  value: number;
-  color?: string;
-  children?: HierarchicalCategoryExpense[];
-}
-
-export interface DashboardData {
-  stats: DashboardStats;
-  transactions: DashboardTransaction[];
-  expenseByCategory: CategoryExpense[];
-  incomeByCategory: CategoryExpense[];
-  expenseByParentCategory?: HierarchicalCategoryExpense[];
-  incomeByParentCategory?: HierarchicalCategoryExpense[];
-  availableRange?: DashboardMonthRange;
 }

@@ -17,8 +17,8 @@ import {
 import { ArrowDown, ArrowUp, ChevronsUpDown, Download, RotateCcw, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
-import { formatAmount, type DashboardTransaction } from '@/lib/mock-data';
-import type { CategoryGroup, TransactionType } from '@/types';
+import { formatAmount } from '@/lib/format-utils';
+import type { CategoryGroup, DashboardTransaction, TransactionType } from '@/types';
 import { useInputRows } from '@/hooks';
 import { InputTableRow } from './input-table-row';
 import type { InputTableRowRef } from './types';

@@ -2,7 +2,7 @@
 
 import { ResponsiveBar } from '@nivo/bar';
 import { Card } from '@/components/ui/card';
-import { formatAmount } from '@/lib/mock-data';
+import { formatAmount } from '@/lib/format-utils';
 
 interface IncomeExpenseChartProps {
   totalIncome: number;
