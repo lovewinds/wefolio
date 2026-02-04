@@ -28,10 +28,9 @@ export function MonthlySummaryView({
   const {
     selectedYear,
     selectedMonth,
-    navigationUnit,
     handlePrevMonth,
     handleNextMonth,
-    toggleNavigationUnit,
+    setSelectedDate,
     canMovePrev,
     canMoveNext,
     updateRangeFromData,
@@ -105,13 +104,13 @@ export function MonthlySummaryView({
         <MonthSelector
           year={selectedYear}
           month={selectedMonth}
-          navigationUnit={navigationUnit}
           titleSuffix="요약"
           canPrev={canMovePrev}
           canNext={canMoveNext}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
-          onToggleNavigationUnit={toggleNavigationUnit}
+          onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
+          onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
           actions={actions}
         />
         <SummaryCardGroup totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />

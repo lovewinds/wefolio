@@ -27,11 +27,9 @@ export interface UseMonthNavigationReturn {
   selectedYear: number;
   selectedMonth: number;
   currentMonthDisplay: string;
-  navigationUnit: 'month' | 'year';
 
   handlePrevMonth: () => void;
   handleNextMonth: () => void;
-  toggleNavigationUnit: () => void;
   setSelectedDate: (date: YearMonth) => void;
 
   canMovePrev: boolean;
@@ -73,7 +71,6 @@ export function useMonthNavigation(
     computeInitialDate(initialDate, initialFromQuery, currentYearMonth)
   );
   const [availableRange, setAvailableRange] = useState<MonthRange | null>(null);
-  const [navigationUnit, setNavigationUnit] = useState<'month' | 'year'>('month');
 
   const fallbackRange = useMemo(
     () => ({ min: currentYearMonth, max: currentYearMonth }),
@@ -86,31 +83,26 @@ export function useMonthNavigation(
 
   const handlePrevMonth = useCallback(() => {
     setSelectedDate(prev => {
-      const next = shiftDate(prev, navigationUnit, -1);
+      const next = shiftDate(prev, 'month', -1);
       return isWithinRange(next, effectiveRange) ? next : prev;
     });
-  }, [effectiveRange, navigationUnit]);
+  }, [effectiveRange]);
 
   const handleNextMonth = useCallback(() => {
     setSelectedDate(prev => {
-      const next = shiftDate(prev, navigationUnit, 1);
-      // If allowFutureNavigation is true, allow any forward movement
+      const next = shiftDate(prev, 'month', 1);
       if (allowFutureNavigation) {
         return next;
       }
       return isWithinRange(next, effectiveRange) ? next : prev;
     });
-  }, [effectiveRange, navigationUnit, allowFutureNavigation]);
+  }, [effectiveRange, allowFutureNavigation]);
 
-  const toggleNavigationUnit = useCallback(() => {
-    setNavigationUnit(prev => (prev === 'month' ? 'year' : 'month'));
-  }, []);
-
-  const canMovePrev = isWithinRange(shiftDate(selectedDate, navigationUnit, -1), effectiveRange);
+  const canMovePrev = isWithinRange(shiftDate(selectedDate, 'month', -1), effectiveRange);
 
   const canMoveNext = allowFutureNavigation
     ? true
-    : isWithinRange(shiftDate(selectedDate, navigationUnit, 1), effectiveRange);
+    : isWithinRange(shiftDate(selectedDate, 'month', 1), effectiveRange);
 
   const updateRangeFromData = useCallback(
     (range: MonthRange | null, transactions?: { date: string }[]) => {
@@ -151,10 +143,8 @@ export function useMonthNavigation(
     selectedYear,
     selectedMonth,
     currentMonthDisplay,
-    navigationUnit,
     handlePrevMonth,
     handleNextMonth,
-    toggleNavigationUnit,
     setSelectedDate,
     canMovePrev,
     canMoveNext,

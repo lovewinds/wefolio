@@ -1,34 +1,51 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 interface MonthSelectorProps {
   year: number;
   month: number;
-  navigationUnit?: 'month' | 'year';
   titleSuffix?: string;
   canPrev?: boolean;
   canNext?: boolean;
   onPrevMonth: () => void;
   onNextMonth: () => void;
-  onToggleNavigationUnit?: () => void;
+  onYearChange?: (year: number) => void;
+  onMonthChange?: (month: number) => void;
   actions?: ReactNode;
 }
 
 export function MonthSelector({
   year,
   month,
-  navigationUnit = 'month',
   titleSuffix = '요약',
   canPrev = true,
   canNext = true,
   onPrevMonth,
   onNextMonth,
-  onToggleNavigationUnit,
+  onYearChange,
+  onMonthChange,
   actions,
 }: MonthSelectorProps) {
-  const yearLabel = `${year}년`;
-  const monthLabel = `${month}월`;
-  const isYearMode = navigationUnit === 'year';
-  const showClickableYear = Boolean(onToggleNavigationUnit);
+  const [openPopup, setOpenPopup] = useState<'year' | 'month' | null>(null);
+  const yearRef = useRef<HTMLSpanElement>(null);
+  const monthRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!openPopup) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      const ref = openPopup === 'year' ? yearRef : monthRef;
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpenPopup(null);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openPopup]);
+
+  const yearGrid = Array.from({ length: 9 }, (_, i) => year - 4 + i);
 
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -54,21 +71,79 @@ export function MonthSelector({
           </svg>
         </button>
         <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
-          {showClickableYear ? (
-            <button
-              type="button"
-              onClick={onToggleNavigationUnit}
-              className={`rounded-md px-1 py-0.5 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
-                isYearMode ? 'text-blue-600 dark:text-blue-300' : 'text-zinc-800 dark:text-zinc-100'
-              }`}
-              aria-pressed={isYearMode}
-            >
-              {yearLabel}
-            </button>
-          ) : (
-            yearLabel
-          )}{' '}
-          {monthLabel} {titleSuffix}
+          <span ref={yearRef} className="relative inline-block">
+            {onYearChange ? (
+              <button
+                type="button"
+                onClick={() => setOpenPopup(openPopup === 'year' ? null : 'year')}
+                className="rounded-md px-1 py-0.5 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              >
+                {year}년
+              </button>
+            ) : (
+              `${year}년`
+            )}
+            {openPopup === 'year' && onYearChange && (
+              <div className="absolute left-1/2 top-full z-20 mt-2 min-w-48 -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {yearGrid.map(y => (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => {
+                        onYearChange(y);
+                        setOpenPopup(null);
+                      }}
+                      className={`rounded-md px-2 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                        y === year
+                          ? 'bg-blue-600 text-white dark:bg-blue-500'
+                          : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </span>{' '}
+          <span ref={monthRef} className="relative inline-block">
+            {onMonthChange ? (
+              <button
+                type="button"
+                onClick={() => setOpenPopup(openPopup === 'month' ? null : 'month')}
+                className="rounded-md px-1 py-0.5 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              >
+                {month}월
+              </button>
+            ) : (
+              `${month}월`
+            )}
+            {openPopup === 'month' && onMonthChange && (
+              <div className="absolute left-1/2 top-full z-20 mt-2 min-w-44 -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        onMonthChange(m);
+                        setOpenPopup(null);
+                      }}
+                      className={`rounded-md px-2 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                        m === month
+                          ? 'bg-blue-600 text-white dark:bg-blue-500'
+                          : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </span>{' '}
+          {titleSuffix}
         </h2>
         <button
           onClick={onNextMonth}

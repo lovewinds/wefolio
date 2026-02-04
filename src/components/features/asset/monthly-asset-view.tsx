@@ -58,10 +58,9 @@ export function MonthlyAssetView({
   const {
     selectedYear,
     selectedMonth,
-    navigationUnit,
     handlePrevMonth,
     handleNextMonth,
-    toggleNavigationUnit,
+    setSelectedDate,
     canMovePrev,
     canMoveNext,
     updateRangeFromData,
@@ -120,13 +119,13 @@ export function MonthlyAssetView({
         <MonthSelector
           year={selectedYear}
           month={selectedMonth}
-          navigationUnit={navigationUnit}
           titleSuffix="자산 현황"
           canPrev={canMovePrev}
           canNext={canMoveNext}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
-          onToggleNavigationUnit={toggleNavigationUnit}
+          onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
+          onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
         />
       </section>
 
