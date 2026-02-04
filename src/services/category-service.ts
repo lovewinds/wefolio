@@ -1,5 +1,5 @@
 import { categoryRepository } from '@/repositories/category-repository';
-import type { Category, Prisma } from '@prisma/client';
+import type { BudgetCategory, Prisma } from '@prisma/client';
 
 // 기본 카테고리 정의
 const DEFAULT_CATEGORIES = [
@@ -19,26 +19,26 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export const categoryService = {
-  async getAll(): Promise<Category[]> {
+  async getAll(): Promise<BudgetCategory[]> {
     return categoryRepository.findAll();
   },
 
-  async getByType(type: 'income' | 'expense'): Promise<Category[]> {
+  async getByType(type: 'income' | 'expense'): Promise<BudgetCategory[]> {
     return categoryRepository.findByType(type);
   },
 
-  async create(data: Prisma.CategoryCreateInput): Promise<Category> {
+  async create(data: Prisma.BudgetCategoryCreateInput): Promise<BudgetCategory> {
     return categoryRepository.create({
       ...data,
       isDefault: false,
     });
   },
 
-  async update(id: string, data: Prisma.CategoryUpdateInput): Promise<Category> {
+  async update(id: string, data: Prisma.BudgetCategoryUpdateInput): Promise<BudgetCategory> {
     return categoryRepository.update(id, data);
   },
 
-  async delete(id: string): Promise<Category> {
+  async delete(id: string): Promise<BudgetCategory> {
     const category = await categoryRepository.findById(id);
     if (category?.isDefault) {
       throw new Error('Cannot delete default category');

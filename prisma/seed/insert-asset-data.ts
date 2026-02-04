@@ -80,14 +80,14 @@ export async function insertAssetSeedData(
     // 2. 금융기관 upsert
     let institutionId = institutionCache.get(snapshot.institutionName);
     if (!institutionId) {
-      const existing = await prisma.institution.findUnique({
+      const existing = await prisma.assetInstitution.findUnique({
         where: { name: snapshot.institutionName },
       });
 
       if (existing) {
         institutionId = existing.id;
       } else {
-        const created = await prisma.institution.create({
+        const created = await prisma.assetInstitution.create({
           data: {
             name: snapshot.institutionName,
             type: inferInstitutionType(snapshot.institutionName),

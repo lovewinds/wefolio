@@ -3,7 +3,7 @@
 // ============================================
 
 // 금융기관 타입
-export type InstitutionType = '은행' | '증권';
+export type AssetInstitutionType = '은행' | '증권';
 
 // 계좌 타입
 export type AccountType =
@@ -63,10 +63,10 @@ export type SnapshotSource = '수기' | '가져오기' | 'API';
 // ============================================
 
 // 금융기관
-export interface InstitutionBase {
+export interface AssetInstitutionBase {
   id: string;
   name: string;
-  type: InstitutionType;
+  type: AssetInstitutionType;
   isActive: boolean;
 }
 
@@ -170,7 +170,7 @@ export interface HoldingValueSnapshotBase {
 // 계좌 (관계 포함)
 export interface AccountWithRelations extends AccountBase {
   member?: FamilyMemberBase;
-  institution?: InstitutionBase;
+  institution?: AssetInstitutionBase;
   holdings?: HoldingWithAsset[];
 }
 
@@ -219,9 +219,9 @@ export interface AssetMasterWithPrice extends AssetMasterBase {
 // ============================================
 
 // 금융기관 생성/수정
-export interface InstitutionFormData {
+export interface AssetInstitutionFormData {
   name: string;
-  type: InstitutionType;
+  type: AssetInstitutionType;
   isActive?: boolean;
 }
 
@@ -313,10 +313,10 @@ export interface AssetClassSummary {
 }
 
 // 기관별 요약
-export interface InstitutionSummary {
+export interface AssetInstitutionSummary {
   institutionId: string;
   institutionName: string;
-  institutionType: InstitutionType;
+  institutionType: AssetInstitutionType;
   totalValue: number;
   accountCount: number;
 }
@@ -340,7 +340,7 @@ export interface PortfolioSummary {
   totalHoldings: number;
   byMember: MemberAssetSummary[];
   byAssetClass: AssetClassSummary[];
-  byInstitution: InstitutionSummary[];
+  byInstitution: AssetInstitutionSummary[];
 }
 
 // ============================================

@@ -8,7 +8,6 @@
 | ---------------------------------- | ----------------------------------------------------- |
 | `transaction-repository.ts`        | 수입/지출 거래 데이터 접근                            |
 | `category-repository.ts`           | 카테고리 데이터 접근                                  |
-| `asset-repository.ts`              | 자산 데이터 접근 (레거시 - 마이그레이션 후 제거 예정) |
 | `recurring-template-repository.ts` | 고정 지출 템플릿 데이터 접근                          |
 | `account-repository.ts`            | 계좌/금융기관/가족구성원 데이터 접근                  |
 | `holding-repository.ts`            | 보유종목/가격/거래 데이터 접근                        |
@@ -48,6 +47,6 @@
 ## 관련 Prisma 모델
 
 ```
-Institution, FamilyMember, Account, AccountSnapshot
+AssetInstitution, FamilyMember, Account, AccountSnapshot
 AssetMaster, AssetPrice, Holding, HoldingTransaction, HoldingValueSnapshot
 ```

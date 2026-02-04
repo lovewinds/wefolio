@@ -1,10 +1,7 @@
 // Transaction Types
 export type TransactionType = 'income' | 'expense';
 
-// Legacy Asset Types (마이그레이션 후 제거 예정)
-export type AssetType = 'cash' | 'bank' | 'investment' | 'property' | 'other';
-
-// New Asset Types
+// Asset Types
 export * from './asset';
 
 // Dashboard Types
@@ -86,15 +83,6 @@ export interface RecurringTemplateBase {
   amount: number;
   description?: string | null;
   categoryId: string;
-}
-
-// Asset
-export interface AssetBase {
-  id: string;
-  name: string;
-  type: AssetType;
-  balance: number;
-  note?: string | null;
 }
 
 // API Response Types

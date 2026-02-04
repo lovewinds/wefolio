@@ -8,7 +8,6 @@
 | ------------------------ | ---------------------------------------------- |
 | `transaction-service.ts` | 수입/지출 거래 CRUD 및 조회                    |
 | `category-service.ts`    | 카테고리 CRUD (대분류/소분류 지원)             |
-| `asset-service.ts`       | 자산 CRUD (레거시 - 마이그레이션 후 제거 예정) |
 | `statistics-service.ts`  | 월별/카테고리별 통계 집계                      |
 | `account-service.ts`     | 계좌/금융기관/가족구성원 관리                  |
 | `holding-service.ts`     | 보유종목/가격/거래/포트폴리오 관리             |
@@ -42,7 +41,7 @@
 
 주요 타입은 `@/types/asset.ts`에 정의되어 있다.
 
-- `InstitutionType`: `'bank' | 'brokerage'`
+- `AssetInstitutionType`: `'bank' | 'brokerage'`
 - `AccountType`: `'savings' | 'time_deposit' | 'cma' | 'regular' | 'pension_savings' | 'irp' | 'isa'`
 - `AssetClass`: `'stock' | 'bond' | 'deposit' | 'gold' | 'fund' | 'etf'`
 - `Currency`: `'KRW' | 'USD'`

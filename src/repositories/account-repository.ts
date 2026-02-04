@@ -1,50 +1,56 @@
 import { prisma } from '@/lib/prisma';
-import type { Account, AccountSnapshot, Institution, FamilyMember, Prisma } from '@prisma/client';
+import type {
+  Account,
+  AccountSnapshot,
+  AssetInstitution,
+  FamilyMember,
+  Prisma,
+} from '@prisma/client';
 
 // ============================================
-// Institution Repository
+// AssetInstitution Repository
 // ============================================
 
 export const institutionRepository = {
-  async findAll(): Promise<Institution[]> {
-    return prisma.institution.findMany({
+  async findAll(): Promise<AssetInstitution[]> {
+    return prisma.assetInstitution.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
     });
   },
 
-  async findById(id: string): Promise<Institution | null> {
-    return prisma.institution.findUnique({
+  async findById(id: string): Promise<AssetInstitution | null> {
+    return prisma.assetInstitution.findUnique({
       where: { id },
     });
   },
 
-  async findByName(name: string): Promise<Institution | null> {
-    return prisma.institution.findUnique({
+  async findByName(name: string): Promise<AssetInstitution | null> {
+    return prisma.assetInstitution.findUnique({
       where: { name },
     });
   },
 
-  async findByType(type: string): Promise<Institution[]> {
-    return prisma.institution.findMany({
+  async findByType(type: string): Promise<AssetInstitution[]> {
+    return prisma.assetInstitution.findMany({
       where: { type, isActive: true },
       orderBy: { name: 'asc' },
     });
   },
 
-  async create(data: Prisma.InstitutionCreateInput): Promise<Institution> {
-    return prisma.institution.create({ data });
+  async create(data: Prisma.AssetInstitutionCreateInput): Promise<AssetInstitution> {
+    return prisma.assetInstitution.create({ data });
   },
 
-  async update(id: string, data: Prisma.InstitutionUpdateInput): Promise<Institution> {
-    return prisma.institution.update({
+  async update(id: string, data: Prisma.AssetInstitutionUpdateInput): Promise<AssetInstitution> {
+    return prisma.assetInstitution.update({
       where: { id },
       data,
     });
   },
 
-  async delete(id: string): Promise<Institution> {
-    return prisma.institution.update({
+  async delete(id: string): Promise<AssetInstitution> {
+    return prisma.assetInstitution.update({
       where: { id },
       data: { isActive: false },
     });
@@ -100,7 +106,7 @@ export const familyMemberRepository = {
 
 type AccountWithRelations = Account & {
   member: FamilyMember;
-  institution: Institution;
+  institution: AssetInstitution;
 };
 
 export const accountRepository = {

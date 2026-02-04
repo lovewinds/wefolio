@@ -1,5 +1,4 @@
 import { transactionRepository } from '@/repositories/transaction-repository';
-import { assetRepository } from '@/repositories/asset-repository';
 import { getMonthRangeUTC } from '@/lib/date-utils';
 
 interface MonthlySummary {
@@ -83,9 +82,5 @@ export const statisticsService = {
         percentage: total > 0 ? (amount / total) * 100 : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
-  },
-
-  async getTotalAssets(): Promise<number> {
-    return assetRepository.getTotalBalance();
   },
 };

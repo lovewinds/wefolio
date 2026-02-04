@@ -1,21 +1,21 @@
 import { prisma } from '@/lib/prisma';
-import type { Category, Prisma } from '@prisma/client';
+import type { BudgetCategory, Prisma } from '@prisma/client';
 
-type CategoryWithRelations = Category & {
-  parent?: Category | null;
-  children?: Category[];
+type CategoryWithRelations = BudgetCategory & {
+  parent?: BudgetCategory | null;
+  children?: BudgetCategory[];
 };
 
 export const categoryRepository = {
-  async findAll(): Promise<Category[]> {
-    return prisma.category.findMany({
+  async findAll(): Promise<BudgetCategory[]> {
+    return prisma.budgetCategory.findMany({
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
     });
   },
 
   // 계층 구조 포함하여 조회
   async findAllWithHierarchy(): Promise<CategoryWithRelations[]> {
-    return prisma.category.findMany({
+    return prisma.budgetCategory.findMany({
       include: {
         parent: true,
         children: true,
@@ -26,7 +26,7 @@ export const categoryRepository = {
 
   // 대분류만 조회 (자식 포함)
   async findParentCategories(): Promise<CategoryWithRelations[]> {
-    return prisma.category.findMany({
+    return prisma.budgetCategory.findMany({
       where: { parentId: null },
       include: {
         children: true,
@@ -36,21 +36,21 @@ export const categoryRepository = {
   },
 
   // 특정 대분류의 소분류 조회
-  async findChildrenByParentId(parentId: string): Promise<Category[]> {
-    return prisma.category.findMany({
+  async findChildrenByParentId(parentId: string): Promise<BudgetCategory[]> {
+    return prisma.budgetCategory.findMany({
       where: { parentId },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
     });
   },
 
-  async findById(id: string): Promise<Category | null> {
-    return prisma.category.findUnique({
+  async findById(id: string): Promise<BudgetCategory | null> {
+    return prisma.budgetCategory.findUnique({
       where: { id },
     });
   },
 
   async findByIdWithRelations(id: string): Promise<CategoryWithRelations | null> {
-    return prisma.category.findUnique({
+    return prisma.budgetCategory.findUnique({
       where: { id },
       include: {
         parent: true,
@@ -59,8 +59,8 @@ export const categoryRepository = {
     });
   },
 
-  async findByType(type: string): Promise<Category[]> {
-    return prisma.category.findMany({
+  async findByType(type: string): Promise<BudgetCategory[]> {
+    return prisma.budgetCategory.findMany({
       where: { type },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
     });
@@ -68,7 +68,7 @@ export const categoryRepository = {
 
   // 특정 타입의 대분류만 조회 (자식 포함)
   async findParentsByType(type: string): Promise<CategoryWithRelations[]> {
-    return prisma.category.findMany({
+    return prisma.budgetCategory.findMany({
       where: { type, parentId: null },
       include: {
         children: true,
@@ -77,19 +77,19 @@ export const categoryRepository = {
     });
   },
 
-  async create(data: Prisma.CategoryCreateInput): Promise<Category> {
-    return prisma.category.create({ data });
+  async create(data: Prisma.BudgetCategoryCreateInput): Promise<BudgetCategory> {
+    return prisma.budgetCategory.create({ data });
   },
 
-  async update(id: string, data: Prisma.CategoryUpdateInput): Promise<Category> {
-    return prisma.category.update({
+  async update(id: string, data: Prisma.BudgetCategoryUpdateInput): Promise<BudgetCategory> {
+    return prisma.budgetCategory.update({
       where: { id },
       data,
     });
   },
 
-  async delete(id: string): Promise<Category> {
-    return prisma.category.delete({
+  async delete(id: string): Promise<BudgetCategory> {
+    return prisma.budgetCategory.delete({
       where: { id },
     });
   },

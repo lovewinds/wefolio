@@ -41,7 +41,7 @@ export async function insertSeedData(
   if (parentNamesByType.size > 0) {
     console.log('   📂 대분류 생성 중...');
     for (const [parentName, parentType] of parentNamesByType) {
-      const existing = await prisma.category.findFirst({
+      const existing = await prisma.budgetCategory.findFirst({
         where: {
           name: parentName,
           type: parentType,
@@ -51,7 +51,7 @@ export async function insertSeedData(
 
       const created =
         existing ??
-        (await prisma.category.create({
+        (await prisma.budgetCategory.create({
           data: {
             name: parentName,
             type: parentType,
@@ -77,7 +77,7 @@ export async function insertSeedData(
     const parentKey = parentName ? `${parentName}:${categoryType}` : null;
     const parentId = parentKey ? (parentCategoryMap.get(parentKey) ?? null) : null;
 
-    const existing = await prisma.category.findFirst({
+    const existing = await prisma.budgetCategory.findFirst({
       where: {
         name: category.name,
         type: categoryType,
@@ -87,7 +87,7 @@ export async function insertSeedData(
 
     const created =
       existing ??
-      (await prisma.category.create({
+      (await prisma.budgetCategory.create({
         data: {
           name: category.name,
           type: categoryType,
@@ -112,7 +112,7 @@ export async function insertSeedData(
       continue;
     }
 
-    await prisma.transaction.create({
+    await prisma.budgetTransaction.create({
       data: {
         type: transaction.type,
         amount: transaction.amount,

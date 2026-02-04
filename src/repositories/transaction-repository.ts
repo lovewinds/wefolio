@@ -1,23 +1,23 @@
 import { prisma } from '@/lib/prisma';
-import type { Transaction, Prisma } from '@prisma/client';
+import type { BudgetTransaction, Prisma } from '@prisma/client';
 
 export const transactionRepository = {
-  async findAll(): Promise<Transaction[]> {
-    return prisma.transaction.findMany({
+  async findAll(): Promise<BudgetTransaction[]> {
+    return prisma.budgetTransaction.findMany({
       include: { category: true },
       orderBy: { date: 'desc' },
     });
   },
 
-  async findById(id: string): Promise<Transaction | null> {
-    return prisma.transaction.findUnique({
+  async findById(id: string): Promise<BudgetTransaction | null> {
+    return prisma.budgetTransaction.findUnique({
       where: { id },
       include: { category: true },
     });
   },
 
-  async findByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
-    return prisma.transaction.findMany({
+  async findByDateRange(startDate: Date, endDate: Date): Promise<BudgetTransaction[]> {
+    return prisma.budgetTransaction.findMany({
       where: {
         date: {
           gte: startDate,
@@ -36,7 +36,7 @@ export const transactionRepository = {
   },
 
   async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {
-    const result = await prisma.transaction.aggregate({
+    const result = await prisma.budgetTransaction.aggregate({
       _min: { date: true },
       _max: { date: true },
     });
@@ -47,23 +47,23 @@ export const transactionRepository = {
     };
   },
 
-  async create(data: Prisma.TransactionCreateInput): Promise<Transaction> {
-    return prisma.transaction.create({
+  async create(data: Prisma.BudgetTransactionCreateInput): Promise<BudgetTransaction> {
+    return prisma.budgetTransaction.create({
       data,
       include: { category: true },
     });
   },
 
-  async update(id: string, data: Prisma.TransactionUpdateInput): Promise<Transaction> {
-    return prisma.transaction.update({
+  async update(id: string, data: Prisma.BudgetTransactionUpdateInput): Promise<BudgetTransaction> {
+    return prisma.budgetTransaction.update({
       where: { id },
       data,
       include: { category: true },
     });
   },
 
-  async delete(id: string): Promise<Transaction> {
-    return prisma.transaction.delete({
+  async delete(id: string): Promise<BudgetTransaction> {
+    return prisma.budgetTransaction.delete({
       where: { id },
     });
   },

@@ -1,18 +1,18 @@
 import { transactionRepository } from '@/repositories/transaction-repository';
 import { recurringTemplateRepository } from '@/repositories/recurring-template-repository';
 import { getMonthRangeUTC } from '@/lib/date-utils';
-import type { Transaction, Prisma } from '@prisma/client';
+import type { BudgetTransaction, Prisma } from '@prisma/client';
 
 export const transactionService = {
-  async getAll(): Promise<Transaction[]> {
+  async getAll(): Promise<BudgetTransaction[]> {
     return transactionRepository.findAll();
   },
 
-  async getById(id: string): Promise<Transaction | null> {
+  async getById(id: string): Promise<BudgetTransaction | null> {
     return transactionRepository.findById(id);
   },
 
-  async getByMonth(year: number, month: number): Promise<Transaction[]> {
+  async getByMonth(year: number, month: number): Promise<BudgetTransaction[]> {
     const { start, end } = getMonthRangeUTC(year, month);
     return transactionRepository.findByDateRange(start, end);
   },
@@ -21,11 +21,11 @@ export const transactionService = {
     return transactionRepository.getDateRange();
   },
 
-  async create(data: Prisma.TransactionCreateInput): Promise<Transaction> {
+  async create(data: Prisma.BudgetTransactionCreateInput): Promise<BudgetTransaction> {
     return transactionRepository.create(data);
   },
 
-  async createFromTemplate(templateId: string, date: Date): Promise<Transaction> {
+  async createFromTemplate(templateId: string, date: Date): Promise<BudgetTransaction> {
     const template = await recurringTemplateRepository.findById(templateId);
     if (!template) {
       throw new Error('Template not found');
@@ -40,11 +40,11 @@ export const transactionService = {
     });
   },
 
-  async update(id: string, data: Prisma.TransactionUpdateInput): Promise<Transaction> {
+  async update(id: string, data: Prisma.BudgetTransactionUpdateInput): Promise<BudgetTransaction> {
     return transactionRepository.update(id, data);
   },
 
-  async delete(id: string): Promise<Transaction> {
+  async delete(id: string): Promise<BudgetTransaction> {
     return transactionRepository.delete(id);
   },
 };

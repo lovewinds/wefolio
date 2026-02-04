@@ -5,12 +5,12 @@ import {
   accountSnapshotRepository,
 } from '@/repositories/account-repository';
 import { holdingRepository } from '@/repositories/holding-repository';
-import type { Institution, FamilyMember, Account, Prisma } from '@prisma/client';
+import type { AssetInstitution, FamilyMember, Account, Prisma } from '@prisma/client';
 import type {
-  InstitutionType,
+  AssetInstitutionType,
   AccountType,
   MemberAssetSummary,
-  InstitutionSummary,
+  AssetInstitutionSummary,
   AccountSummary,
 } from '@/types/asset';
 
@@ -19,41 +19,41 @@ import type {
 // ============================================
 
 export const institutionService = {
-  async getAll(): Promise<Institution[]> {
+  async getAll(): Promise<AssetInstitution[]> {
     return institutionRepository.findAll();
   },
 
-  async getById(id: string): Promise<Institution | null> {
+  async getById(id: string): Promise<AssetInstitution | null> {
     return institutionRepository.findById(id);
   },
 
-  async getByType(type: InstitutionType): Promise<Institution[]> {
+  async getByType(type: AssetInstitutionType): Promise<AssetInstitution[]> {
     return institutionRepository.findByType(type);
   },
 
-  async create(data: Prisma.InstitutionCreateInput): Promise<Institution> {
+  async create(data: Prisma.AssetInstitutionCreateInput): Promise<AssetInstitution> {
     return institutionRepository.create(data);
   },
 
-  async update(id: string, data: Prisma.InstitutionUpdateInput): Promise<Institution> {
+  async update(id: string, data: Prisma.AssetInstitutionUpdateInput): Promise<AssetInstitution> {
     return institutionRepository.update(id, data);
   },
 
-  async delete(id: string): Promise<Institution> {
+  async delete(id: string): Promise<AssetInstitution> {
     return institutionRepository.delete(id);
   },
 
-  async getSummary(): Promise<InstitutionSummary[]> {
+  async getSummary(): Promise<AssetInstitutionSummary[]> {
     const institutions = await institutionRepository.findAll();
     const accounts = await accountRepository.findAll();
 
-    const summaryMap = new Map<string, InstitutionSummary>();
+    const summaryMap = new Map<string, AssetInstitutionSummary>();
 
     for (const inst of institutions) {
       summaryMap.set(inst.id, {
         institutionId: inst.id,
         institutionName: inst.name,
-        institutionType: inst.type as InstitutionType,
+        institutionType: inst.type as AssetInstitutionType,
         totalValue: 0,
         accountCount: 0,
       });

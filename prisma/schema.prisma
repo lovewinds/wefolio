@@ -8,59 +8,48 @@ datasource db {
 }
 
 // 카테고리 (기본 제공 + 사용자 정의, 대분류/소분류 지원)
-model Category {
-  id           String        @id @default(cuid())
+model BudgetCategory {
+  id           String                    @id @default(cuid())
   name         String
-  type         String        // "income" | "expense"
+  type         String                    // "income" | "expense"
   icon         String?
   color        String?
-  isDefault    Boolean       @default(false)
-  parentId     String?       // 대분류 ID (null이면 대분류, 있으면 소분류)
-  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children     Category[]    @relation("CategoryHierarchy")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
-  templates    RecurringTemplate[]
+  isDefault    Boolean                   @default(false)
+  parentId     String?                   // 대분류 ID (null이면 대분류, 있으면 소분류)
+  parent       BudgetCategory?           @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     BudgetCategory[]          @relation("CategoryHierarchy")
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  transactions BudgetTransaction[]
+  templates    BudgetRecurringTemplate[]
 }
 
 // 수입/지출 거래
-model Transaction {
-  id            String   @id @default(cuid())
-  type          String   // "income" | "expense"
+model BudgetTransaction {
+  id            String         @id @default(cuid())
+  type          String         // "income" | "expense"
   amount        Float
   description   String?
   date          DateTime
   categoryId    String
-  category      Category @relation(fields: [categoryId], references: [id])
-  paymentMethod String?  // "현대카드" | "신한카드" | "계좌이체" | "현금" 등
-  user          String?  // "지완" | "지아"
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  category      BudgetCategory @relation(fields: [categoryId], references: [id])
+  paymentMethod String?        // "현대카드" | "신한카드" | "계좌이체" | "현금" 등
+  user          String?        // "지완" | "지아"
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 // 고정 지출 템플릿
-model RecurringTemplate {
-  id          String   @id @default(cuid())
+model BudgetRecurringTemplate {
+  id          String         @id @default(cuid())
   name        String
-  type        String   // "income" | "expense"
+  type        String         // "income" | "expense"
   amount      Float
   description String?
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// 자산 (레거시 - 마이그레이션 후 제거 예정)
-model Asset {
-  id        String   @id @default(cuid())
-  name      String
-  type      String   // "cash" | "bank" | "investment" | "property" | "other"
-  balance   Float
-  note      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  category    BudgetCategory @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 // ============================================
@@ -68,7 +57,7 @@ model Asset {
 // ============================================
 
 // 금융기관
-model Institution {
+model AssetInstitution {
   id        String    @id @default(cuid())
   name      String    @unique // "농협은행", "나무증권"
   type      String    // "bank" | "brokerage"
@@ -138,7 +127,7 @@ model Account {
   memberId      String
   member        FamilyMember @relation(fields: [memberId], references: [id])
   institutionId String
-  institution   Institution  @relation(fields: [institutionId], references: [id])
+  institution   AssetInstitution @relation(fields: [institutionId], references: [id])
 
   name          String       // "급여통장", "연금저축 나무"
   accountType   String       // "savings" | "time_deposit" | "cma" | "regular" | "pension_savings" | "irp" | "isa"
