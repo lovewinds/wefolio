@@ -404,10 +404,16 @@ function buildRiskGroups(holdings: MonthlyHolding[], totalValue: number): RiskGr
 
 export const holdingValueSnapshotService = {
   async getMonthlyAssetData(year: number, month: number): Promise<MonthlyAssetData> {
-    const snapshotDate = new Date(Date.UTC(year, month - 1, 1));
+    const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+    const startOfNextMonth = new Date(Date.UTC(year, month, 1));
 
     const snapshots = await prisma.holdingValueSnapshot.findMany({
-      where: { date: snapshotDate },
+      where: {
+        date: {
+          gte: startOfMonth,
+          lt: startOfNextMonth,
+        },
+      },
       include: {
         holding: {
           include: {
