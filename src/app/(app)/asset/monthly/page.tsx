@@ -8,7 +8,7 @@ export default async function AssetMonthlyPage() {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const data = await holdingValueSnapshotService.getMonthlyAssetData(year, month);
+  const data = await holdingValueSnapshotService.getMonthlyAssetDataWithDelta(year, month);
 
   return <MonthlyAssetView initialData={data} initialYear={year} initialMonth={month} />;
 }

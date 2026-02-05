@@ -402,6 +402,10 @@ function buildRiskGroups(holdings: MonthlyHolding[], totalValue: number): RiskGr
     .sort((a, b) => b.totalValue - a.totalValue);
 }
 
+function getPrevMonth(year: number, month: number): { year: number; month: number } {
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+}
+
 export const holdingValueSnapshotService = {
   async getMonthlyAssetData(year: number, month: number): Promise<MonthlyAssetData> {
     const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
@@ -483,6 +487,153 @@ export const holdingValueSnapshotService = {
     const byRiskLevel = buildRiskGroups(holdings, totalValue);
 
     return { totalValue, byRiskLevel, holdings, availableRange };
+  },
+
+  async getMonthlyAssetDataWithDelta(year: number, month: number) {
+    const current = await this.getMonthlyAssetData(year, month);
+    const prev = getPrevMonth(year, month);
+    const prevData = await this.getMonthlyAssetData(prev.year, prev.month);
+
+    const hasPrev = prevData.holdings.length > 0;
+    const prevTotalValue = hasPrev ? prevData.totalValue : null;
+    const deltaAmount = hasPrev ? current.totalValue - prevData.totalValue : null;
+    const deltaPercent =
+      hasPrev && prevData.totalValue > 0
+        ? Math.round(((current.totalValue - prevData.totalValue) / prevData.totalValue) * 10000) /
+          100
+        : null;
+
+    // Build map of prev holdings by a composite key: assetName + memberName + accountName
+    const prevHoldingMap = new Map<string, number>();
+    for (const h of prevData.holdings) {
+      const key = `${h.assetName}::${h.memberName}::${h.accountName}`;
+      prevHoldingMap.set(key, (prevHoldingMap.get(key) ?? 0) + h.totalValueKRW);
+    }
+
+    const holdingsWithDelta = current.holdings.map(h => {
+      const key = `${h.assetName}::${h.memberName}::${h.accountName}`;
+      const prevVal = prevHoldingMap.get(key) ?? null;
+      return {
+        ...h,
+        prevTotalValueKRW: prevVal,
+        deltaAmount: prevVal !== null ? h.totalValueKRW - prevVal : null,
+      };
+    });
+
+    // Previous month risk level summary
+    const prevByRiskLevel = prevData.byRiskLevel.map(g => ({
+      riskLevel: g.riskLevel,
+      totalValue: g.totalValue,
+      percentage: g.percentage,
+    }));
+
+    return {
+      ...current,
+      holdings: holdingsWithDelta,
+      prevTotalValue,
+      deltaAmount,
+      deltaPercent,
+      prevByRiskLevel,
+    };
+  },
+
+  async getAssetTrendData(
+    startYear: number,
+    startMonth: number,
+    endYear: number,
+    endMonth: number
+  ) {
+    const months: { year: number; month: number }[] = [];
+    let y = startYear;
+    let m = startMonth;
+    while (y < endYear || (y === endYear && m <= endMonth)) {
+      months.push({ year: y, month: m });
+      m++;
+      if (m > 12) {
+        m = 1;
+        y++;
+      }
+    }
+
+    const monthlyData = await Promise.all(
+      months.map(async ({ year, month }) => {
+        const data = await this.getMonthlyAssetData(year, month);
+        return { year, month, ...data };
+      })
+    );
+
+    // Build trend entries
+    const trend = monthlyData.map((current, index) => {
+      const prev = index > 0 ? monthlyData[index - 1] : null;
+      const deltaAmount = prev ? current.totalValue - prev.totalValue : null;
+      const deltaPercent =
+        prev && prev.totalValue > 0
+          ? Math.round(((current.totalValue - prev.totalValue) / prev.totalValue) * 10000) / 100
+          : null;
+
+      // Find top gainer and loser by comparing holdings
+      let topGainer: { name: string; amount: number } | null = null;
+      let topLoser: { name: string; amount: number } | null = null;
+
+      if (prev) {
+        const prevMap = new Map<string, number>();
+        for (const h of prev.holdings) {
+          prevMap.set(h.assetName, (prevMap.get(h.assetName) ?? 0) + h.totalValueKRW);
+        }
+
+        const changes: { name: string; amount: number }[] = [];
+        const currentMap = new Map<string, number>();
+        for (const h of current.holdings) {
+          currentMap.set(h.assetName, (currentMap.get(h.assetName) ?? 0) + h.totalValueKRW);
+        }
+
+        for (const [name, value] of currentMap) {
+          const prevVal = prevMap.get(name) ?? 0;
+          changes.push({ name, amount: value - prevVal });
+        }
+        // Assets that disappeared
+        for (const [name, prevVal] of prevMap) {
+          if (!currentMap.has(name)) {
+            changes.push({ name, amount: -prevVal });
+          }
+        }
+
+        changes.sort((a, b) => b.amount - a.amount);
+        if (changes.length > 0 && changes[0].amount > 0) topGainer = changes[0];
+        if (changes.length > 0 && changes[changes.length - 1].amount < 0)
+          topLoser = changes[changes.length - 1];
+      }
+
+      // Risk level breakdown
+      const byRiskLevel = current.byRiskLevel.map(g => ({
+        riskLevel: g.riskLevel,
+        totalValue: g.totalValue,
+        percentage: g.percentage,
+      }));
+
+      // By member breakdown
+      const memberMap = new Map<string, number>();
+      for (const h of current.holdings) {
+        memberMap.set(h.memberName, (memberMap.get(h.memberName) ?? 0) + h.totalValueKRW);
+      }
+      const byMember = Array.from(memberMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+
+      return {
+        year: current.year,
+        month: current.month,
+        totalValue: current.totalValue,
+        deltaAmount,
+        deltaPercent,
+        byRiskLevel,
+        byMember,
+        topGainer,
+        topLoser,
+      };
+    });
+
+    return { trend };
   },
 
   async getByHoldingId(holdingId: string) {

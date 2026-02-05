@@ -43,6 +43,19 @@ export const apiClient = {
     getMonthly<T>(year: number, month: number): Promise<T> {
       return request<T>(`/api/asset/monthly${buildQuery({ year, month })}`);
     },
+    getMonthlyWithDelta<T>(year: number, month: number): Promise<T> {
+      return request<T>(`/api/asset/monthly${buildQuery({ year, month, withDelta: 'true' })}`);
+    },
+    getTrend<T>(
+      startYear: number,
+      startMonth: number,
+      endYear: number,
+      endMonth: number
+    ): Promise<T> {
+      return request<T>(
+        `/api/asset/trend${buildQuery({ startYear, startMonth, endYear, endMonth })}`
+      );
+    },
   },
 
   transactions: {

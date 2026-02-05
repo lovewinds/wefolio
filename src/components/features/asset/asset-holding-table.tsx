@@ -17,7 +17,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
 import { RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
-import type { HoldingRow } from '@/types';
+import type { HoldingRow, HoldingRowWithDelta } from '@/types';
 
 interface MemberFilterProps {
   members: string[];
@@ -26,7 +26,7 @@ interface MemberFilterProps {
 }
 
 interface AssetHoldingTableProps extends MemberFilterProps {
-  holdings: HoldingRow[];
+  holdings: (HoldingRow | HoldingRowWithDelta)[];
   totalValue: number;
 }
 
@@ -166,6 +166,30 @@ export function AssetHoldingTable({
         accessorKey: 'percentage',
         header: '비율',
         cell: ({ getValue }) => `${getValue<number>().toFixed(1)}%`,
+        meta: { align: 'right' } satisfies ColumnMeta,
+      },
+      {
+        id: 'deltaAmount',
+        header: '전월 대비',
+        accessorFn: row => (row as HoldingRowWithDelta).deltaAmount ?? null,
+        cell: ({ getValue }) => {
+          const delta = getValue<number | null>();
+          if (delta === null) return <span className="text-zinc-300 dark:text-zinc-600">-</span>;
+          const isPositive = delta > 0;
+          const isZero = delta === 0;
+          const colorClass = isZero
+            ? 'text-zinc-500'
+            : isPositive
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-rose-600 dark:text-rose-400';
+          const sign = isPositive ? '+' : '';
+          return (
+            <span className={`text-xs font-medium ${colorClass}`}>
+              {sign}
+              {formatAmount(delta)}
+            </span>
+          );
+        },
         meta: { align: 'right' } satisfies ColumnMeta,
       },
       {

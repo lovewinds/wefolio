@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ResponsivePie } from '@nivo/pie';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
@@ -19,6 +20,8 @@ interface MemberFilterProps {
 interface AssetRiskPieChartProps extends MemberFilterProps {
   data: RiskGroup[];
   totalValue: number;
+  selectedYear?: number;
+  selectedMonth?: number;
 }
 
 export function AssetRiskPieChart({
@@ -27,7 +30,11 @@ export function AssetRiskPieChart({
   members,
   selectedMember,
   onMemberChange,
+  selectedYear,
+  selectedMonth,
 }: AssetRiskPieChartProps) {
+  const router = useRouter();
+
   // Inner donut: risk levels
   const innerData = data.map(group => ({
     id: group.riskLevel,
@@ -57,6 +64,14 @@ export function AssetRiskPieChart({
       });
     });
   });
+
+  const handleSegmentClick = (riskLevel: string) => {
+    const params = new URLSearchParams();
+    if (selectedYear) params.set('year', String(selectedYear));
+    if (selectedMonth) params.set('month', String(selectedMonth));
+    params.set('riskLevel', riskLevel);
+    router.push(`/asset/portfolio?${params.toString()}`);
+  };
 
   return (
     <Card>
@@ -106,6 +121,7 @@ export function AssetRiskPieChart({
             arcLinkLabel={datum => String(datum.label)}
             arcLinkLabelsColor={{ from: 'color' }}
             enableArcLabels={false}
+            onClick={datum => handleSegmentClick(datum.data.parentLabel)}
             tooltip={({ datum }) => (
               <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
                 <div className="flex items-center gap-2">
@@ -149,7 +165,11 @@ export function AssetRiskPieChart({
       {/* Legend */}
       <div className="mt-4 flex flex-wrap justify-center gap-4">
         {data.map(group => (
-          <div key={group.riskLevel} className="flex items-center gap-1.5">
+          <button
+            key={group.riskLevel}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            onClick={() => handleSegmentClick(group.riskLevel)}
+          >
             <div
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: RISK_LEVEL_COLORS[group.riskLevel] ?? '#6b7280' }}
@@ -157,7 +177,7 @@ export function AssetRiskPieChart({
             <span className="text-xs text-zinc-600 dark:text-zinc-400">
               {group.riskLevel} {group.percentage}%
             </span>
-          </div>
+          </button>
         ))}
       </div>
 

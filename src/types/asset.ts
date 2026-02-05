@@ -398,3 +398,39 @@ export interface AssetMonthlyData {
     max: { year: number; month: number };
   } | null;
 }
+
+export interface HoldingRowWithDelta extends HoldingRow {
+  prevTotalValueKRW: number | null;
+  deltaAmount: number | null;
+}
+
+export interface RiskGroupDelta {
+  riskLevel: string;
+  totalValue: number;
+  percentage: number;
+}
+
+// 자산 추이 페이지 타입
+export interface AssetTrendEntry {
+  year: number;
+  month: number;
+  totalValue: number;
+  deltaAmount: number | null;
+  deltaPercent: number | null;
+  byRiskLevel: RiskGroupDelta[];
+  byMember: { name: string; value: number }[];
+  topGainer: { name: string; amount: number } | null;
+  topLoser: { name: string; amount: number } | null;
+}
+
+export interface AssetTrendData {
+  trend: AssetTrendEntry[];
+}
+
+export interface AssetMonthlyDataWithDelta extends AssetMonthlyData {
+  holdings: HoldingRowWithDelta[];
+  prevTotalValue: number | null;
+  deltaAmount: number | null;
+  deltaPercent: number | null;
+  prevByRiskLevel: RiskGroupDelta[];
+}

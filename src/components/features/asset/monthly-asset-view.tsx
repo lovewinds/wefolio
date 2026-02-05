@@ -3,12 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { MonthSelector } from '@/components/features/navigation';
-import { AssetRiskPieChart, AssetHoldingTable } from '@/components/features/asset';
+import {
+  AssetRiskPieChart,
+  AssetHoldingTable,
+  AssetMonthlySummaryCards,
+} from '@/components/features/asset';
 import { PageContainer, EmptyState } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
-import type { AssetMonthlyData, HoldingRow, RiskGroup } from '@/types';
+import type { AssetMonthlyDataWithDelta, HoldingRowWithDelta, RiskGroup } from '@/types';
 
-function buildRiskGroups(holdings: HoldingRow[]): { byRiskLevel: RiskGroup[]; totalValue: number } {
+function buildRiskGroups(holdings: HoldingRowWithDelta[]): {
+  byRiskLevel: RiskGroup[];
+  totalValue: number;
+} {
   const totalValue = holdings.reduce((sum, h) => sum + h.totalValueKRW, 0);
 
   const riskGroupMap = new Map<string, { totalValue: number; children: Map<string, number> }>();
@@ -41,7 +48,7 @@ function buildRiskGroups(holdings: HoldingRow[]): { byRiskLevel: RiskGroup[]; to
 }
 
 interface MonthlyAssetViewProps {
-  initialData: AssetMonthlyData;
+  initialData: AssetMonthlyDataWithDelta;
   initialYear: number;
   initialMonth: number;
 }
@@ -51,7 +58,7 @@ export function MonthlyAssetView({
   initialYear,
   initialMonth,
 }: MonthlyAssetViewProps) {
-  const [data, setData] = useState<AssetMonthlyData>(initialData);
+  const [data, setData] = useState<AssetMonthlyDataWithDelta>(initialData);
   const [isFetching, setIsFetching] = useState(false);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
@@ -75,7 +82,7 @@ export function MonthlyAssetView({
     const loadData = async () => {
       try {
         setIsFetching(true);
-        const result = await apiClient.asset.getMonthly<AssetMonthlyData>(
+        const result = await apiClient.asset.getMonthlyWithDelta<AssetMonthlyDataWithDelta>(
           selectedYear,
           selectedMonth
         );
@@ -108,7 +115,30 @@ export function MonthlyAssetView({
       percentage: totalValue > 0 ? Math.round((h.totalValueKRW / totalValue) * 10000) / 100 : 0,
     }));
 
-    return { ...data, holdings, byRiskLevel, totalValue };
+    // Recalculate delta for filtered member
+    const prevFiltered = data.holdings
+      .filter(h => h.memberName === selectedMember)
+      .reduce((sum, h) => sum + (h.prevTotalValueKRW ?? 0), 0);
+    const hasPrev = data.holdings
+      .filter(h => h.memberName === selectedMember)
+      .some(h => h.prevTotalValueKRW !== null);
+
+    const prevTotalValue = hasPrev ? prevFiltered : null;
+    const deltaAmount = hasPrev ? totalValue - prevFiltered : null;
+    const deltaPercent =
+      hasPrev && prevFiltered > 0
+        ? Math.round(((totalValue - prevFiltered) / prevFiltered) * 10000) / 100
+        : null;
+
+    return {
+      ...data,
+      holdings,
+      byRiskLevel,
+      totalValue,
+      prevTotalValue,
+      deltaAmount,
+      deltaPercent,
+    };
   }, [data, selectedMember]);
 
   const isEmpty = filteredData.holdings.length === 0 && filteredData.byRiskLevel.length === 0;
@@ -136,12 +166,22 @@ export function MonthlyAssetView({
         />
       ) : (
         <>
+          <AssetMonthlySummaryCards
+            totalValue={filteredData.totalValue}
+            prevTotalValue={filteredData.prevTotalValue}
+            deltaAmount={filteredData.deltaAmount}
+            deltaPercent={filteredData.deltaPercent}
+            byRiskLevel={filteredData.byRiskLevel}
+            prevByRiskLevel={filteredData.prevByRiskLevel}
+          />
           <AssetRiskPieChart
             data={filteredData.byRiskLevel}
             totalValue={filteredData.totalValue}
             members={members}
             selectedMember={selectedMember}
             onMemberChange={setSelectedMember}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
           />
           <AssetHoldingTable
             holdings={filteredData.holdings}

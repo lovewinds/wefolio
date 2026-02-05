@@ -10,7 +10,19 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/summary/monthly', label: '월별 요약', icon: Calendar },
   { href: '/statistics/yearly', label: '연간 요약', icon: CalendarRange },
-  { href: '/asset/monthly', label: '자산 현황', icon: PieChart },
+  { href: '/asset', label: '자산 현황', icon: PieChart },
+];
+
+// Asset Sub Navigation
+export interface AssetSubNavItem {
+  href: string;
+  label: string;
+}
+
+export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
+  { href: '/asset/monthly', label: '월별 현황' },
+  { href: '/asset/trend', label: '자산 추이' },
+  { href: '/asset/portfolio', label: '포트폴리오 분석' },
 ];
 
 // Risk Level
