@@ -6,7 +6,7 @@ interface PageContainerProps {
 export function PageContainer({ isFetching = false, children }: PageContainerProps) {
   return (
     <main
-      className={`px-8 py-8 transition-opacity duration-150 ${
+      className={`px-8 py-1 transition-opacity duration-150 ${
         isFetching ? 'pointer-events-none opacity-50' : ''
       }`}
     >
