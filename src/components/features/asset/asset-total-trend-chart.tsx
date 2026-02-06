@@ -23,6 +23,23 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
     return Array.from(set).sort();
   }, [data]);
 
+  const yTickValues = useMemo(() => {
+    const allValues = data.flatMap(entry =>
+      showByMember ? entry.byMember.map(m => m.value) : [entry.totalValue],
+    );
+    if (allValues.length === 0) return [];
+    const minVal = Math.min(...allValues);
+    const maxVal = Math.max(...allValues);
+    const unit = 50_000_000; // 0.5억
+    const start = Math.floor(minVal / unit) * unit;
+    const end = Math.ceil(maxVal / unit) * unit;
+    const ticks: number[] = [];
+    for (let v = start; v <= end; v += unit) {
+      ticks.push(v);
+    }
+    return ticks;
+  }, [data, showByMember]);
+
   const chartData = useMemo(() => {
     if (!showByMember || members.length === 0) {
       return [
@@ -73,7 +90,12 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
           data={chartData}
           margin={{ top: 20, right: 20, bottom: 50, left: 80 }}
           xScale={{ type: 'point' }}
-          yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false }}
+          yScale={{
+            type: 'linear',
+            min: yTickValues[0] ?? 'auto',
+            max: yTickValues[yTickValues.length - 1] ?? 'auto',
+            stacked: false,
+          }}
           curve="monotoneX"
           enablePoints={true}
           pointSize={6}
@@ -88,10 +110,14 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
             legendOffset: 40,
           }}
           axisLeft={{
+            tickValues: yTickValues,
             format: v => {
               const num = Number(v);
-              if (num >= 100000000) return `${(num / 100000000).toFixed(0)}억`;
-              if (num >= 10000) return `${(num / 10000).toFixed(0)}만`;
+              if (Math.abs(num) >= 50_000_000) {
+                const eok = num / 100_000_000;
+                return Number.isInteger(eok) ? `${eok}억` : `${eok.toFixed(1)}억`;
+              }
+              if (Math.abs(num) >= 10000) return `${(num / 10000).toFixed(0)}만`;
               return String(v);
             },
           }}
