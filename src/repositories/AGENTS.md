@@ -50,3 +50,6 @@
 AssetInstitution, FamilyMember, Account, AccountSnapshot
 AssetMaster, AssetPrice, Holding, HoldingTransaction, HoldingValueSnapshot
 ```
+
+## References
+- [Database Schema](docs/schema-guide.md)
