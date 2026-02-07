@@ -355,6 +355,8 @@ interface MonthlyHolding {
   riskLevel: string;
   currency: string;
   quantity: number;
+  priceOriginal: number;
+  exchangeRate: number | null;
   priceKRW: number;
   totalValueKRW: number;
   percentage: number;
@@ -476,6 +478,8 @@ export const holdingValueSnapshotService = {
         riskLevel: RISK_LEVEL_LABELS[assetMaster.riskLevel] ?? assetMaster.riskLevel,
         currency: assetMaster.currency,
         quantity: s.quantity,
+        priceOriginal: s.priceOriginal,
+        exchangeRate: s.exchangeRate,
         priceKRW: s.priceKRW,
         totalValueKRW: s.totalValueKRW,
         percentage: totalValue > 0 ? Math.round((s.totalValueKRW / totalValue) * 10000) / 100 : 0,

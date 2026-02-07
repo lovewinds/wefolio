@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { formatAmount } from '@/lib/format-utils';
+import { formatAmount, formatForeignAmount } from '@/lib/format-utils';
 import { RISK_LEVEL_TEXT_COLORS, PENSION_ACCOUNT_TYPES } from '@/lib/constants';
 import type { HoldingRow, HoldingRowWithDelta } from '@/types';
 
@@ -206,6 +206,29 @@ export function AssetHoldingTable({
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
         filterFn: textFilter,
         meta: { filter: 'text' } satisfies ColumnMeta,
+      },
+      {
+        id: 'priceOriginal',
+        header: '개당 가격',
+        accessorFn: row => row.priceOriginal,
+        cell: ({ row }) => {
+          const { priceOriginal, currency, quantity, assetClass } = row.original;
+          if (!priceOriginal || (assetClass === '예금' && quantity <= 1)) return null;
+          return currency === 'KRW'
+            ? formatAmount(priceOriginal)
+            : formatForeignAmount(priceOriginal, currency);
+        },
+        meta: { align: 'right' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'quantity',
+        header: '개수',
+        cell: ({ row }) => {
+          const { quantity: qty, priceOriginal, assetClass } = row.original;
+          if (qty <= 1 && (!priceOriginal || assetClass === '예금')) return null;
+          return qty.toLocaleString('ko-KR');
+        },
+        meta: { align: 'right' } satisfies ColumnMeta,
       },
       {
         accessorKey: 'totalValueKRW',

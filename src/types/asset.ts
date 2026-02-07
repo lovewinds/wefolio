@@ -368,6 +368,8 @@ export interface HoldingRow {
   riskLevel: string;
   currency: string;
   quantity: number;
+  priceOriginal: number;
+  exchangeRate: number | null;
   priceKRW: number;
   totalValueKRW: number;
   percentage: number;
