@@ -52,6 +52,9 @@ export const RISK_LEVEL_CHILD_PALETTES: Record<string, string[]> = {
 
 export const DEFAULT_CHILD_COLORS = ['#6b7280', '#9ca3af', '#d1d5db'];
 
+// Account Type Categories
+export const PENSION_ACCOUNT_TYPES = ['연금저축', 'IRP', 'ISA'] as const;
+
 // Chart Colors
 export const CHART_COLORS = {
   income: '#10b981',

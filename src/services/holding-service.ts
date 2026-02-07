@@ -360,6 +360,7 @@ interface MonthlyHolding {
   percentage: number;
   memberName: string;
   accountName: string;
+  accountType: string;
   institutionName: string;
 }
 
@@ -480,6 +481,7 @@ export const holdingValueSnapshotService = {
         percentage: totalValue > 0 ? Math.round((s.totalValueKRW / totalValue) * 10000) / 100 : 0,
         memberName: account.member.name,
         accountName: account.name,
+        accountType: account.accountType,
         institutionName: account.institution.name,
       };
     });

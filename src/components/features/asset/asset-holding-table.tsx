@@ -16,7 +16,7 @@ import {
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
-import { RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
+import { RISK_LEVEL_TEXT_COLORS, PENSION_ACCOUNT_TYPES } from '@/lib/constants';
 import type { HoldingRow, HoldingRowWithDelta } from '@/types';
 
 interface MemberFilterProps {
@@ -31,8 +31,9 @@ interface AssetHoldingTableProps extends MemberFilterProps {
 }
 
 type ColumnMeta = {
-  filter?: 'text' | 'select';
+  filter?: 'text' | 'select' | 'grouped-select';
   options?: string[];
+  groupedOptions?: { category: string; options: string[] }[];
   align?: 'left' | 'right';
 };
 
@@ -46,6 +47,18 @@ const textFilter: FilterFn<HoldingRow> = (row, columnId, filterValue) => {
 const selectFilter: FilterFn<HoldingRow> = (row, columnId, filterValue) => {
   const value = row.getValue<string>(columnId);
   if (!filterValue) return true;
+  return value === filterValue;
+};
+
+const accountTypeFilter: FilterFn<HoldingRow> = (row, columnId, filterValue) => {
+  const value = row.getValue<string>(columnId);
+  if (!filterValue) return true;
+  if (filterValue === 'category:연금성') {
+    return (PENSION_ACCOUNT_TYPES as readonly string[]).includes(value);
+  }
+  if (filterValue === 'category:일반') {
+    return !(PENSION_ACCOUNT_TYPES as readonly string[]).includes(value);
+  }
   return value === filterValue;
 };
 
@@ -84,6 +97,28 @@ function renderColumnFilter(column: Column<HoldingRow, unknown>) {
     );
   }
 
+  if (meta.filter === 'grouped-select') {
+    return (
+      <select
+        className={baseInputClass}
+        value={(column.getFilterValue() as string) ?? ''}
+        onChange={e => column.setFilterValue(e.target.value || undefined)}
+      >
+        <option value="">전체</option>
+        {meta.groupedOptions?.map(group => (
+          <optgroup key={group.category} label={group.category}>
+            <option value={`category:${group.category}`}>{group.category} 전체</option>
+            {group.options.map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    );
+  }
+
   return null;
 }
 
@@ -109,6 +144,12 @@ export function AssetHoldingTable({
     () => Array.from(new Set(holdings.map(h => h.institutionName))).sort(),
     [holdings]
   );
+  const accountTypes = useMemo(() => {
+    const all = Array.from(new Set(holdings.map(h => h.accountType))).sort();
+    const pension = all.filter(t => (PENSION_ACCOUNT_TYPES as readonly string[]).includes(t));
+    const general = all.filter(t => !(PENSION_ACCOUNT_TYPES as readonly string[]).includes(t));
+    return { pension, general };
+  }, [holdings]);
   const memberNames = useMemo(
     () => Array.from(new Set(holdings.map(h => h.memberName))).sort(),
     [holdings]
@@ -146,6 +187,18 @@ export function AssetHoldingTable({
         header: '기관',
         filterFn: selectFilter,
         meta: { filter: 'select', options: institutions } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'accountType',
+        header: '계좌종류',
+        filterFn: accountTypeFilter,
+        meta: {
+          filter: 'grouped-select',
+          groupedOptions: [
+            { category: '연금성', options: accountTypes.pension },
+            { category: '일반', options: accountTypes.general },
+          ],
+        } satisfies ColumnMeta,
       },
       {
         accessorKey: 'assetName',
@@ -199,14 +252,14 @@ export function AssetHoldingTable({
         meta: { filter: 'select', options: memberNames } satisfies ColumnMeta,
       },
     ],
-    [assetClasses, riskLevels, memberNames, institutions]
+    [assetClasses, riskLevels, memberNames, institutions, accountTypes]
   );
 
   const table = useReactTable({
     data: holdings,
     columns,
     state: { sorting, columnFilters },
-    filterFns: { textFilter, selectFilter },
+    filterFns: { textFilter, selectFilter, accountTypeFilter },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

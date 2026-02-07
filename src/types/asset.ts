@@ -373,6 +373,7 @@ export interface HoldingRow {
   percentage: number;
   memberName: string;
   accountName: string;
+  accountType: string;
   institutionName: string;
 }
 
