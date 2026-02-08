@@ -3,7 +3,10 @@ export { HoldingTransactionInputRowComponent as HoldingTransactionInputRow } fro
 export type {
   HoldingTransactionInputRow as HoldingTransactionInputRowType,
   HoldingTransactionRow,
-  HoldingOption,
+  InstitutionOption,
+  AccountOption,
+  AssetMasterOption,
+  MemberOption,
   HoldingTransactionInputRowRef,
   CellPosition,
   RowStatus,

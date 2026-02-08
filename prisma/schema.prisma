@@ -197,7 +197,6 @@ model HoldingTransaction {
   exchangeRate    Float?
   priceKRW        Float
   totalKRW        Float
-  fees            Float?
   notes           String?
 
   createdAt       DateTime @default(now())

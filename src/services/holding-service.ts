@@ -225,30 +225,36 @@ export const holdingTransactionService = {
   },
 
   async record(
-    holdingId: string,
+    accountId: string,
+    assetMasterId: string,
     transactionType: string,
     date: Date,
     quantity: number,
     priceOriginal: number,
     priceKRW: number,
     exchangeRate?: number | null,
-    fees?: number | null,
     notes?: string | null
   ): Promise<HoldingTransaction> {
+    // Find or create holding
+    let holding = await holdingRepository.findByAccountAndAsset(accountId, assetMasterId);
+    if (!holding) {
+      holding = (await holdingRepository.create({
+        account: { connect: { id: accountId } },
+        assetMaster: { connect: { id: assetMasterId } },
+        quantity: 0,
+        averageCostKRW: 0,
+        dataSource: 'transaction',
+      })) as Holding & { assetMaster: AssetMaster };
+    }
+
     // sell / transfer_out use negative quantity
     const storedQuantity =
       transactionType === 'sell' || transactionType === 'transfer_out' ? -quantity : quantity;
 
-    // Calculate totalKRW
-    let totalKRW: number;
-    if (transactionType === 'sell' || transactionType === 'transfer_out') {
-      totalKRW = quantity * priceKRW - (fees ?? 0);
-    } else {
-      totalKRW = quantity * priceKRW + (fees ?? 0);
-    }
+    const totalKRW = quantity * priceKRW;
 
     const transaction = await holdingTransactionRepository.create({
-      holding: { connect: { id: holdingId } },
+      holding: { connect: { id: holding.id } },
       transactionType,
       date,
       quantity: storedQuantity,
@@ -256,11 +262,10 @@ export const holdingTransactionService = {
       exchangeRate: exchangeRate ?? null,
       priceKRW,
       totalKRW,
-      fees: fees ?? null,
       notes: notes ?? null,
     });
 
-    await this.updateHoldingAfterTransaction(holdingId);
+    await this.updateHoldingAfterTransaction(holding.id);
 
     return transaction;
   },
@@ -295,10 +300,9 @@ export const holdingTransactionService = {
     priceOriginal: number,
     priceKRW: number,
     exchangeRate?: number | null,
-    fees?: number | null,
     notes?: string | null
   ): Promise<HoldingTransaction> {
-    const totalKRW = quantity * priceKRW + (fees ?? 0);
+    const totalKRW = quantity * priceKRW;
 
     const transaction = await holdingTransactionRepository.create({
       holding: { connect: { id: holdingId } },
@@ -309,7 +313,6 @@ export const holdingTransactionService = {
       exchangeRate,
       priceKRW,
       totalKRW,
-      fees,
       notes,
     });
 
@@ -326,10 +329,9 @@ export const holdingTransactionService = {
     priceOriginal: number,
     priceKRW: number,
     exchangeRate?: number | null,
-    fees?: number | null,
     notes?: string | null
   ): Promise<HoldingTransaction> {
-    const totalKRW = quantity * priceKRW - (fees ?? 0);
+    const totalKRW = quantity * priceKRW;
 
     const transaction = await holdingTransactionRepository.create({
       holding: { connect: { id: holdingId } },
@@ -340,7 +342,6 @@ export const holdingTransactionService = {
       exchangeRate,
       priceKRW,
       totalKRW,
-      fees,
       notes,
     });
 

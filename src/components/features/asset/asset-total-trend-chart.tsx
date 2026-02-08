@@ -25,7 +25,7 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
 
   const yTickValues = useMemo(() => {
     const allValues = data.flatMap(entry =>
-      showByMember ? entry.byMember.map(m => m.value) : [entry.totalValue],
+      showByMember ? entry.byMember.map(m => m.value) : [entry.totalValue]
     );
     if (allValues.length === 0) return [];
     const minVal = Math.min(...allValues);

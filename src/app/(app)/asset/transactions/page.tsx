@@ -8,7 +8,10 @@ import { MonthSelector } from '@/components/features/navigation';
 import { HoldingTransactionTable } from '@/components/features/asset-transaction';
 import type {
   HoldingTransactionRow,
-  HoldingOption,
+  InstitutionOption,
+  AccountOption,
+  AssetMasterOption,
+  MemberOption,
 } from '@/components/features/asset-transaction/types';
 import { PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
@@ -16,7 +19,10 @@ import { useMonthNavigation } from '@/hooks';
 function AssetTransactionsContent() {
   const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<HoldingTransactionRow[]>([]);
-  const [holdings, setHoldings] = useState<HoldingOption[]>([]);
+  const [institutions, setInstitutions] = useState<InstitutionOption[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [assetMasters, setAssetMasters] = useState<AssetMasterOption[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,12 +45,18 @@ function AssetTransactionsContent() {
   const loadData = useCallback(async () => {
     try {
       setIsFetching(true);
-      const [txData, holdingData] = await Promise.all([
+      const [txData, instData, acctData, amData, memberData] = await Promise.all([
         apiClient.asset.getTransactions<HoldingTransactionRow[]>(selectedYear, selectedMonth),
-        apiClient.asset.getHoldings<HoldingOption[]>(),
+        apiClient.asset.getInstitutions<InstitutionOption[]>(),
+        apiClient.asset.getAccounts<AccountOption[]>(),
+        apiClient.asset.getAssetMasters<AssetMasterOption[]>(),
+        apiClient.asset.getMembers<MemberOption[]>(),
       ]);
       setTransactions(txData);
-      setHoldings(holdingData);
+      setInstitutions(instData);
+      setAccounts(acctData);
+      setAssetMasters(amData);
+      setMembers(memberData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -100,7 +112,10 @@ function AssetTransactionsContent() {
         transactions={transactions}
         year={selectedYear}
         month={selectedMonth}
-        holdings={holdings}
+        institutions={institutions}
+        accounts={accounts}
+        assetMasters={assetMasters}
+        members={members}
         onDataChange={loadData}
       />
     </PageContainer>

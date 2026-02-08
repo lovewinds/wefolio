@@ -15,29 +15,38 @@ import { HOLDING_TRANSACTION_TYPE_LABELS } from '@/lib/constants';
 import { apiClient } from '@/lib/api-client';
 import { useHoldingTransactionInputRows } from '@/hooks';
 import { HoldingTransactionInputRowComponent } from './holding-transaction-input-row';
-import type { HoldingTransactionRow, HoldingOption, HoldingTransactionInputRowRef } from './types';
+import type {
+  HoldingTransactionRow,
+  InstitutionOption,
+  AccountOption,
+  AssetMasterOption,
+  MemberOption,
+  HoldingTransactionInputRowRef,
+} from './types';
 
 interface HoldingTransactionTableProps {
   transactions: HoldingTransactionRow[];
   year: number;
   month: number;
-  holdings: HoldingOption[];
+  institutions: InstitutionOption[];
+  accounts: AccountOption[];
+  assetMasters: AssetMasterOption[];
+  members: MemberOption[];
   onDataChange?: () => void;
 }
 
 const columnWidths = {
   action: '40px',
   date: '110px',
-  asset: '180px',
-  account: '120px',
-  member: '80px',
+  institution: '120px',
+  account: '160px',
+  asset: '160px',
   type: '80px',
   quantity: '90px',
   priceOriginal: '110px',
   priceKRW: '110px',
   exchangeRate: '90px',
   totalKRW: '120px',
-  fees: '90px',
   notes: '150px',
 } as const;
 
@@ -45,11 +54,27 @@ export function HoldingTransactionTable({
   transactions,
   year,
   month,
-  holdings,
+  institutions,
+  accounts,
+  assetMasters,
+  members,
   onDataChange,
 }: HoldingTransactionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [localInstitutions, setLocalInstitutions] = useState(institutions);
+  const [localAccounts, setLocalAccounts] = useState(accounts);
+  const [localAssetMasters, setLocalAssetMasters] = useState(assetMasters);
+
+  useEffect(() => {
+    setLocalInstitutions(institutions);
+  }, [institutions]);
+  useEffect(() => {
+    setLocalAccounts(accounts);
+  }, [accounts]);
+  useEffect(() => {
+    setLocalAssetMasters(assetMasters);
+  }, [assetMasters]);
 
   const defaultDate = useMemo(() => {
     const paddedMonth = String(month).padStart(2, '0');
@@ -96,6 +121,18 @@ export function HoldingTransactionTable({
     }
   };
 
+  const handleInstitutionCreated = (inst: InstitutionOption) => {
+    setLocalInstitutions(prev => [...prev, inst]);
+  };
+
+  const handleAccountCreated = (acc: AccountOption) => {
+    setLocalAccounts(prev => [...prev, acc]);
+  };
+
+  const handleAssetMasterCreated = (am: AssetMasterOption) => {
+    setLocalAssetMasters(prev => [...prev, am]);
+  };
+
   const columns = useMemo<ColumnDef<HoldingTransactionRow>[]>(
     () => [
       {
@@ -104,19 +141,20 @@ export function HoldingTransactionTable({
         meta: { width: columnWidths.date },
       },
       {
-        accessorKey: 'assetName',
-        header: '종목',
-        meta: { width: columnWidths.asset },
+        accessorKey: 'institutionName',
+        header: '기관',
+        meta: { width: columnWidths.institution },
       },
       {
-        accessorKey: 'accountName',
+        id: 'accountWithMember',
         header: '계좌',
+        accessorFn: row => `${row.accountName} (${row.memberName})`,
         meta: { width: columnWidths.account },
       },
       {
-        accessorKey: 'memberName',
-        header: '구성원',
-        meta: { width: columnWidths.member },
+        accessorKey: 'assetName',
+        header: '종목',
+        meta: { width: columnWidths.asset },
       },
       {
         accessorKey: 'transactionType',
@@ -161,15 +199,6 @@ export function HoldingTransactionTable({
         meta: { width: columnWidths.totalKRW, align: 'right' },
       },
       {
-        accessorKey: 'fees',
-        header: '수수료',
-        cell: ({ getValue }) => {
-          const val = getValue<number | null>();
-          return val ? formatAmount(val) : '-';
-        },
-        meta: { width: columnWidths.fees, align: 'right' },
-      },
-      {
         accessorKey: 'notes',
         header: '메모',
         cell: ({ getValue }) => getValue<string | null>() ?? '-',
@@ -200,16 +229,15 @@ export function HoldingTransactionTable({
             <colgroup>
               <col style={{ width: columnWidths.action }} />
               <col style={{ width: columnWidths.date }} />
-              <col style={{ width: columnWidths.asset }} />
+              <col style={{ width: columnWidths.institution }} />
               <col style={{ width: columnWidths.account }} />
-              <col style={{ width: columnWidths.member }} />
+              <col style={{ width: columnWidths.asset }} />
               <col style={{ width: columnWidths.type }} />
               <col style={{ width: columnWidths.quantity }} />
               <col style={{ width: columnWidths.priceOriginal }} />
               <col style={{ width: columnWidths.priceKRW }} />
               <col style={{ width: columnWidths.exchangeRate }} />
               <col style={{ width: columnWidths.totalKRW }} />
-              <col style={{ width: columnWidths.fees }} />
               <col style={{ width: columnWidths.notes }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
@@ -346,10 +374,13 @@ export function HoldingTransactionTable({
                 <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
                   날짜
                 </td>
-                <td
-                  colSpan={3}
-                  className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700"
-                >
+                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
+                  기관
+                </td>
+                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
+                  계좌
+                </td>
+                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
                   종목
                 </td>
                 <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
@@ -370,9 +401,6 @@ export function HoldingTransactionTable({
                 <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
                   총액(KRW)
                 </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  수수료
-                </td>
                 <td className="border-b border-zinc-200 px-3 py-1.5 dark:border-zinc-700">메모</td>
               </tr>
               {inputRows.map((row, idx) => (
@@ -387,13 +415,19 @@ export function HoldingTransactionTable({
                   }}
                   row={row}
                   rowIndex={idx}
-                  holdings={holdings}
+                  institutions={localInstitutions}
+                  accounts={localAccounts}
+                  assetMasters={localAssetMasters}
+                  members={members}
                   rowPadding={rowPadding}
                   onCellChange={handleCellChange}
                   onCellKeyDown={handleCellKeyDown}
                   onCellFocus={handleCellFocus}
                   onSave={handleSaveRow}
                   canSave={canSaveRow(idx)}
+                  onInstitutionCreated={handleInstitutionCreated}
+                  onAccountCreated={handleAccountCreated}
+                  onAssetMasterCreated={handleAssetMasterCreated}
                 />
               ))}
             </tbody>

@@ -60,14 +60,14 @@ export const apiClient = {
       return request<T>(`/api/asset/transactions${buildQuery({ year, month })}`);
     },
     createTransaction(data: {
-      holdingId: string;
+      accountId: string;
+      assetMasterId: string;
       transactionType: string;
       date: string;
       quantity: number;
       priceOriginal: number;
       priceKRW: number;
       exchangeRate?: number | null;
-      fees?: number | null;
       notes?: string | null;
     }) {
       return request<unknown>('/api/asset/transactions', {
@@ -83,6 +83,49 @@ export const apiClient = {
     },
     getHoldings<T>(): Promise<T> {
       return request<T>('/api/asset/holdings');
+    },
+    getInstitutions<T>(): Promise<T> {
+      return request<T>('/api/asset/institutions');
+    },
+    createInstitution<T>(data: { name: string; type: string }): Promise<T> {
+      return request<T>('/api/asset/institutions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    getAccounts<T>(institutionId?: string): Promise<T> {
+      return request<T>(`/api/asset/accounts${buildQuery({ institutionId })}`);
+    },
+    createAccount<T>(data: {
+      name: string;
+      accountType: string;
+      institutionId: string;
+      memberId: string;
+    }): Promise<T> {
+      return request<T>('/api/asset/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    getAssetMasters<T>(): Promise<T> {
+      return request<T>('/api/asset/asset-masters');
+    },
+    createAssetMaster<T>(data: {
+      name: string;
+      assetClass: string;
+      currency?: string;
+      riskLevel?: string;
+    }): Promise<T> {
+      return request<T>('/api/asset/asset-masters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    getMembers<T>(): Promise<T> {
+      return request<T>('/api/asset/members');
     },
   },
 

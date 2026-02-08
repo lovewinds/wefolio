@@ -12,13 +12,14 @@ import type {
 const MIN_ROWS = 3;
 const COLUMNS = [
   'date',
-  'holdingId',
+  'institutionId',
+  'accountId',
+  'assetMasterId',
   'transactionType',
   'quantity',
   'priceOriginal',
   'priceKRW',
   'exchangeRate',
-  'fees',
   'notes',
 ] as const;
 
@@ -30,13 +31,14 @@ function createEmptyRow(defaultDate: string): HoldingTransactionInputRow {
   return {
     id: generateRowId(),
     date: defaultDate,
-    holdingId: '',
+    institutionId: '',
+    accountId: '',
+    assetMasterId: '',
     transactionType: 'buy',
     quantity: '',
     priceOriginal: '',
     priceKRW: '',
     exchangeRate: '',
-    fees: '',
     notes: '',
     status: 'empty',
   };
@@ -45,12 +47,13 @@ function createEmptyRow(defaultDate: string): HoldingTransactionInputRow {
 function isRowEmpty(row: HoldingTransactionInputRow, defaultDate: string): boolean {
   return (
     (row.date === defaultDate || row.date === '') &&
-    row.holdingId === '' &&
+    row.institutionId === '' &&
+    row.accountId === '' &&
+    row.assetMasterId === '' &&
     row.quantity === '' &&
     row.priceOriginal === '' &&
     row.priceKRW === '' &&
     row.exchangeRate === '' &&
-    row.fees === '' &&
     row.notes === ''
   );
 }
@@ -107,6 +110,11 @@ export function useHoldingTransactionInputRows({
         const row = { ...next[rowIndex] };
         (row as Record<string, string>)[field] = value;
 
+        // Clear accountId when institution changes
+        if (field === 'institutionId' && value !== next[rowIndex].institutionId) {
+          row.accountId = '';
+        }
+
         if (isRowEmpty(row, defaultDate)) {
           row.status = 'empty';
         } else if (row.status === 'empty' || row.status === 'saved') {
@@ -125,7 +133,8 @@ export function useHoldingTransactionInputRows({
       const row = rows[rowIndex];
       if (!row) return false;
       if (row.status === 'saving') return false;
-      if (!row.holdingId) return false;
+      if (!row.accountId) return false;
+      if (!row.assetMasterId) return false;
       if (!row.transactionType) return false;
       if (!row.date) return false;
 
@@ -154,14 +163,14 @@ export function useHoldingTransactionInputRows({
 
       try {
         await apiClient.asset.createTransaction({
-          holdingId: row.holdingId,
+          accountId: row.accountId,
+          assetMasterId: row.assetMasterId,
           transactionType: row.transactionType,
           date: row.date,
           quantity: parseFloat(row.quantity),
           priceOriginal: parseFloat(row.priceOriginal) || 0,
           priceKRW: parseFloat(row.priceKRW),
           exchangeRate: row.exchangeRate ? parseFloat(row.exchangeRate) : null,
-          fees: row.fees ? parseFloat(row.fees) : null,
           notes: row.notes || null,
         });
 
