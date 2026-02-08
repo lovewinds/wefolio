@@ -55,6 +55,23 @@ export const DEFAULT_CHILD_COLORS = ['#6b7280', '#9ca3af', '#d1d5db'];
 // Account Type Categories
 export const PENSION_ACCOUNT_TYPES = ['연금저축', 'IRP', 'ISA'] as const;
 
+// Holding Transaction Type
+export const HOLDING_TRANSACTION_TYPE_OPTIONS = [
+  { value: 'buy', label: '매수' },
+  { value: 'sell', label: '매도' },
+  { value: 'dividend', label: '배당' },
+  { value: 'transfer_in', label: '이체입고' },
+  { value: 'transfer_out', label: '이체출고' },
+] as const;
+
+export const HOLDING_TRANSACTION_TYPE_LABELS: Record<string, string> = {
+  buy: '매수',
+  sell: '매도',
+  dividend: '배당',
+  transfer_in: '이체입고',
+  transfer_out: '이체출고',
+};
+
 // Chart Colors
 export const CHART_COLORS = {
   income: '#10b981',

@@ -56,6 +56,34 @@ export const apiClient = {
         `/api/asset/trend${buildQuery({ startYear, startMonth, endYear, endMonth })}`
       );
     },
+    getTransactions<T>(year: number, month: number): Promise<T> {
+      return request<T>(`/api/asset/transactions${buildQuery({ year, month })}`);
+    },
+    createTransaction(data: {
+      holdingId: string;
+      transactionType: string;
+      date: string;
+      quantity: number;
+      priceOriginal: number;
+      priceKRW: number;
+      exchangeRate?: number | null;
+      fees?: number | null;
+      notes?: string | null;
+    }) {
+      return request<unknown>('/api/asset/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    deleteTransaction(id: string) {
+      return request<unknown>(`/api/asset/transactions/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    getHoldings<T>(): Promise<T> {
+      return request<T>('/api/asset/holdings');
+    },
   },
 
   transactions: {

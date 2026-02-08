@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { MonthSelector } from '@/components/features/navigation';
 import {
@@ -143,6 +145,16 @@ export function MonthlyAssetView({
 
   const isEmpty = filteredData.holdings.length === 0 && filteredData.byRiskLevel.length === 0;
 
+  const monthActions = (
+    <Link
+      href={`/asset/transactions?year=${selectedYear}&month=${selectedMonth}`}
+      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+    >
+      <Plus size={16} />
+      자산 거래 입력
+    </Link>
+  );
+
   return (
     <PageContainer isFetching={isFetching}>
       <section className="mb-8">
@@ -156,6 +168,7 @@ export function MonthlyAssetView({
           onNextMonth={handleNextMonth}
           onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
           onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
+          actions={monthActions}
         />
       </section>
 

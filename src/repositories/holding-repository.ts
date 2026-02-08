@@ -222,6 +222,21 @@ export const holdingRepository = {
     });
   },
 
+  async findAllWithAccountAndAsset() {
+    return prisma.holding.findMany({
+      include: {
+        assetMaster: true,
+        account: {
+          include: {
+            member: true,
+            institution: true,
+          },
+        },
+      },
+      orderBy: { assetMaster: { name: 'asc' } },
+    });
+  },
+
   async delete(id: string): Promise<Holding> {
     return prisma.holding.delete({
       where: { id },
@@ -280,6 +295,31 @@ export const holdingTransactionRepository = {
         },
       },
       orderBy: { date: 'asc' },
+    });
+  },
+
+  async findAllByDateRange(startDate: Date, endDate: Date) {
+    return prisma.holdingTransaction.findMany({
+      where: {
+        date: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      include: {
+        holding: {
+          include: {
+            assetMaster: true,
+            account: {
+              include: {
+                member: true,
+                institution: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
     });
   },
 

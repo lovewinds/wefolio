@@ -164,6 +164,15 @@ export const holdingService = {
     return holdingRepository.getTotalValueByAccountId(accountId);
   },
 
+  async getAllWithAccountInfo() {
+    const holdings = await holdingRepository.findAllWithAccountAndAsset();
+    return holdings.map(h => ({
+      id: h.id,
+      label: `${h.assetMaster.name} (${h.account.name} - ${h.account.member.name})`,
+      currency: h.assetMaster.currency,
+    }));
+  },
+
   async getSummaryByAssetClass(): Promise<AssetClassSummary[]> {
     const holdings = await holdingRepository.findAll();
     const summaryMap = new Map<AssetClass, AssetClassSummary>();
@@ -209,6 +218,53 @@ export const holdingService = {
 // ============================================
 
 export const holdingTransactionService = {
+  async getAllByMonth(year: number, month: number) {
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1));
+    return holdingTransactionRepository.findAllByDateRange(startDate, endDate);
+  },
+
+  async record(
+    holdingId: string,
+    transactionType: string,
+    date: Date,
+    quantity: number,
+    priceOriginal: number,
+    priceKRW: number,
+    exchangeRate?: number | null,
+    fees?: number | null,
+    notes?: string | null
+  ): Promise<HoldingTransaction> {
+    // sell / transfer_out use negative quantity
+    const storedQuantity =
+      transactionType === 'sell' || transactionType === 'transfer_out' ? -quantity : quantity;
+
+    // Calculate totalKRW
+    let totalKRW: number;
+    if (transactionType === 'sell' || transactionType === 'transfer_out') {
+      totalKRW = quantity * priceKRW - (fees ?? 0);
+    } else {
+      totalKRW = quantity * priceKRW + (fees ?? 0);
+    }
+
+    const transaction = await holdingTransactionRepository.create({
+      holding: { connect: { id: holdingId } },
+      transactionType,
+      date,
+      quantity: storedQuantity,
+      priceOriginal,
+      exchangeRate: exchangeRate ?? null,
+      priceKRW,
+      totalKRW,
+      fees: fees ?? null,
+      notes: notes ?? null,
+    });
+
+    await this.updateHoldingAfterTransaction(holdingId);
+
+    return transaction;
+  },
+
   async getByHoldingId(holdingId: string): Promise<HoldingTransaction[]> {
     return holdingTransactionRepository.findByHoldingId(holdingId);
   },
