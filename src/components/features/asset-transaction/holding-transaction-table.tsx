@@ -38,6 +38,7 @@ interface HoldingTransactionTableProps {
 const columnWidths = {
   action: '40px',
   date: '110px',
+  member: '80px',
   institution: '120px',
   account: '160px',
   asset: '160px',
@@ -62,6 +63,7 @@ export function HoldingTransactionTable({
 }: HoldingTransactionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [localInstitutions, setLocalInstitutions] = useState(institutions);
   const [localAccounts, setLocalAccounts] = useState(accounts);
   const [localAssetMasters, setLocalAssetMasters] = useState(assetMasters);
@@ -141,6 +143,11 @@ export function HoldingTransactionTable({
         meta: { width: columnWidths.date },
       },
       {
+        accessorKey: 'memberName',
+        header: '소유자',
+        meta: { width: columnWidths.member },
+      },
+      {
         accessorKey: 'institutionName',
         header: '기관',
         meta: { width: columnWidths.institution },
@@ -208,8 +215,19 @@ export function HoldingTransactionTable({
     []
   );
 
+  const filteredTransactions = useMemo(
+    () =>
+      selectedMemberId
+        ? transactions.filter(t => {
+            const account = localAccounts.find(a => a.id === t.accountId);
+            return account?.memberId === selectedMemberId;
+          })
+        : transactions,
+    [transactions, selectedMemberId, localAccounts]
+  );
+
   const table = useReactTable({
-    data: transactions,
+    data: filteredTransactions,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -221,14 +239,60 @@ export function HoldingTransactionTable({
 
   const totalColSpan = columns.length + 1;
 
+  const selectedMemberName = useMemo(() => {
+    if (!selectedMemberId) return null;
+    return members.find(m => m.id === selectedMemberId)?.name ?? null;
+  }, [selectedMemberId, members]);
+
+  const memberFilteredAccounts = useMemo(() => {
+    if (!selectedMemberId) return localAccounts;
+    return localAccounts.filter(a => a.memberId === selectedMemberId);
+  }, [localAccounts, selectedMemberId]);
+
+  const memberFilteredInstitutions = useMemo(() => {
+    if (!selectedMemberId) return localInstitutions;
+    const instIds = new Set(memberFilteredAccounts.map(a => a.institutionId));
+    return localInstitutions.filter(i => instIds.has(i.id));
+  }, [localInstitutions, selectedMemberId, memberFilteredAccounts]);
+
+  const handleMemberChange = (memberId: string | null) => {
+    setSelectedMemberId(memberId);
+    resetRows();
+  };
+
   return (
     <section className="mt-6 space-y-4">
+      <div className="flex items-center justify-end">
+        <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+          {[
+            { value: null, label: '전체' },
+            ...members.map(m => ({ value: m.id, label: m.name })),
+          ].map(option => {
+            const isActive = option.value === selectedMemberId;
+            return (
+              <button
+                key={option.label}
+                type="button"
+                className={`rounded-full px-3 py-1.5 transition ${
+                  isActive
+                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                }`}
+                onClick={() => handleMemberChange(option.value)}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1400px] table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
               <col style={{ width: columnWidths.action }} />
               <col style={{ width: columnWidths.date }} />
+              <col style={{ width: columnWidths.member }} />
               <col style={{ width: columnWidths.institution }} />
               <col style={{ width: columnWidths.account }} />
               <col style={{ width: columnWidths.asset }} />
@@ -349,9 +413,12 @@ export function HoldingTransactionTable({
                     <span>
                       건수{' '}
                       <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-                        {transactions.length}
+                        {filteredTransactions.length}
                       </span>
                       건
+                      {selectedMemberId && filteredTransactions.length !== transactions.length && (
+                        <span className="ml-1 text-zinc-400">/ 전체 {transactions.length}건</span>
+                      )}
                     </span>
                   </div>
                 </td>
@@ -373,6 +440,9 @@ export function HoldingTransactionTable({
                 </td>
                 <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
                   날짜
+                </td>
+                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
+                  소유자
                 </td>
                 <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
                   기관
@@ -415,10 +485,12 @@ export function HoldingTransactionTable({
                   }}
                   row={row}
                   rowIndex={idx}
-                  institutions={localInstitutions}
-                  accounts={localAccounts}
+                  institutions={memberFilteredInstitutions}
+                  accounts={memberFilteredAccounts}
                   assetMasters={localAssetMasters}
                   members={members}
+                  selectedMemberName={selectedMemberName}
+                  defaultMemberId={selectedMemberId}
                   rowPadding={rowPadding}
                   onCellChange={handleCellChange}
                   onCellKeyDown={handleCellKeyDown}

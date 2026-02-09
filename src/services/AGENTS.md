@@ -4,13 +4,13 @@
 
 ## 파일 구조
 
-| 파일                     | 설명                                           |
-| ------------------------ | ---------------------------------------------- |
-| `transaction-service.ts` | 수입/지출 거래 CRUD 및 조회                    |
-| `category-service.ts`    | 카테고리 CRUD (대분류/소분류 지원)             |
-| `statistics-service.ts`  | 월별/카테고리별 통계 집계                      |
-| `account-service.ts`     | 계좌/금융기관/가족구성원 관리                  |
-| `holding-service.ts`     | 보유종목/가격/거래/포트폴리오 관리             |
+| 파일                     | 설명                               |
+| ------------------------ | ---------------------------------- |
+| `transaction-service.ts` | 수입/지출 거래 CRUD 및 조회        |
+| `category-service.ts`    | 카테고리 CRUD (대분류/소분류 지원) |
+| `statistics-service.ts`  | 월별/카테고리별 통계 집계          |
+| `account-service.ts`     | 계좌/금융기관/가족구성원 관리      |
+| `holding-service.ts`     | 보유종목/가격/거래/포트폴리오 관리 |
 
 ## 자산 관리 시스템 (신규)
 

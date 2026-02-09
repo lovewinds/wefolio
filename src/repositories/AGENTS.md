@@ -4,13 +4,13 @@
 
 ## 파일 구조
 
-| 파일                               | 설명                                                  |
-| ---------------------------------- | ----------------------------------------------------- |
-| `transaction-repository.ts`        | 수입/지출 거래 데이터 접근                            |
-| `category-repository.ts`           | 카테고리 데이터 접근                                  |
-| `recurring-template-repository.ts` | 고정 지출 템플릿 데이터 접근                          |
-| `account-repository.ts`            | 계좌/금융기관/가족구성원 데이터 접근                  |
-| `holding-repository.ts`            | 보유종목/가격/거래 데이터 접근                        |
+| 파일                               | 설명                                 |
+| ---------------------------------- | ------------------------------------ |
+| `transaction-repository.ts`        | 수입/지출 거래 데이터 접근           |
+| `category-repository.ts`           | 카테고리 데이터 접근                 |
+| `recurring-template-repository.ts` | 고정 지출 템플릿 데이터 접근         |
+| `account-repository.ts`            | 계좌/금융기관/가족구성원 데이터 접근 |
+| `holding-repository.ts`            | 보유종목/가격/거래 데이터 접근       |
 
 ## 자산 관리 시스템 (신규)
 
@@ -52,4 +52,5 @@ AssetMaster, AssetPrice, Holding, HoldingTransaction, HoldingValueSnapshot
 ```
 
 ## References
+
 - [Database Schema](docs/schema-guide.md)

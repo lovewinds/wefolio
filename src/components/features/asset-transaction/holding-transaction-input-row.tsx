@@ -56,6 +56,8 @@ interface HoldingTransactionInputRowProps {
   accounts: AccountOption[];
   assetMasters: AssetMasterOption[];
   members: MemberOption[];
+  selectedMemberName: string | null;
+  defaultMemberId: string | null;
   rowPadding: string;
   onCellChange: (rowIndex: number, field: string, value: string) => void;
   onCellKeyDown: (rowIndex: number, colIndex: number, event: React.KeyboardEvent) => void;
@@ -79,6 +81,8 @@ export const HoldingTransactionInputRowComponent = forwardRef<
       accounts,
       assetMasters,
       members,
+      selectedMemberName,
+      defaultMemberId,
       rowPadding,
       onCellChange,
       onCellKeyDown,
@@ -154,7 +158,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
           setNewAcct({
             name: '',
             accountType: 'regular',
-            memberId: members[0]?.id ?? '',
+            memberId: defaultMemberId ?? members[0]?.id ?? '',
           });
         } else if (field === 'assetMasterId') {
           setCreatingAssetMaster(true);
@@ -299,6 +303,11 @@ export const HoldingTransactionInputRowComponent = forwardRef<
             onFocus={() => onCellFocus(rowIndex, 0)}
             className={baseInputClass}
           />
+        </td>
+
+        {/* Member (read-only) */}
+        <td className={`${td} text-xs text-zinc-500 dark:text-zinc-400`}>
+          {selectedMemberName ?? '-'}
         </td>
 
         {/* Institution */}
