@@ -7,6 +7,7 @@ export type {
   AccountOption,
   AssetMasterOption,
   MemberOption,
+  HoldingOption,
   HoldingTransactionInputRowRef,
   CellPosition,
   RowStatus,

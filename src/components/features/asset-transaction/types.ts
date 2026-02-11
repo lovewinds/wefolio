@@ -58,6 +58,12 @@ export interface AssetMasterOption {
   assetClass: string;
 }
 
+export interface HoldingOption {
+  id: string;
+  accountId: string;
+  assetMasterId: string;
+}
+
 export interface MemberOption {
   id: string;
   name: string;

@@ -21,6 +21,7 @@ import type {
   AccountOption,
   AssetMasterOption,
   MemberOption,
+  HoldingOption,
   HoldingTransactionInputRowRef,
 } from './types';
 
@@ -32,6 +33,7 @@ interface HoldingTransactionTableProps {
   accounts: AccountOption[];
   assetMasters: AssetMasterOption[];
   members: MemberOption[];
+  holdings: HoldingOption[];
   onDataChange?: () => void;
 }
 
@@ -59,6 +61,7 @@ export function HoldingTransactionTable({
   accounts,
   assetMasters,
   members,
+  holdings,
   onDataChange,
 }: HoldingTransactionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
@@ -248,6 +251,19 @@ export function HoldingTransactionTable({
     if (!selectedMemberId) return localAccounts;
     return localAccounts.filter(a => a.memberId === selectedMemberId);
   }, [localAccounts, selectedMemberId]);
+
+  const accountAssetMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const h of holdings) {
+      let set = map.get(h.accountId);
+      if (!set) {
+        set = new Set<string>();
+        map.set(h.accountId, set);
+      }
+      set.add(h.assetMasterId);
+    }
+    return map;
+  }, [holdings]);
 
   const memberFilteredInstitutions = useMemo(() => {
     if (!selectedMemberId) return localInstitutions;
@@ -488,6 +504,7 @@ export function HoldingTransactionTable({
                   institutions={memberFilteredInstitutions}
                   accounts={memberFilteredAccounts}
                   assetMasters={localAssetMasters}
+                  accountAssetMap={accountAssetMap}
                   members={members}
                   selectedMemberName={selectedMemberName}
                   defaultMemberId={selectedMemberId}

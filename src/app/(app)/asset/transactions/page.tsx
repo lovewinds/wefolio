@@ -12,6 +12,7 @@ import type {
   AccountOption,
   AssetMasterOption,
   MemberOption,
+  HoldingOption,
 } from '@/components/features/asset-transaction/types';
 import { PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
@@ -23,6 +24,7 @@ function AssetTransactionsContent() {
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [assetMasters, setAssetMasters] = useState<AssetMasterOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
+  const [holdings, setHoldings] = useState<HoldingOption[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,18 +47,20 @@ function AssetTransactionsContent() {
   const loadData = useCallback(async () => {
     try {
       setIsFetching(true);
-      const [txData, instData, acctData, amData, memberData] = await Promise.all([
+      const [txData, instData, acctData, amData, memberData, holdingData] = await Promise.all([
         apiClient.asset.getTransactions<HoldingTransactionRow[]>(selectedYear, selectedMonth),
         apiClient.asset.getInstitutions<InstitutionOption[]>(),
         apiClient.asset.getAccounts<AccountOption[]>(),
         apiClient.asset.getAssetMasters<AssetMasterOption[]>(),
         apiClient.asset.getMembers<MemberOption[]>(),
+        apiClient.asset.getHoldings<HoldingOption[]>(),
       ]);
       setTransactions(txData);
       setInstitutions(instData);
       setAccounts(acctData);
       setAssetMasters(amData);
       setMembers(memberData);
+      setHoldings(holdingData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -116,6 +120,7 @@ function AssetTransactionsContent() {
         accounts={accounts}
         assetMasters={assetMasters}
         members={members}
+        holdings={holdings}
         onDataChange={loadData}
       />
     </PageContainer>

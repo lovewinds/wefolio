@@ -55,6 +55,7 @@ interface HoldingTransactionInputRowProps {
   institutions: InstitutionOption[];
   accounts: AccountOption[];
   assetMasters: AssetMasterOption[];
+  accountAssetMap: Map<string, Set<string>>;
   members: MemberOption[];
   selectedMemberName: string | null;
   defaultMemberId: string | null;
@@ -80,6 +81,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
       institutions,
       accounts,
       assetMasters,
+      accountAssetMap,
       members,
       selectedMemberName,
       defaultMemberId,
@@ -147,6 +149,13 @@ export const HoldingTransactionInputRowComponent = forwardRef<
       if (!row.institutionId) return [];
       return accounts.filter(a => a.institutionId === row.institutionId);
     }, [accounts, row.institutionId]);
+
+    const filteredAssetMasters = useMemo(() => {
+      if (!row.accountId) return assetMasters;
+      const assetIds = accountAssetMap.get(row.accountId);
+      if (!assetIds || assetIds.size === 0) return [];
+      return assetMasters.filter(am => assetIds.has(am.id));
+    }, [assetMasters, accountAssetMap, row.accountId]);
 
     const handleSelectChange = (field: string, value: string) => {
       if (value === CREATE_NEW) {
@@ -520,7 +529,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
               className={baseInputClass}
             >
               <option value="">선택</option>
-              {assetMasters.map(am => (
+              {filteredAssetMasters.map(am => (
                 <option key={am.id} value={am.id}>
                   {am.name} ({am.currency})
                 </option>

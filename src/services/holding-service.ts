@@ -168,6 +168,8 @@ export const holdingService = {
     const holdings = await holdingRepository.findAllWithAccountAndAsset();
     return holdings.map(h => ({
       id: h.id,
+      accountId: h.accountId,
+      assetMasterId: h.assetMasterId,
       label: `${h.assetMaster.name} (${h.account.name} - ${h.account.member.name})`,
       currency: h.assetMaster.currency,
     }));
