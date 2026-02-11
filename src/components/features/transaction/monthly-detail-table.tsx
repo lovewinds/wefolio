@@ -752,6 +752,58 @@ export function MonthlyDetailTable({
                 </td>
               </tr>
 
+              {/* Input area column headers (no filters) */}
+              <tr className="bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+                <td
+                  className="border-b border-r border-zinc-200 px-2 py-2 text-center dark:border-zinc-700"
+                  style={{ width: columnWidths.action }}
+                >
+                  <span className="sr-only">액션</span>
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.date }}
+                >
+                  날짜
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.category }}
+                >
+                  카테고리
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.type }}
+                >
+                  유형
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.paymentMethod }}
+                >
+                  결제 수단
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.user }}
+                >
+                  사용자
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-right dark:border-zinc-700"
+                  style={{ width: columnWidths.amount }}
+                >
+                  금액
+                </td>
+                <td
+                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  style={{ width: columnWidths.description }}
+                >
+                  메모
+                </td>
+              </tr>
+
               {/* Input rows */}
               {inputRows.map((row, idx) => (
                 <InputTableRow
