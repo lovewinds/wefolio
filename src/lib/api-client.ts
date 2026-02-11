@@ -153,6 +153,12 @@ export const apiClient = {
     },
   },
 
+  templates: {
+    getAll<T>(type?: 'income' | 'expense'): Promise<T> {
+      return request<T>(`/api/templates${buildQuery({ type })}`);
+    },
+  },
+
   categories: {
     getGrouped<T>(type: 'income' | 'expense'): Promise<T> {
       return request<T>(`/api/categories${buildQuery({ type, grouped: 'true' })}`);
