@@ -1,13 +1,4 @@
-export { MultiRowForm } from './multi-row-form';
-export { TransactionRowComponent } from './transaction-row';
 export { MonthlyDetailTable } from './monthly-detail-table';
 export { InputTableRow } from './input-table-row';
 export { RecentTransactions } from './recent-transactions';
-export type {
-  TransactionRow,
-  InputRow,
-  RowStatus,
-  CellPosition,
-  MultiRowFormProps,
-  InputTableRowRef,
-} from './types';
+export type { InputRow, RowStatus, CellPosition, InputTableRowRef } from './types';
