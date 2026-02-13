@@ -45,20 +45,17 @@ export function useRecommendations(
       setIsLoading(true);
       const items: RecommendationItem[] = [];
 
-      // 1. Fetch last month's transactions
+      // 1. Fetch last month's transactions → deduplicate by categoryId, sort by frequency
       try {
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         const data = await fetchDashboardData(prevYear, prevMonth);
 
         if (!cancelled) {
-          const seen = new Set<string>();
+          // Count frequency per categoryId
+          const freq = new Map<string, { categoryId: string; categoryName: string; count: number }>();
           for (const tx of data.transactions) {
             if (tx.type !== type) continue;
-            // Dedup key: category + paymentMethod + amount
-            const key = `${tx.category}|${tx.paymentMethod ?? ''}|${tx.amount}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
 
             // Find category ID from category name
             let categoryId = '';
@@ -75,18 +72,25 @@ export function useRecommendations(
               }
               if (categoryId) break;
             }
-
             if (!categoryId) continue;
 
+            const existing = freq.get(categoryId);
+            if (existing) {
+              existing.count++;
+            } else {
+              freq.set(categoryId, { categoryId, categoryName: tx.category, count: 1 });
+            }
+          }
+
+          // Sort by frequency (descending), take top 6
+          const sorted = [...freq.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+          for (const entry of sorted) {
             items.push({
-              id: `last-${tx.id}`,
+              id: `last-${entry.categoryId}`,
               source: 'lastMonth',
-              label: `${tx.category} ${tx.amount.toLocaleString()}원`,
-              categoryId,
-              categoryName: tx.category,
-              paymentMethod: tx.paymentMethod ?? undefined,
-              amount: tx.amount,
-              description: tx.description ?? undefined,
+              label: entry.categoryName,
+              categoryId: entry.categoryId,
+              categoryName: entry.categoryName,
             });
           }
         }
@@ -98,7 +102,7 @@ export function useRecommendations(
       try {
         const templates = await apiClient.templates.getAll<TemplateData[]>(type);
         if (!cancelled) {
-          for (const t of templates) {
+          for (const t of templates.slice(0, 5)) {
             items.push({
               id: `tmpl-${t.id}`,
               source: 'template',

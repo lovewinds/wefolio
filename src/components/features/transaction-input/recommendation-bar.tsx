@@ -47,7 +47,7 @@ export function RecommendationBar({
 
       {lastMonth.length > 0 && (
         <div>
-          <div className="mb-1.5 text-xs font-medium text-zinc-400 dark:text-zinc-500">지난달</div>
+          <div className="mb-1.5 text-xs font-medium text-zinc-400 dark:text-zinc-500">최근 카테고리</div>
           <div className="flex flex-wrap gap-2">
             {lastMonth.map(item => (
               <button

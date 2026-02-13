@@ -22,7 +22,10 @@ const DEFAULT_PAYMENT_METHODS = ['현대카드', '신한카드', '계좌이체',
 const DEFAULT_USERS = ['지완', '지아'];
 
 export function SequentialTransactionForm({ year, month }: SequentialTransactionFormProps) {
-  const defaultDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const today = new Date();
+  const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+    today.getDate()
+  ).padStart(2, '0')}`;
   const form = useSequentialForm(defaultDate);
 
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
@@ -82,6 +85,14 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
 
   const handleRecommendationSelect = useCallback(
     (item: RecommendationItem) => {
+      if (item.source === 'lastMonth') {
+        // "최근 카테고리" — only set categoryId, advance to next step
+        form.setMultipleFields({ categoryId: item.categoryId });
+        form.goToStep(4);
+        return;
+      }
+
+      // Templates — set all available fields
       const values: Partial<SequentialFormState> = {
         categoryId: item.categoryId,
       };
