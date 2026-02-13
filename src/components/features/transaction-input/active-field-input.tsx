@@ -77,6 +77,7 @@ export function ActiveFieldInput({
         <FieldInput
           field={field}
           value={formState[field]}
+          selectedUser={formState.user}
           options={options}
           onChange={value => onFieldChange(field, value)}
           onConfirm={isLastStep && canSave ? onSave : onAdvance}
@@ -110,12 +111,13 @@ export function ActiveFieldInput({
 interface FieldInputProps {
   field: StepField;
   value: string;
+  selectedUser: string;
   options: FormOptions;
   onChange: (value: string) => void;
   onConfirm: () => void;
 }
 
-function FieldInput({ field, value, options, onChange, onConfirm }: FieldInputProps) {
+function FieldInput({ field, value, selectedUser, options, onChange, onConfirm }: FieldInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const comboRef = useRef<ComboboxHandle>(null);
 
@@ -196,11 +198,18 @@ function FieldInput({ field, value, options, onChange, onConfirm }: FieldInputPr
       );
     }
 
-    case 'paymentMethod':
+    case 'paymentMethod': {
+      const userKey = selectedUser.trim();
+      const userMethods = userKey ? (options.paymentMethodsByUser?.[userKey] ?? []) : [];
+      const availableMethods = userMethods.length > 0 ? userMethods : options.paymentMethods;
+      const paymentMethodOptions = buildSimpleOptions(
+        Array.from(new Set(availableMethods)).sort((a, b) => a.localeCompare(b, 'ko'))
+      );
+
       return (
         <Combobox
           ref={comboRef}
-          options={buildSimpleOptions(options.paymentMethods)}
+          options={paymentMethodOptions}
           value={value}
           onChange={onChange}
           onConfirm={onConfirm}
@@ -208,6 +217,7 @@ function FieldInput({ field, value, options, onChange, onConfirm }: FieldInputPr
           autoFocus
         />
       );
+    }
 
     case 'amount':
       return (

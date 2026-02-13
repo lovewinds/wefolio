@@ -64,4 +64,5 @@ export interface FormOptions {
   categories: CategoryGroup[];
   paymentMethods: string[];
   users: string[];
+  paymentMethodsByUser?: Record<string, string[]>;
 }

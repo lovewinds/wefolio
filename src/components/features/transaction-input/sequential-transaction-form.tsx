@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { CategoryGroup } from '@/types';
+import type { CategoryGroup, TransactionInputOptions } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import { useSequentialForm } from '@/hooks/use-sequential-form';
 import { useRecommendations } from '@/hooks/use-recommendations';
@@ -29,8 +29,9 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
   const form = useSequentialForm(defaultDate);
 
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
-  const [paymentMethods] = useState<string[]>(DEFAULT_PAYMENT_METHODS);
-  const [users] = useState<string[]>(DEFAULT_USERS);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(DEFAULT_PAYMENT_METHODS);
+  const [users, setUsers] = useState<string[]>(DEFAULT_USERS);
+  const [paymentMethodsByUser, setPaymentMethodsByUser] = useState<Record<string, string[]>>({});
 
   // Fetch categories when type changes
   useEffect(() => {
@@ -46,6 +47,33 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
     };
   }, [form.formState.type]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient.transactions
+      .getOptions<TransactionInputOptions>(form.formState.type)
+      .then(data => {
+        if (cancelled) return;
+
+        setPaymentMethods(
+          data.paymentMethods.length > 0 ? data.paymentMethods : DEFAULT_PAYMENT_METHODS
+        );
+        setUsers(data.users.length > 0 ? data.users : DEFAULT_USERS);
+        setPaymentMethodsByUser(data.paymentMethodsByUser ?? {});
+      })
+      .catch(() => {
+        if (cancelled) return;
+
+        setPaymentMethods(DEFAULT_PAYMENT_METHODS);
+        setUsers(DEFAULT_USERS);
+        setPaymentMethodsByUser({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.formState.type]);
+
   const { recommendations, isLoading: recLoading } = useRecommendations(
     year,
     month,
@@ -54,8 +82,17 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
   );
 
   const options: FormOptions = useMemo(
-    () => ({ categories, paymentMethods, users }),
-    [categories, paymentMethods, users]
+    () => ({ categories, paymentMethods, users, paymentMethodsByUser }),
+    [categories, paymentMethods, users, paymentMethodsByUser]
+  );
+
+  const getPaymentMethodsForUser = useCallback(
+    (user: string): string[] => {
+      const trimmedUser = user.trim();
+      const userMethods = trimmedUser ? (paymentMethodsByUser[trimmedUser] ?? []) : [];
+      return userMethods.length > 0 ? userMethods : paymentMethods;
+    },
+    [paymentMethods, paymentMethodsByUser]
   );
 
   const getCategoryName = useCallback(
@@ -78,9 +115,22 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
 
   const handleFieldChange = useCallback(
     (field: StepField, value: string) => {
+      if (field === 'user') {
+        form.setFieldValue('user', value);
+
+        const currentPaymentMethod = form.formState.paymentMethod;
+        if (currentPaymentMethod) {
+          const allowedMethods = new Set(getPaymentMethodsForUser(value));
+          if (!allowedMethods.has(currentPaymentMethod)) {
+            form.setFieldValue('paymentMethod', '');
+          }
+        }
+        return;
+      }
+
       form.setFieldValue(field, value);
     },
-    [form]
+    [form, getPaymentMethodsForUser]
   );
 
   const handleRecommendationSelect = useCallback(

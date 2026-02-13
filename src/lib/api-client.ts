@@ -151,6 +151,10 @@ export const apiClient = {
         method: 'DELETE',
       });
     },
+
+    getOptions<T>(type?: 'income' | 'expense'): Promise<T> {
+      return request<T>(`/api/transactions/options${buildQuery({ type })}`);
+    },
   },
 
   templates: {

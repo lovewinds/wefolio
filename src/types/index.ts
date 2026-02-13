@@ -75,6 +75,12 @@ export interface TransactionFormData {
   description?: string;
 }
 
+export interface TransactionInputOptions {
+  users: string[];
+  paymentMethods: string[];
+  paymentMethodsByUser: Record<string, string[]>;
+}
+
 // Recurring Template
 export interface RecurringTemplateBase {
   id: string;

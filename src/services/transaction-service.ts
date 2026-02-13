@@ -2,6 +2,18 @@ import { transactionRepository } from '@/repositories/transaction-repository';
 import { recurringTemplateRepository } from '@/repositories/recurring-template-repository';
 import { getMonthRangeUTC } from '@/lib/date-utils';
 import type { BudgetTransaction, Prisma } from '@prisma/client';
+import type { TransactionInputOptions } from '@/types';
+
+type TransactionKind = 'income' | 'expense';
+
+function normalizeAndSort(values: string[]): string[] {
+  const deduped = new Set<string>();
+  values.forEach(value => {
+    const trimmed = value.trim();
+    if (trimmed) deduped.add(trimmed);
+  });
+  return Array.from(deduped).sort((a, b) => a.localeCompare(b, 'ko'));
+}
 
 export const transactionService = {
   async getAll(): Promise<BudgetTransaction[]> {
@@ -19,6 +31,39 @@ export const transactionService = {
 
   async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {
     return transactionRepository.getDateRange();
+  },
+
+  async getInputOptions(type?: TransactionKind): Promise<TransactionInputOptions> {
+    const [users, paymentMethods, pairs] = await Promise.all([
+      transactionRepository.findDistinctUsers(type),
+      transactionRepository.findDistinctPaymentMethods(type),
+      transactionRepository.findUserPaymentMethodPairs(type),
+    ]);
+
+    const normalizedUsers = normalizeAndSort(users);
+    const normalizedPaymentMethods = normalizeAndSort(paymentMethods);
+
+    const grouped = new Map<string, Set<string>>();
+    pairs.forEach(pair => {
+      const user = pair.user.trim();
+      const paymentMethod = pair.paymentMethod.trim();
+      if (!user || !paymentMethod) return;
+
+      const methods = grouped.get(user) ?? new Set<string>();
+      methods.add(paymentMethod);
+      grouped.set(user, methods);
+    });
+
+    const paymentMethodsByUser: Record<string, string[]> = {};
+    grouped.forEach((methods, user) => {
+      paymentMethodsByUser[user] = Array.from(methods).sort((a, b) => a.localeCompare(b, 'ko'));
+    });
+
+    return {
+      users: normalizedUsers,
+      paymentMethods: normalizedPaymentMethods,
+      paymentMethodsByUser,
+    };
   },
 
   async create(data: Prisma.BudgetTransactionCreateInput): Promise<BudgetTransaction> {
