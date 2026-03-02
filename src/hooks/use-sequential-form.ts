@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import {
   type SequentialFormState,
@@ -11,6 +11,7 @@ import {
   RESET_TO_STEP,
   OPTIONAL_STEPS,
 } from '@/components/features/transaction-input/types';
+import type { TransactionType } from '@/types';
 
 const INITIAL_STATE: SequentialFormState = {
   user: '',
@@ -20,6 +21,12 @@ const INITIAL_STATE: SequentialFormState = {
   paymentMethod: '',
   amount: '',
   description: '',
+};
+
+const STORAGE_KEYS = {
+  USER: 'wefolio_last_user',
+  TYPE: 'wefolio_last_type',
+  DATE: 'wefolio_last_date',
 };
 
 export type FormStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -40,14 +47,41 @@ export interface UseSequentialFormReturn {
 }
 
 export function useSequentialForm(defaultDate: string): UseSequentialFormReturn {
-  const [formState, setFormState] = useState<SequentialFormState>({
-    ...INITIAL_STATE,
-    date: defaultDate,
+  const [formState, setFormState] = useState<SequentialFormState>(() => {
+    if (typeof window === 'undefined') return { ...INITIAL_STATE, date: defaultDate };
+
+    const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+    const savedType = localStorage.getItem(STORAGE_KEYS.TYPE);
+    const savedDate = localStorage.getItem(STORAGE_KEYS.DATE);
+
+    // Only use savedDate if it matches the current month's year/month (to avoid confusion)
+    const isValidSavedDate = savedDate && savedDate.substring(0, 7) === defaultDate.substring(0, 7);
+
+    return {
+      ...INITIAL_STATE,
+      user: savedUser || '',
+      type: (savedType as TransactionType) || 'expense',
+      date: isValidSavedDate ? savedDate : defaultDate,
+    };
   });
-  const [currentStep, setCurrentStep] = useState(0);
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (formState.user && formState.type && formState.date) return 3; // Start at category
+    if (formState.user && formState.type) return 2; // Start at date
+    if (formState.user) return 1; // Start at type
+    return 0; // Start at user
+  });
+
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [savedTransactions, setSavedTransactions] = useState<SavedTransaction[]>([]);
+
+  // Update localStorage when context fields change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USER, formState.user);
+    localStorage.setItem(STORAGE_KEYS.TYPE, formState.type);
+    localStorage.setItem(STORAGE_KEYS.DATE, formState.date);
+  }, [formState.user, formState.type, formState.date]);
 
   const setFieldValue = useCallback((field: StepField, value: string) => {
     setFormState(prev => ({ ...prev, [field]: value }));
@@ -96,7 +130,9 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
         });
 
         const saved: SavedTransaction = {
-          id: crypto.randomUUID(),
+          id: typeof crypto !== 'undefined' && crypto.randomUUID 
+            ? crypto.randomUUID() 
+            : Math.random().toString(36).substring(2, 11) + Date.now().toString(36),
           type: formState.type,
           categoryName,
           amount: parseFloat(formState.amount.replace(/,/g, '')),

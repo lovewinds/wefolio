@@ -64,7 +64,11 @@ function TransactionInputContent() {
         actions={actions}
       />
 
-      <SequentialTransactionForm year={selectedYear} month={selectedMonth} />
+      <SequentialTransactionForm
+        key={`${selectedYear}-${selectedMonth}`}
+        year={selectedYear}
+        month={selectedMonth}
+      />
     </PageContainer>
   );
 }

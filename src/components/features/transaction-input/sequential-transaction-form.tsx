@@ -22,10 +22,13 @@ const DEFAULT_PAYMENT_METHODS = ['현대카드', '신한카드', '계좌이체',
 const DEFAULT_USERS = ['지완', '지아'];
 
 export function SequentialTransactionForm({ year, month }: SequentialTransactionFormProps) {
-  const today = new Date();
-  const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-    today.getDate()
-  ).padStart(2, '0')}`;
+  const defaultDate = useMemo(() => {
+    const now = new Date();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() + 1 === month;
+    const day = isCurrentMonth ? now.getDate() : 1;
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }, [year, month]);
+
   const form = useSequentialForm(defaultDate);
 
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
