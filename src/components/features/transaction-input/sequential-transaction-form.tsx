@@ -208,6 +208,8 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
           currentStep={form.currentStep}
           onChipClick={form.goToStep}
           getCategoryName={getCategoryName}
+          persistedFields={form.persistedFields}
+
         />
       </div>
 
@@ -231,7 +233,13 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
       </div>
 
       {/* Saved transactions list */}
-      <SavedTransactionsList transactions={form.savedTransactions} />
+      <SavedTransactionsList
+        transactions={form.savedTransactions}
+        editingId={form.editingId}
+        onEdit={form.startEdit}
+        onDelete={form.deleteTransaction}
+        onCancelEdit={form.cancelEdit}
+      />
     </div>
   );
 }

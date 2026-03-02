@@ -40,6 +40,7 @@ export const RESET_TO_STEP = 3; // categoryId
 export interface SavedTransaction {
   id: string;
   type: TransactionType;
+  categoryId: string;
   categoryName: string;
   amount: number;
   description?: string;

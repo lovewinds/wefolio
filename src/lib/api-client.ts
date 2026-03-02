@@ -146,6 +146,25 @@ export const apiClient = {
       });
     },
 
+    update(
+      id: string,
+      data: {
+        type: string;
+        amount: number;
+        categoryId: string;
+        date: string;
+        paymentMethod?: string | null;
+        user?: string | null;
+        description?: string | null;
+      }
+    ) {
+      return request<unknown>(`/api/transactions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+
     delete(id: string) {
       return request<unknown>(`/api/transactions/${id}`, {
         method: 'DELETE',

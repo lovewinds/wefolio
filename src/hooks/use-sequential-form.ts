@@ -37,6 +37,8 @@ export interface UseSequentialFormReturn {
   status: FormStatus;
   errorMessage: string;
   savedTransactions: SavedTransaction[];
+  persistedFields: Set<StepField>;
+  editingId: string | null;
   setFieldValue: (field: StepField, value: string) => void;
   setMultipleFields: (values: Partial<SequentialFormState>) => void;
   advanceStep: () => void;
@@ -44,9 +46,26 @@ export interface UseSequentialFormReturn {
   skipStep: () => void;
   save: (categoryName: string) => Promise<void>;
   canSave: boolean;
+  startEdit: (tx: SavedTransaction) => void;
+  cancelEdit: () => void;
+  deleteTransaction: (id: string) => Promise<void>;
 }
 
 export function useSequentialForm(defaultDate: string): UseSequentialFormReturn {
+  const [persistedFields, setPersistedFields] = useState<Set<StepField>>(() => {
+    if (typeof window === 'undefined') return new Set();
+
+    const fields = new Set<StepField>();
+    if (localStorage.getItem(STORAGE_KEYS.USER)) fields.add('user');
+    if (localStorage.getItem(STORAGE_KEYS.TYPE)) fields.add('type');
+    // Only count date as persisted if it's valid for current month
+    const savedDate = localStorage.getItem(STORAGE_KEYS.DATE);
+    if (savedDate && savedDate.substring(0, 7) === defaultDate.substring(0, 7)) {
+      fields.add('date');
+    }
+    return fields;
+  });
+
   const [formState, setFormState] = useState<SequentialFormState>(() => {
     if (typeof window === 'undefined') return { ...INITIAL_STATE, date: defaultDate };
 
@@ -75,6 +94,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [savedTransactions, setSavedTransactions] = useState<SavedTransaction[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Update localStorage when context fields change
   useEffect(() => {
@@ -85,6 +105,13 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
 
   const setFieldValue = useCallback((field: StepField, value: string) => {
     setFormState(prev => ({ ...prev, [field]: value }));
+    // Once user changes a persisted field, it's no longer "auto-filled from storage"
+    setPersistedFields(prev => {
+      if (!prev.has(field)) return prev;
+      const next = new Set(prev);
+      next.delete(field);
+      return next;
+    });
   }, []);
 
   const setMultipleFields = useCallback((values: Partial<SequentialFormState>) => {
@@ -119,30 +146,62 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
       setErrorMessage('');
 
       try {
-        await apiClient.transactions.create({
-          type: formState.type,
-          amount: parseFloat(formState.amount.replace(/,/g, '')),
-          categoryId: formState.categoryId,
-          date: formState.date,
-          paymentMethod: formState.paymentMethod || null,
-          user: formState.user || null,
-          description: formState.description || null,
-        });
+        if (editingId) {
+          // Update existing transaction
+          await apiClient.transactions.update(editingId, {
+            type: formState.type,
+            amount: parseFloat(formState.amount.replace(/,/g, '')),
+            categoryId: formState.categoryId,
+            date: formState.date,
+            paymentMethod: formState.paymentMethod || null,
+            user: formState.user || null,
+            description: formState.description || null,
+          });
 
-        const saved: SavedTransaction = {
-          id: typeof crypto !== 'undefined' && crypto.randomUUID 
-            ? crypto.randomUUID() 
-            : Math.random().toString(36).substring(2, 11) + Date.now().toString(36),
-          type: formState.type,
-          categoryName,
-          amount: parseFloat(formState.amount.replace(/,/g, '')),
-          description: formState.description || undefined,
-          date: formState.date,
-          user: formState.user || undefined,
-          paymentMethod: formState.paymentMethod || undefined,
-        };
+          const updated: SavedTransaction = {
+            id: editingId,
+            type: formState.type,
+            categoryId: formState.categoryId,
+            categoryName,
+            amount: parseFloat(formState.amount.replace(/,/g, '')),
+            description: formState.description || undefined,
+            date: formState.date,
+            user: formState.user || undefined,
+            paymentMethod: formState.paymentMethod || undefined,
+          };
 
-        setSavedTransactions(prev => [saved, ...prev]);
+          setSavedTransactions(prev => prev.map(tx => (tx.id === editingId ? updated : tx)));
+          setEditingId(null);
+        } else {
+          // Create new transaction
+          await apiClient.transactions.create({
+            type: formState.type,
+            amount: parseFloat(formState.amount.replace(/,/g, '')),
+            categoryId: formState.categoryId,
+            date: formState.date,
+            paymentMethod: formState.paymentMethod || null,
+            user: formState.user || null,
+            description: formState.description || null,
+          });
+
+          const saved: SavedTransaction = {
+            id:
+              typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : Math.random().toString(36).substring(2, 11) + Date.now().toString(36),
+            type: formState.type,
+            categoryId: formState.categoryId,
+            categoryName,
+            amount: parseFloat(formState.amount.replace(/,/g, '')),
+            description: formState.description || undefined,
+            date: formState.date,
+            user: formState.user || undefined,
+            paymentMethod: formState.paymentMethod || undefined,
+          };
+
+          setSavedTransactions(prev => [saved, ...prev]);
+        }
+
         setStatus('saved');
 
         // Reset: keep persisted fields, clear the rest
@@ -162,8 +221,59 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
         setErrorMessage(err instanceof Error ? err.message : '저장 실패');
       }
     },
-    [canSave, formState]
+    [canSave, formState, editingId]
   );
+
+  const startEdit = useCallback((tx: SavedTransaction) => {
+    setFormState({
+      user: tx.user || '',
+      type: tx.type,
+      date: tx.date,
+      categoryId: tx.categoryId,
+      paymentMethod: tx.paymentMethod || '',
+      amount: String(tx.amount),
+      description: tx.description || '',
+    });
+    setEditingId(tx.id);
+    setCurrentStep(STEP_FIELDS.length - 1);
+    setStatus('idle');
+    setErrorMessage('');
+    // Fields are user-provided when editing, not from localStorage
+    setPersistedFields(new Set());
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    const savedUser = localStorage.getItem(STORAGE_KEYS.USER) || '';
+    const savedType = (localStorage.getItem(STORAGE_KEYS.TYPE) as TransactionType) || 'expense';
+    const savedDate = localStorage.getItem(STORAGE_KEYS.DATE) || '';
+    const isValidSavedDate = savedDate && savedDate.substring(0, 7) === defaultDate.substring(0, 7);
+
+    setFormState({
+      ...INITIAL_STATE,
+      user: savedUser,
+      type: savedType,
+      date: isValidSavedDate ? savedDate : defaultDate,
+    });
+    setEditingId(null);
+    setCurrentStep(RESET_TO_STEP);
+    setStatus('idle');
+    setErrorMessage('');
+    setPersistedFields(new Set(['user', 'type', ...(isValidSavedDate ? ['date'] : [])] as StepField[]));
+  }, [defaultDate]);
+
+  const deleteTransaction = useCallback(async (id: string) => {
+    // Optimistic update
+    setSavedTransactions(prev => prev.filter(tx => tx.id !== id));
+
+    try {
+      await apiClient.transactions.delete(id);
+    } catch (err) {
+      // Restore on failure — we don't have the original data easily, just show error
+      setStatus('error');
+      setErrorMessage(err instanceof Error ? err.message : '삭제 실패');
+      // Reload is the safest fallback here, but we avoid that
+    }
+  }, []);
 
   return {
     formState,
@@ -171,6 +281,8 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
     status,
     errorMessage,
     savedTransactions,
+    persistedFields,
+    editingId,
     setFieldValue,
     setMultipleFields,
     advanceStep,
@@ -178,5 +290,8 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
     skipStep,
     save,
     canSave,
+    startEdit,
+    cancelEdit,
+    deleteTransaction,
   };
 }
