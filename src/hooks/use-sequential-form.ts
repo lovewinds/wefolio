@@ -174,7 +174,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
           setEditingId(null);
         } else {
           // Create new transaction
-          await apiClient.transactions.create({
+          const created = await apiClient.transactions.create({
             type: formState.type,
             amount: parseFloat(formState.amount.replace(/,/g, '')),
             categoryId: formState.categoryId,
@@ -185,10 +185,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
           });
 
           const saved: SavedTransaction = {
-            id:
-              typeof crypto !== 'undefined' && crypto.randomUUID
-                ? crypto.randomUUID()
-                : Math.random().toString(36).substring(2, 11) + Date.now().toString(36),
+            id: created.id,
             type: formState.type,
             categoryId: formState.categoryId,
             categoryName,

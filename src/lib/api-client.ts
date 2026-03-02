@@ -139,7 +139,7 @@ export const apiClient = {
       user?: string | null;
       description?: string | null;
     }) {
-      return request<unknown>('/api/transactions', {
+      return request<{ id: string }>('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
