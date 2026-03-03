@@ -53,7 +53,10 @@ export function useRecommendations(
 
         if (!cancelled) {
           // Count frequency per categoryId
-          const freq = new Map<string, { categoryId: string; categoryName: string; count: number }>();
+          const freq = new Map<
+            string,
+            { categoryId: string; categoryName: string; count: number }
+          >();
           for (const tx of data.transactions) {
             if (tx.type !== type) continue;
 

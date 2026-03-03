@@ -5,11 +5,11 @@ import type { CategoryGroup, TransactionInputOptions } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import { useSequentialForm } from '@/hooks/use-sequential-form';
 import { useRecommendations } from '@/hooks/use-recommendations';
-import { CompletedFieldChips } from './completed-field-chips';
 import { ActiveFieldInput } from './active-field-input';
 import { StepIndicator } from './step-indicator';
 import { SavedTransactionsList } from './saved-transactions-list';
 import { RecommendationBar } from './recommendation-bar';
+import { TransactionInputSummaryRow } from './transaction-input-summary-row';
 import type { FormOptions, RecommendationItem, SequentialFormState, StepField } from './types';
 import { STEP_FIELDS } from './types';
 
@@ -136,6 +136,16 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
     [form, getPaymentMethodsForUser]
   );
 
+  const handleSummaryFieldClick = useCallback(
+    (field: StepField) => {
+      const stepIndex = STEP_FIELDS.indexOf(field);
+      if (stepIndex >= 0) {
+        form.goToStep(stepIndex);
+      }
+    },
+    [form]
+  );
+
   const handleRecommendationSelect = useCallback(
     (item: RecommendationItem) => {
       if (item.source === 'lastMonth') {
@@ -201,15 +211,14 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
         </div>
       )}
 
-      {/* Completed field chips */}
+      {/* Current transaction summary */}
       <div className="mb-6">
-        <CompletedFieldChips
+        <TransactionInputSummaryRow
           formState={form.formState}
           currentStep={form.currentStep}
-          onChipClick={form.goToStep}
           getCategoryName={getCategoryName}
           persistedFields={form.persistedFields}
-
+          onFieldClick={handleSummaryFieldClick}
         />
       </div>
 

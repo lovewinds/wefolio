@@ -255,7 +255,9 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
     setCurrentStep(RESET_TO_STEP);
     setStatus('idle');
     setErrorMessage('');
-    setPersistedFields(new Set(['user', 'type', ...(isValidSavedDate ? ['date'] : [])] as StepField[]));
+    setPersistedFields(
+      new Set(['user', 'type', ...(isValidSavedDate ? ['date'] : [])] as StepField[])
+    );
   }, [defaultDate]);
 
   const deleteTransaction = useCallback(async (id: string) => {
