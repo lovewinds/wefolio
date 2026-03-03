@@ -9,6 +9,7 @@ interface TransactionInputSummaryRowProps {
   persistedFields: Set<StepField>;
   getCategoryName: (id: string) => string;
   onFieldClick: (field: StepField) => void;
+  rowFlash?: boolean;
 }
 
 const EMPTY_LABELS: Record<StepField, string> = {
@@ -162,7 +163,12 @@ export function TransactionInputSummaryRow({
   persistedFields,
   getCategoryName,
   onFieldClick,
+  rowFlash = false,
 }: TransactionInputSummaryRowProps) {
+  const row3Flash = rowFlash
+    ? 'ring-2 ring-blue-400/60 transition-all duration-300'
+    : 'transition-all duration-300';
+
   return (
     <div className="rounded-xl border border-blue-100 bg-linear-to-r from-blue-50 to-white p-3 dark:border-blue-900/70 dark:from-blue-950/20 dark:to-zinc-950">
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -173,6 +179,7 @@ export function TransactionInputSummaryRow({
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-2">
+        {/* Row 1: context fields */}
         <div className="grid w-full grid-cols-3 gap-2">
           <SummaryFieldButton
             field="user"
@@ -203,7 +210,21 @@ export function TransactionInputSummaryRow({
           />
         </div>
 
-        <div className="grid w-full grid-cols-3 gap-2">
+        {/* Row 2: description */}
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <SummaryFieldButton
+            field="description"
+            formState={formState}
+            currentStep={currentStep}
+            persistedFields={persistedFields}
+            getCategoryName={getCategoryName}
+            onFieldClick={onFieldClick}
+            className="flex-1"
+          />
+        </div>
+
+        {/* Row 3: classification + amount (flashes on autocomplete) */}
+        <div className={`grid w-full grid-cols-3 gap-2 rounded-lg ${row3Flash}`}>
           <SummaryFieldButton
             field="categoryId"
             formState={formState}
@@ -230,18 +251,6 @@ export function TransactionInputSummaryRow({
             getCategoryName={getCategoryName}
             onFieldClick={onFieldClick}
             className="w-full"
-          />
-        </div>
-
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <SummaryFieldButton
-            field="description"
-            formState={formState}
-            currentStep={currentStep}
-            persistedFields={persistedFields}
-            getCategoryName={getCategoryName}
-            onFieldClick={onFieldClick}
-            className="flex-1"
           />
         </div>
       </div>

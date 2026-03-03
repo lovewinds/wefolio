@@ -8,7 +8,6 @@ import { useRecommendations } from '@/hooks/use-recommendations';
 import { ActiveFieldInput } from './active-field-input';
 import { StepIndicator } from './step-indicator';
 import { SavedTransactionsList } from './saved-transactions-list';
-import { RecommendationBar } from './recommendation-bar';
 import { TransactionInputSummaryRow } from './transaction-input-summary-row';
 import type { FormOptions, RecommendationItem, SequentialFormState, StepField } from './types';
 import { STEP_FIELDS } from './types';
@@ -35,6 +34,8 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
   const [paymentMethods, setPaymentMethods] = useState<string[]>(DEFAULT_PAYMENT_METHODS);
   const [users, setUsers] = useState<string[]>(DEFAULT_USERS);
   const [paymentMethodsByUser, setPaymentMethodsByUser] = useState<Record<string, string[]>>({});
+  const [amountHint, setAmountHint] = useState<number | null>(null);
+  const [rowFlash, setRowFlash] = useState(false);
 
   // Fetch categories when type changes
   useEffect(() => {
@@ -81,7 +82,8 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
     year,
     month,
     form.formState.type,
-    categories
+    categories,
+    form.formState.description
   );
 
   const options: FormOptions = useMemo(
@@ -111,9 +113,10 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
     [categories]
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const categoryName = getCategoryName(form.formState.categoryId);
-    form.save(categoryName);
+    await form.save(categoryName);
+    setAmountHint(null);
   }, [form, getCategoryName]);
 
   const handleFieldChange = useCallback(
@@ -129,6 +132,11 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
           }
         }
         return;
+      }
+
+      // Clear amount hint when user manually edits amount
+      if (field === 'amount' && value) {
+        setAmountHint(null);
       }
 
       form.setFieldValue(field, value);
@@ -148,40 +156,32 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
 
   const handleRecommendationSelect = useCallback(
     (item: RecommendationItem) => {
-      if (item.source === 'lastMonth') {
-        // "최근 카테고리" — only set categoryId, advance to next step
-        form.setMultipleFields({ categoryId: item.categoryId });
-        form.goToStep(4);
-        return;
-      }
-
-      // Templates — set all available fields
       const values: Partial<SequentialFormState> = {
+        description: item.description ?? item.label,
         categoryId: item.categoryId,
       };
       if (item.paymentMethod) values.paymentMethod = item.paymentMethod;
-      if (item.amount) values.amount = String(item.amount);
-      if (item.description) values.description = item.description;
+
+      if (item.source === 'template' && item.amount) {
+        // Templates: auto-fill amount too
+        values.amount = String(item.amount);
+        setAmountHint(null);
+      } else if (item.amount) {
+        // Memo-based: show amount as hint, don't fill
+        setAmountHint(item.amount);
+      }
 
       form.setMultipleFields(values);
 
-      // Find the first empty required field after categoryId
-      const filledKeys = new Set(Object.keys(values) as StepField[]);
-      for (let i = 3; i < STEP_FIELDS.length; i++) {
-        const field = STEP_FIELDS[i];
-        if (!filledKeys.has(field)) {
-          form.goToStep(i);
-          return;
-        }
-      }
-      // All fields filled — go to last step
+      // Flash Row 3 to signal autocomplete
+      setRowFlash(true);
+      setTimeout(() => setRowFlash(false), 400);
+
+      // Jump to amount step for user to confirm
       form.goToStep(STEP_FIELDS.length - 1);
     },
     [form]
   );
-
-  // Show recommendation bar only at the category step (step 3)
-  const showRecommendations = form.currentStep === 3;
 
   return (
     <div className="mx-auto max-w-lg">
@@ -200,17 +200,6 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
         </div>
       )}
 
-      {/* Recommendation bar */}
-      {showRecommendations && (
-        <div className="mb-6">
-          <RecommendationBar
-            recommendations={recommendations}
-            isLoading={recLoading}
-            onSelect={handleRecommendationSelect}
-          />
-        </div>
-      )}
-
       {/* Current transaction summary */}
       <div className="mb-6">
         <TransactionInputSummaryRow
@@ -219,6 +208,7 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
           getCategoryName={getCategoryName}
           persistedFields={form.persistedFields}
           onFieldClick={handleSummaryFieldClick}
+          rowFlash={rowFlash}
         />
       </div>
 
@@ -233,6 +223,10 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
           onSkip={form.skipStep}
           onSave={handleSave}
           canSave={form.canSave}
+          recommendations={recommendations}
+          recLoading={recLoading}
+          onRecommendationSelect={handleRecommendationSelect}
+          amountHint={amountHint}
         />
       </div>
 

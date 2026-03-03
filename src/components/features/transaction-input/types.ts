@@ -16,10 +16,10 @@ export const STEP_FIELDS: StepField[] = [
   'user',
   'type',
   'date',
+  'description',
   'categoryId',
   'paymentMethod',
   'amount',
-  'description',
 ];
 
 export const STEP_LABELS: Record<StepField, string> = {
@@ -32,10 +32,10 @@ export const STEP_LABELS: Record<StepField, string> = {
   description: '메모',
 };
 
-export const OPTIONAL_STEPS = new Set<StepField>(['user', 'paymentMethod', 'description']);
+export const OPTIONAL_STEPS = new Set<StepField>(['user', 'paymentMethod']);
 
 export const PERSIST_AFTER_SAVE: StepField[] = ['user', 'type', 'date'];
-export const RESET_TO_STEP = 3; // categoryId
+export const RESET_TO_STEP = 3; // description
 
 export interface SavedTransaction {
   id: string;
@@ -59,6 +59,7 @@ export interface RecommendationItem {
   amount?: number;
   description?: string;
   user?: string;
+  count?: number;
 }
 
 export interface FormOptions {

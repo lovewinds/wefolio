@@ -85,7 +85,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
   });
 
   const [currentStep, setCurrentStep] = useState(() => {
-    if (formState.user && formState.type && formState.date) return 3; // Start at category
+    if (formState.user && formState.type && formState.date) return 3; // Start at description
     if (formState.user && formState.type) return 2; // Start at date
     if (formState.user) return 1; // Start at type
     return 0; // Start at user
@@ -136,7 +136,12 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
     }
   }, [currentStep]);
 
-  const canSave = !!(formState.categoryId && formState.date && formState.amount);
+  const canSave = !!(
+    formState.categoryId &&
+    formState.date &&
+    formState.amount &&
+    formState.description
+  );
 
   const save = useCallback(
     async (categoryName: string) => {
