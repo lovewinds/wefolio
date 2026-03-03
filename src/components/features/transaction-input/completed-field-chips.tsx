@@ -82,15 +82,19 @@ export function CompletedFieldChips({
             }
           >
             {isPersisted && <PinIcon />}
-            <span className={isPersisted ? 'text-xs text-blue-400 dark:text-blue-500' : 'text-xs text-zinc-400 dark:text-zinc-500'}>
+            <span
+              className={
+                isPersisted
+                  ? 'text-xs text-blue-400 dark:text-blue-500'
+                  : 'text-xs text-zinc-400 dark:text-zinc-500'
+              }
+            >
               {STEP_LABELS[field]}
             </span>
             <span>{display}</span>
           </button>
         );
       })}
-
-
     </div>
   );
 }

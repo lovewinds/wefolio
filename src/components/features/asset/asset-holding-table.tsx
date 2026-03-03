@@ -278,6 +278,8 @@ export function AssetHoldingTable({
     [assetClasses, riskLevels, memberNames, institutions, accountTypes]
   );
 
+  // TanStack Table returns non-memoizable functions; this hook is intentionally excluded.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: holdings,
     columns,
