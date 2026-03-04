@@ -100,28 +100,35 @@ export function MonthlySummaryView({
 
   return (
     <PageContainer isFetching={isFetching}>
-      <section className="mb-8">
-        <MonthSelector
-          year={selectedYear}
-          month={selectedMonth}
-          titleSuffix="요약"
-          canPrev={canMovePrev}
-          canNext={canMoveNext}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
-          onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
-          actions={actions}
-        />
-        <SummaryCardGroup totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />
-      </section>
+      <MonthSelector
+        year={selectedYear}
+        month={selectedMonth}
+        titleSuffix="요약"
+        canPrev={canMovePrev}
+        canNext={canMoveNext}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
+        onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
+        actions={actions}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 items-stretch lg:grid-cols-3">
+        <SummaryCardGroup
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+          balance={balance}
+          vertical
+        />
         <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
         <CategoryBreakdownChart dataByType={categoryChartData} />
       </div>
 
-      <RecentTransactions transactions={transactions} />
+      <RecentTransactions
+        transactions={transactions}
+        limit={3}
+        detailHref={`/summary/monthly/detail?year=${selectedYear}&month=${selectedMonth}`}
+      />
     </PageContainer>
   );
 }

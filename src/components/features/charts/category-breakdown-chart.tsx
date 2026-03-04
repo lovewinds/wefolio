@@ -132,8 +132,8 @@ export function CategoryBreakdownChart({
   const hasHierarchy = data.some(d => d.children && d.children.length > 0);
 
   return (
-    <Card>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <Card className="flex flex-col h-full">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">
           카테고리별 {currentLabel}
         </h3>
@@ -160,12 +160,12 @@ export function CategoryBreakdownChart({
           })}
         </div>
       </div>
-      <div className="relative h-72">
+      <div className="relative flex-1 min-h-[200px]">
         {/* 외부 도넛 (소분류) */}
         <div className="absolute inset-0">
           <ResponsivePie
             data={childData}
-            margin={{ top: 24, right: 100, bottom: 24, left: 24 }}
+            margin={{ top: 12, right: 80, bottom: 12, left: 12 }}
             innerRadius={hasHierarchy ? 0.55 : 0.5}
             padAngle={0.5}
             cornerRadius={2}
@@ -174,7 +174,7 @@ export function CategoryBreakdownChart({
             borderWidth={0}
             borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
             enableArcLinkLabels={true}
-            arcLinkLabelsSkipAngle={12}
+            arcLinkLabelsSkipAngle={15}
             arcLinkLabelsTextColor="#52525b"
             arcLinkLabelsThickness={1.5}
             arcLinkLabelsDiagonalLength={10}
@@ -204,7 +204,7 @@ export function CategoryBreakdownChart({
         {/* 내부 도넛 (대분류) - 계층 구조가 있을 때만 표시 */}
         {hasHierarchy && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-[45%] w-[45%]" style={{ marginRight: '76px' }}>
+            <div className="h-[45%] w-[45%]" style={{ marginRight: '68px' }}>
               <ResponsivePie
                 data={parentData}
                 margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
@@ -227,7 +227,7 @@ export function CategoryBreakdownChart({
       </div>
 
       {/* 범례 */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3">
+      <div className="mt-2 flex flex-wrap justify-center gap-3">
         {parentData.slice(0, 6).map(item => (
           <div key={item.id} className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />

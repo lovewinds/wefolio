@@ -19,14 +19,14 @@ export function IncomeExpenseChart({ totalIncome, totalExpense }: IncomeExpenseC
   ];
 
   return (
-    <Card>
-      <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">수입 vs 지출</h3>
-      <div className="h-64">
+    <Card className="flex flex-col h-full">
+      <h3 className="mb-2 text-lg font-semibold text-zinc-800 dark:text-zinc-100">수입 vs 지출</h3>
+      <div className="flex-1 min-h-[200px]">
         <ResponsiveBar
           data={data}
           keys={['수입', '지출']}
           indexBy="category"
-          margin={{ top: 20, right: 20, bottom: 40, left: 80 }}
+          margin={{ top: 10, right: 16, bottom: 32, left: 64 }}
           padding={0.3}
           innerPadding={16}
           groupMode="grouped"
