@@ -7,6 +7,7 @@ interface SummaryCardGroupProps {
   balance: number;
   simplify?: boolean;
   vertical?: boolean;
+  inline?: boolean;
 }
 
 export function SummaryCardGroup({
@@ -15,10 +16,21 @@ export function SummaryCardGroup({
   balance,
   simplify = false,
   vertical = false,
+  inline = false,
 }: SummaryCardGroupProps) {
   const totalFlow = totalIncome + totalExpense;
   const incomeRatio = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 50;
   const expenseRatio = totalFlow > 0 ? (totalExpense / totalFlow) * 100 : 50;
+
+  if (inline) {
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        <SummaryCard type="income" amount={totalIncome} compact simplify />
+        <SummaryCard type="expense" amount={totalExpense} compact simplify />
+        <SummaryCard type="balance" amount={balance} compact simplify />
+      </div>
+    );
+  }
 
   if (vertical) {
     return (

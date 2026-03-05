@@ -26,7 +26,7 @@ export function IncomeExpenseChart({ totalIncome, totalExpense }: IncomeExpenseC
           data={data}
           keys={['수입', '지출']}
           indexBy="category"
-          margin={{ top: 10, right: 16, bottom: 32, left: 64 }}
+          margin={{ top: 32, right: 16, bottom: 32, left: 64 }}
           padding={0.3}
           innerPadding={16}
           groupMode="grouped"

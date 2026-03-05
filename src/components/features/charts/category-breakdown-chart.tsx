@@ -10,12 +10,22 @@ type CategoryType = 'income' | 'expense';
 
 type CategoryChartData = HierarchicalCategoryExpense;
 
+interface ClickedItem {
+  id: string;
+  label: string;
+  isParent: boolean;
+  parentId?: string;
+  parentLabel?: string;
+}
+
 interface CategoryBreakdownChartProps {
   dataByType: Record<CategoryType, CategoryChartData[]>;
   value?: CategoryType;
   defaultValue?: CategoryType;
   onValueChange?: (value: CategoryType) => void;
   typeOptions?: Array<{ value: CategoryType; label: string }>;
+  onItemClick?: (item: ClickedItem) => void;
+  selectedItemId?: string;
 }
 
 const categoryColorPalettes: Record<CategoryType, string[]> = {
@@ -79,6 +89,8 @@ export function CategoryBreakdownChart({
   defaultValue = 'expense',
   onValueChange,
   typeOptions = defaultTypeOptions,
+  onItemClick,
+  selectedItemId,
 }: CategoryBreakdownChartProps) {
   const [internalValue, setInternalValue] = useState<CategoryType>(defaultValue);
   const currentValue = value ?? internalValue;
@@ -103,6 +115,7 @@ export function CategoryBreakdownChart({
     label: string;
     value: number;
     color: string;
+    parentId: string;
     parentLabel: string;
   }[] = [];
   data.forEach(parent => {
@@ -114,6 +127,7 @@ export function CategoryBreakdownChart({
           label: child.label,
           value: child.value,
           color: child.color ?? getChildColor(parentColor, index),
+          parentId: parent.id,
           parentLabel: parent.label,
         });
       });
@@ -124,6 +138,7 @@ export function CategoryBreakdownChart({
         label: parent.label,
         value: parent.value,
         color: parentColor,
+        parentId: parent.id,
         parentLabel: parent.label,
       });
     }
@@ -183,6 +198,15 @@ export function CategoryBreakdownChart({
             arcLinkLabel={datum => String(datum.label)}
             arcLinkLabelsColor={{ from: 'color' }}
             enableArcLabels={false}
+            onClick={datum => {
+              onItemClick?.({
+                id: datum.id as string,
+                label: datum.label as string,
+                isParent: false,
+                parentId: datum.data.parentId,
+                parentLabel: datum.data.parentLabel,
+              });
+            }}
             tooltip={({ datum }) => (
               <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
                 <div className="flex items-center gap-2">
@@ -204,7 +228,7 @@ export function CategoryBreakdownChart({
         {/* 내부 도넛 (대분류) - 계층 구조가 있을 때만 표시 */}
         {hasHierarchy && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-[45%] w-[45%]" style={{ marginRight: '68px' }}>
+            <div className="pointer-events-auto h-[45%] w-[45%]" style={{ marginRight: '68px' }}>
               <ResponsivePie
                 data={parentData}
                 margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
@@ -219,7 +243,29 @@ export function CategoryBreakdownChart({
                 arcLabelsSkipAngle={25}
                 arcLabelsTextColor="#ffffff"
                 arcLabel={d => String(d.label)}
-                isInteractive={false}
+                onClick={datum => {
+                  onItemClick?.({
+                    id: datum.id as string,
+                    label: datum.label as string,
+                    isParent: true,
+                  });
+                }}
+                tooltip={({ datum }) => (
+                  <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: datum.color }}
+                      />
+                      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                        {datum.label}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                      {formatAmount(datum.value)}
+                    </div>
+                  </div>
+                )}
               />
             </div>
           </div>
@@ -228,12 +274,23 @@ export function CategoryBreakdownChart({
 
       {/* 범례 */}
       <div className="mt-2 flex flex-wrap justify-center gap-3">
-        {parentData.slice(0, 6).map(item => (
-          <div key={item.id} className="flex items-center gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">{item.label}</span>
-          </div>
-        ))}
+        {parentData.slice(0, 6).map(item => {
+          const isSelected = selectedItemId === item.id;
+          return (
+            <div key={item.id} className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+              <span
+                className={`text-xs ${
+                  isSelected
+                    ? 'font-bold underline text-zinc-800 dark:text-zinc-100'
+                    : 'text-zinc-600 dark:text-zinc-400'
+                }`}
+              >
+                {item.label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );

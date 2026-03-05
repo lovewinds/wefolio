@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { MonthSelector } from '@/components/features/navigation';
-import { SummaryCardGroup } from '@/components/features/summary';
+import { SummaryCardGroup, CategoryTransactionDetail } from '@/components/features/summary';
 import { IncomeExpenseChart, CategoryBreakdownChart } from '@/components/features/charts';
 import { RecentTransactions } from '@/components/features/transaction';
 import { PageContainer } from '@/components/ui';
@@ -17,6 +17,17 @@ interface MonthlySummaryViewProps {
   initialMonth: number;
 }
 
+type CategoryType = 'income' | 'expense';
+
+interface SelectedCategory {
+  id: string;
+  label: string;
+  isParent: boolean;
+  parentId?: string;
+  parentLabel?: string;
+  categoryType: CategoryType;
+}
+
 export function MonthlySummaryView({
   initialData,
   initialYear,
@@ -24,6 +35,8 @@ export function MonthlySummaryView({
 }: MonthlySummaryViewProps) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [isFetching, setIsFetching] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null);
+  const [activeChartType, setActiveChartType] = useState<CategoryType>('expense');
 
   const {
     selectedYear,
@@ -48,6 +61,7 @@ export function MonthlySummaryView({
         setIsFetching(true);
         const result = await apiClient.dashboard.getMonthly(selectedYear, selectedMonth);
         setData(result);
+        setSelectedCategory(null);
       } catch {
         // Keep previous data on error
       } finally {
@@ -113,22 +127,56 @@ export function MonthlySummaryView({
         actions={actions}
       />
 
-      <div className="grid grid-cols-1 gap-4 items-stretch lg:grid-cols-3">
-        <SummaryCardGroup
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-          balance={balance}
-          vertical
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Left: CategoryBreakdownChart */}
+        <CategoryBreakdownChart
+          dataByType={categoryChartData}
+          value={activeChartType}
+          onValueChange={type => {
+            setActiveChartType(type);
+            setSelectedCategory(null);
+          }}
+          onItemClick={item => setSelectedCategory({ ...item, categoryType: activeChartType })}
+          selectedItemId={selectedCategory?.id}
         />
-        <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
-        <CategoryBreakdownChart dataByType={categoryChartData} />
+
+        {/* Right: IncomeExpenseChart + inline summary */}
+        <div className="flex flex-col gap-4">
+          <SummaryCardGroup
+            totalIncome={totalIncome}
+            totalExpense={totalExpense}
+            balance={balance}
+            inline
+          />
+          <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
+        </div>
       </div>
 
-      <RecentTransactions
-        transactions={transactions}
-        limit={3}
-        detailHref={`/summary/monthly/detail?year=${selectedYear}&month=${selectedMonth}`}
-      />
+      {selectedCategory && (
+        <div className="mt-4">
+          <CategoryTransactionDetail
+            label={selectedCategory.label}
+            isParent={selectedCategory.isParent}
+            parentLabel={selectedCategory.parentLabel}
+            categoryType={selectedCategory.categoryType}
+            transactions={transactions}
+            categoryExpenses={
+              selectedCategory.categoryType === 'expense'
+                ? (data.expenseByCategory ?? [])
+                : (data.incomeByCategory ?? [])
+            }
+            onClose={() => setSelectedCategory(null)}
+          />
+        </div>
+      )}
+
+      <div className="mt-4">
+        <RecentTransactions
+          transactions={transactions}
+          limit={3}
+          detailHref={`/summary/monthly/detail?year=${selectedYear}&month=${selectedMonth}`}
+        />
+      </div>
     </PageContainer>
   );
 }
