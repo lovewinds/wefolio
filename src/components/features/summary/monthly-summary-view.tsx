@@ -169,14 +169,6 @@ export function MonthlySummaryView({
           />
         </div>
       )}
-
-      <div className="mt-4">
-        <RecentTransactions
-          transactions={transactions}
-          limit={3}
-          detailHref={`/summary/monthly/detail?year=${selectedYear}&month=${selectedMonth}`}
-        />
-      </div>
     </PageContainer>
   );
 }
