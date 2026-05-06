@@ -360,14 +360,31 @@ export const holdingTransactionService = {
     let totalCostKRW = 0;
     let totalCostOriginal = 0;
 
-    // 매수 거래만 평균단가 계산에 사용
-    for (const tx of transactions) {
+    const orderedTransactions = [...transactions].sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
+
+    // 매수/입고는 취득 원가를 더하고, 매도/출고는 기존 평균단가 기준으로 원가를 차감한다.
+    for (const tx of orderedTransactions) {
       if (tx.transactionType === 'buy' || tx.transactionType === 'transfer_in') {
-        totalQuantity += tx.quantity;
-        totalCostKRW += tx.quantity * tx.priceKRW;
-        totalCostOriginal += tx.quantity * tx.priceOriginal;
+        const quantity = Math.abs(tx.quantity);
+        totalQuantity += quantity;
+        totalCostKRW += quantity * tx.priceKRW;
+        totalCostOriginal += quantity * tx.priceOriginal;
       } else if (tx.transactionType === 'sell' || tx.transactionType === 'transfer_out') {
-        totalQuantity += tx.quantity; // 음수
+        const quantity = Math.abs(tx.quantity);
+        const averageCostKRW = totalQuantity > 0 ? totalCostKRW / totalQuantity : 0;
+        const averageCostOriginal = totalQuantity > 0 ? totalCostOriginal / totalQuantity : 0;
+
+        totalQuantity -= quantity;
+        totalCostKRW -= quantity * averageCostKRW;
+        totalCostOriginal -= quantity * averageCostOriginal;
+
+        if (totalQuantity <= 0) {
+          totalQuantity = 0;
+          totalCostKRW = 0;
+          totalCostOriginal = 0;
+        }
       }
     }
 
