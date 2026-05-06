@@ -47,5 +47,8 @@ next-env.d.ts
 # Resources
 *.xlsx
 
+# Codex local state
+.codex
+
 # IDE
 .vscode/
