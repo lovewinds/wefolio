@@ -1,8 +1,74 @@
-# WeFolio
+# AGENTS.md
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Project-Specific Rules
 
 가족의 자산 포트폴리오를 완성해 나가는 가계부 & 자산 관리 서비스 (We + Portfolio)
 
-## 기술 스택
+### 기술 스택
 
 - **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript 5
@@ -14,7 +80,7 @@
 - **Package Manager**: pnpm
 - **Node.js**: 20.9.0 이상 필요
 
-## 프로젝트 구조
+### 프로젝트 구조
 
 ```
 src/
@@ -34,7 +100,7 @@ src/
 └── types/                  # TypeScript 타입 정의
 ```
 
-## 아키텍처
+### 아키텍처
 
 Layered Architecture를 적용하여 DB 교체가 용이하도록 설계:
 
@@ -50,29 +116,21 @@ Layered Architecture를 적용하여 DB 교체가 용이하도록 설계:
   [SQLite/PostgreSQL]
 ```
 
-## MVP 기능
-
-- [ ] 수입/지출 기록 (CRUD)
-- [ ] 카테고리 관리 (기본 제공 + 사용자 정의)
-- [ ] 고정 지출 템플릿 (반복 지출 빠른 입력)
-- [ ] 자산 현황 대시보드
-- [ ] 통계 및 차트
-
-## 프로젝트 상태 문서
+### 프로젝트 상태 문서
 
 - `docs/project-status.md`는 현재 구현 상태, 알려진 제약, 다음 마일스톤을 관리하는 기준 문서입니다.
 - 새 기능 구현, 리팩토링, 버그 수정 전에 해당 문서의 현재 상태와 알려진 제약을 먼저 확인합니다.
 - 기능 구현이나 제약 해소가 끝나면 `docs/project-status.md`의 상태 표와 마일스톤 체크리스트를 함께 갱신합니다.
 - `ROADMAP.md`는 초기 계획 참고용이며, 실제 구현 상태 판단은 코드와 `docs/project-status.md`를 우선합니다.
 
-## 작업 시작 규칙
+### 작업 시작 규칙
 
 - "이번에 구현할 내용", "다음 작업", "현재 상태", "마일스톤" 관련 질문은 코드 탐색보다 `docs/project-status.md`를 먼저 기준으로 답합니다.
 - 구현에 들어갈 때는 `docs/project-status.md`의 해당 마일스톤을 확인한 뒤 관련 코드와 작업 트리를 확인합니다.
 - 기능 구현이나 제약 해소가 끝나면 `docs/project-status.md`의 상태 표, 마일스톤 체크리스트, 검증 이력을 함께 갱신합니다.
 - README의 현재 상태나 주의점과 달라지는 변경이면 `README.md`도 함께 갱신합니다.
 
-## 개발 명령어
+### 개발 명령어
 
 ```bash
 pnpm install          # 의존성 설치
@@ -85,7 +143,7 @@ pnpm format           # Prettier 포맷팅
 pnpm format:check     # Prettier 포맷 검사
 ```
 
-## 데이터베이스
+### 데이터베이스
 
 ```bash
 pnpm prisma generate  # Prisma 클라이언트 생성
@@ -94,9 +152,9 @@ pnpm prisma migrate dev  # 마이그레이션 생성 및 적용
 pnpm prisma studio    # Prisma Studio 실행
 ```
 
-## 데이터 초기화
+### 데이터 초기화
 
-### 처음 시작할 때
+#### 처음 시작할 때
 
 ```bash
 # 1. 의존성 설치
@@ -110,20 +168,20 @@ pnpm prisma db push
 pnpm db:seed
 ```
 
-### 시드 데이터 명령어
+#### 시드 데이터 명령어
 
 ```bash
 pnpm db:seed   # 시드 데이터 삽입 (카테고리, 거래, 자산, 템플릿)
 pnpm db:reset  # DB 초기화 후 시드 데이터 재삽입
 ```
 
-### 시드 데이터 파일
+#### 시드 데이터 파일
 
 - `prisma/seed-data.ts` - 시드 데이터 정의 (카테고리, 거래, 자산, 템플릿)
 - `prisma/seed.ts` - 시드 스크립트 (데이터 삽입 로직)
 - `src/lib/mock-data.ts` - 클라이언트 사이드 Mock 데이터 (개발/테스트용)
 
-## 코드 컨벤션
+### 코드 컨벤션
 
 - ESLint + Prettier 사용
 - 함수형 컴포넌트 + React Hooks
@@ -132,34 +190,7 @@ pnpm db:reset  # DB 초기화 후 시드 데이터 재삽입
 - 컴포넌트명: PascalCase (예: `TransactionList`)
 - 타입/인터페이스: PascalCase, `I` prefix 없이 사용
 
-## 커밋 컨벤션
+### 커밋 컨벤션
 
 - Conventional Commit 스타일 사용
 - Co-Authored-By 사용하지 않음
-
-```
-<type>: <subject>
-
-<body>
-```
-
-**Type 종류:**
-- `feat`: 새로운 기능 추가
-- `fix`: 버그 수정
-- `refactor`: 코드 리팩토링
-- `chore`: 빌드, 설정 등 기타 변경
-- `docs`: 문서 변경
-- `style`: 코드 포맷팅
-- `test`: 테스트 추가/수정
-
-## 환경 변수
-
-```env
-DATABASE_URL="file:./dev.db"
-```
-
-## 참고
-
-- 인증 없음 (MVP 단계)
-- 단일 사용자 기준 설계
-- 향후 확장: 멀티 유저, 가족 그룹, 소셜 로그인
