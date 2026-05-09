@@ -1,6 +1,6 @@
 # Project Status
 
-최종 갱신: 2026-05-07
+최종 갱신: 2026-05-09
 
 이 문서는 WeFolio의 현재 구현 상태, 알려진 제약, 마일스톤 현황을 관리하는 기준 문서입니다. 프로젝트 개요와 개발 명령어는 루트 `AGENTS.md`를, 초기 개발 계획은 `ROADMAP.md`를 참고합니다. 단, `ROADMAP.md`는 초기 계획 기준이라 현재 코드와 차이가 있을 수 있으며, 이 문서는 현재 코드 기준 상태를 우선합니다.
 
@@ -38,7 +38,7 @@
 | 데이터 접근 계층       | `Done`    | transaction, category, recurring-template, account, holding repository 구현                             | 복잡한 집계는 일부 service에서 Prisma 직접 호출을 병행함                     |
 | 서비스 계층            | `Partial` | transaction, category, dashboard, statistics, account, holding service 구현                             | 통계 서비스는 월/연/카테고리 일부만 있고 주간/기간 분석은 없음               |
 | API 응답 형식          | `Partial` | 대부분 `{ success, data, error }` 형태로 응답                                                           | 공통 response helper는 없고 route별로 직접 구성함                            |
-| 월별 요약              | `Done`    | `/summary/monthly`에서 DB 기반 월별 수입/지출, 잔액, 카테고리 breakdown, 차트 표시                      | 날짜 범위와 빈 데이터 UX 추가 검증 필요                                      |
+| 월별 요약              | `Done`    | `/summary/monthly`에서 DB 기반 월별 수입/지출, 잔액 우선 KPI, 수입/지출 비교, 카테고리 breakdown, 빈 상태 표시 | 반응형/다크 모드 확인은 `docs/manual-checklist.md` 기준으로 회귀 체크         |
 | 월별 상세 거래         | `Partial` | `/summary/monthly/detail`에서 거래 테이블, 필터 옵션, 수정/삭제 연결 제공                               | 데이터 로딩이 `fetchDashboardData` 경유라 mock/DB 전환 경로를 명확히 해야 함 |
 | 거래 입력              | `Partial` | `/summary/monthly/input`에서 단계형 입력, 저장 직후 목록, 수정/삭제, localStorage 기반 기본값 유지 제공 | 실제 전체 목록 조회 없이 현재 화면에서 저장한 항목 중심으로 동작함           |
 | 추천 입력              | `Partial` | 최근 3개월 거래와 반복 템플릿 기반 설명/카테고리/금액 추천 흐름 구현                                    | 최근 거래 조회가 `fetchDashboardData` 경유이며 추천 품질/정확도 검증 필요    |
@@ -96,10 +96,24 @@
 - 진행 이력:
   - 2026-05-06: 목표 5개 중 5개 완료. 테스트 인프라, 자동 테스트, 수동 체크리스트 문서화 완료
 
-### M002. 수입/지출 실제 데이터 흐름 정리
+### M002. 월별 요약 디자인 개선
+
+- 상태: 완료
+- 상세 문서: [m002-monthly-summary-design-refresh.md](./milestones/m002-monthly-summary-design-refresh.md)
+- Goal:
+  - [x] 월별 요약 상단에서 총수입, 총지출, 잔액의 우선순위가 명확하게 보인다
+  - [x] 수입/지출 비교와 카테고리 분석 카드가 데스크톱/모바일에서 자연스럽게 배치된다
+  - [x] 거래가 없는 월과 카테고리 데이터가 없는 상태가 깨진 차트 대신 빈 상태로 표시된다
+  - [x] 월 이동, 상세 보기, 거래 추가, 카테고리 선택 동작이 기존과 동일하게 유지된다
+  - [x] 다크 모드와 작은 화면에서 텍스트, 버튼, 차트 라벨이 겹치지 않는다
+- 진행 이력:
+  - 2026-05-09: KPI 우선 레이아웃, 차트 카드 재배치, 빈 상태 개선 완료. `pnpm lint`와 `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` 통과
+  - 2026-05-09: 브라우저에서 다크 모드/작은 화면 표시가 괜찮음을 사용자 확인. M002 완료 처리
+
+### M003. 수입/지출 실제 데이터 흐름 정리
 
 - 상태: 시작 전
-- 상세 문서: 시작 시 생성 예정
+- 상세 문서: 시작 시 `m003-income-expense-data-flow.md` 생성 예정
 - Goal:
   - [ ] 월별/기간별 거래 목록을 API로 직접 조회할 수 있다
   - [ ] 월별 상세 화면이 mock 경유 없이 실제 거래 API 클라이언트를 사용한다
@@ -108,10 +122,10 @@
 - 진행 이력:
   - 아직 없음
 
-### M003. 카테고리와 반복 템플릿 관리 완성
+### M004. 카테고리와 반복 템플릿 관리 완성
 
 - 상태: 시작 전
-- 상세 문서: 시작 시 생성 예정
+- 상세 문서: 시작 시 `m004-category-template-management.md` 생성 예정
 - Goal:
   - [ ] 카테고리를 생성/수정/삭제할 수 있다
   - [ ] 카테고리 관리 UI에서 계층형 카테고리를 관리할 수 있다
@@ -120,10 +134,10 @@
 - 진행 이력:
   - 아직 없음
 
-### M004. 통계 기능 확장
+### M005. 통계 기능 확장
 
 - 상태: 시작 전
-- 상세 문서: 시작 시 생성 예정
+- 상세 문서: 시작 시 `m005-statistics-expansion.md` 생성 예정
 - Goal:
   - [ ] `/statistics/yearly`가 실제 연간 집계 데이터를 표시한다
   - [ ] 월별 수입/지출 추이 차트를 확인할 수 있다
@@ -132,10 +146,10 @@
 - 진행 이력:
   - 아직 없음
 
-### M005. 자산 데이터 관리 안정화
+### M006. 자산 데이터 관리 안정화
 
 - 상태: 시작 전
-- 상세 문서: 시작 시 생성 예정
+- 상세 문서: 시작 시 `m006-asset-data-stabilization.md` 생성 예정
 - Goal:
   - [ ] 자산 기준 데이터 수정/삭제 정책과 UI가 정리되어 있다
   - [ ] 자산 거래를 수정할 수 있다
@@ -145,10 +159,10 @@
 - 진행 이력:
   - 아직 없음
 
-### M006. 문서 동기화
+### M007. 문서 동기화
 
 - 상태: 시작 전
-- 상세 문서: 시작 시 생성 예정
+- 상세 문서: 시작 시 `m007-documentation-sync.md` 생성 예정
 - Goal:
   - [ ] README가 WeFolio 기준 소개/실행/DB 초기화 문서로 정리되어 있다
   - [ ] `ROADMAP.md`가 현재 구현 상태 기준으로 갱신되거나 archive 처리되어 있다
@@ -160,6 +174,10 @@
 
 | 일시             | 범위                     | 명령/방법      | 결과 | 비고                                                                       |
 | ---------------- | ------------------------ | -------------- | ---- | -------------------------------------------------------------------------- |
+| 2026-05-09 17:59 | M002 수동 확인           | 브라우저 확인  | Pass | 사용자가 다크 모드/작은 화면 표시가 괜찮음을 확인                          |
+| 2026-05-09 17:52 | M002 자동 테스트         | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
+| 2026-05-09 17:51 | M002 build               | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 `pnpm build`는 Google Fonts TLS fetch 오류로 실패해 system TLS 옵션으로 재검증 |
+| 2026-05-09 17:48 | M002 lint                | `pnpm lint`    | Pass | 월별 요약 디자인 개선 코드 검증                                            |
 | 2026-05-07 23:02 | 마일스톤 문서 분리 체계  | 정적 문서 확인 | Pass | M001 상세 문서 추가, M001-M006 현황 요약과 운영 규칙 갱신                  |
 | 2026-05-06 22:26 | M001 lint                | `pnpm lint`    | Pass | 기존 `monthly-summary-view.tsx` unused import warning 1건                  |
 | 2026-05-06 22:26 | M001 자동 테스트         | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
