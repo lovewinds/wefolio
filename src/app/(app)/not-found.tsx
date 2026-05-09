@@ -11,7 +11,7 @@ export default function AppNotFound() {
           요청하신 페이지가 존재하지 않습니다.
         </p>
         <Link
-          href="/summary/monthly"
+          href="/budget/monthly"
           className="mt-4 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           대시보드로 이동

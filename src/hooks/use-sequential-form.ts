@@ -51,7 +51,16 @@ export interface UseSequentialFormReturn {
   deleteTransaction: (id: string) => Promise<void>;
 }
 
-export function useSequentialForm(defaultDate: string): UseSequentialFormReturn {
+interface UseSequentialFormOptions {
+  onDataChange?: () => void | Promise<void>;
+}
+
+export function useSequentialForm(
+  defaultDate: string,
+  options: UseSequentialFormOptions = {}
+): UseSequentialFormReturn {
+  const { onDataChange } = options;
+
   const [persistedFields, setPersistedFields] = useState<Set<StepField>>(() => {
     if (typeof window === 'undefined') return new Set();
 
@@ -205,6 +214,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
         }
 
         setStatus('saved');
+        void onDataChange?.();
 
         // Reset: keep persisted fields, clear the rest
         setFormState(prev => {
@@ -223,7 +233,7 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
         setErrorMessage(err instanceof Error ? err.message : '저장 실패');
       }
     },
-    [canSave, formState, editingId]
+    [canSave, formState, editingId, onDataChange]
   );
 
   const startEdit = useCallback((tx: SavedTransaction) => {
@@ -265,19 +275,23 @@ export function useSequentialForm(defaultDate: string): UseSequentialFormReturn 
     );
   }, [defaultDate]);
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    // Optimistic update
-    setSavedTransactions(prev => prev.filter(tx => tx.id !== id));
+  const deleteTransaction = useCallback(
+    async (id: string) => {
+      // Optimistic update
+      setSavedTransactions(prev => prev.filter(tx => tx.id !== id));
 
-    try {
-      await apiClient.transactions.delete(id);
-    } catch (err) {
-      // Restore on failure — we don't have the original data easily, just show error
-      setStatus('error');
-      setErrorMessage(err instanceof Error ? err.message : '삭제 실패');
-      // Reload is the safest fallback here, but we avoid that
-    }
-  }, []);
+      try {
+        await apiClient.transactions.delete(id);
+        void onDataChange?.();
+      } catch (err) {
+        // Restore on failure — we don't have the original data easily, just show error
+        setStatus('error');
+        setErrorMessage(err instanceof Error ? err.message : '삭제 실패');
+        // Reload is the safest fallback here, but we avoid that
+      }
+    },
+    [onDataChange]
+  );
 
   return {
     formState,

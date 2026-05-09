@@ -15,12 +15,17 @@ import { STEP_FIELDS } from './types';
 interface SequentialTransactionFormProps {
   year: number;
   month: number;
+  onDataChange?: () => void | Promise<void>;
 }
 
 const DEFAULT_PAYMENT_METHODS = ['현대카드', '신한카드', '계좌이체', '현금'];
 const DEFAULT_USERS = ['지완', '지아'];
 
-export function SequentialTransactionForm({ year, month }: SequentialTransactionFormProps) {
+export function SequentialTransactionForm({
+  year,
+  month,
+  onDataChange,
+}: SequentialTransactionFormProps) {
   const defaultDate = useMemo(() => {
     const now = new Date();
     const isCurrentMonth = now.getFullYear() === year && now.getMonth() + 1 === month;
@@ -28,7 +33,7 @@ export function SequentialTransactionForm({ year, month }: SequentialTransaction
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }, [year, month]);
 
-  const form = useSequentialForm(defaultDate);
+  const form = useSequentialForm(defaultDate, { onDataChange });
 
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<string[]>(DEFAULT_PAYMENT_METHODS);

@@ -1,5 +1,5 @@
 import { formatAmount } from '@/lib/format-utils';
-import { SummaryCard } from './summary-card';
+import { SummaryCard } from './budget-card';
 
 interface SummaryCardGroupProps {
   totalIncome: number;

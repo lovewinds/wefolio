@@ -8,7 +8,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: '/summary/monthly', label: '월별 요약', icon: Calendar },
+  { href: '/budget/monthly', label: '월별 요약', icon: Calendar },
   { href: '/asset', label: '자산 현황', icon: PieChart },
 ];
 

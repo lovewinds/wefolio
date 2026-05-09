@@ -1,4 +1,5 @@
 export { SequentialTransactionForm } from './sequential-transaction-form';
+export { TransactionInputPanel } from './transaction-input-panel';
 export { ActiveFieldInput } from './active-field-input';
 export { StepIndicator } from './step-indicator';
 export { SavedTransactionsList } from './saved-transactions-list';
