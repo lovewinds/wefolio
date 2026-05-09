@@ -58,9 +58,9 @@ export function AssetMonthlySummaryCards({
   const riskLevels = ['안전자산', '중립자산', '위험자산'];
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4">
       {/* Total Asset Card */}
-      <Card className="col-span-1 sm:col-span-2 lg:col-span-1">
+      <Card>
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">총 자산</p>
         <p className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
           {formatAmount(totalValue)}

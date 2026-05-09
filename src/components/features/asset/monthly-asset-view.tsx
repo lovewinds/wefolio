@@ -179,23 +179,27 @@ export function MonthlyAssetView({
         />
       ) : (
         <>
-          <AssetMonthlySummaryCards
-            totalValue={filteredData.totalValue}
-            prevTotalValue={filteredData.prevTotalValue}
-            deltaAmount={filteredData.deltaAmount}
-            deltaPercent={filteredData.deltaPercent}
-            byRiskLevel={filteredData.byRiskLevel}
-            prevByRiskLevel={filteredData.prevByRiskLevel}
-          />
-          <AssetRiskPieChart
-            data={filteredData.byRiskLevel}
-            totalValue={filteredData.totalValue}
-            members={members}
-            selectedMember={selectedMember}
-            onMemberChange={setSelectedMember}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-          />
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+            <AssetMonthlySummaryCards
+              totalValue={filteredData.totalValue}
+              prevTotalValue={filteredData.prevTotalValue}
+              deltaAmount={filteredData.deltaAmount}
+              deltaPercent={filteredData.deltaPercent}
+              byRiskLevel={filteredData.byRiskLevel}
+              prevByRiskLevel={filteredData.prevByRiskLevel}
+            />
+            <div className="min-w-0 self-stretch">
+              <AssetRiskPieChart
+                data={filteredData.byRiskLevel}
+                totalValue={filteredData.totalValue}
+                members={members}
+                selectedMember={selectedMember}
+                onMemberChange={setSelectedMember}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+              />
+            </div>
+          </div>
           <AssetHoldingTable
             holdings={filteredData.holdings}
             totalValue={filteredData.totalValue}

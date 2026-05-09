@@ -74,7 +74,7 @@ export function AssetRiskPieChart({
   };
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">자산 구성 비율</h3>
         <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
@@ -99,7 +99,7 @@ export function AssetRiskPieChart({
           )}
         </div>
       </div>
-      <div className="relative h-72">
+      <div className="relative min-h-72 flex-1">
         {/* Outer donut (sub-classifications) */}
         <div className="absolute inset-0">
           <ResponsivePie
