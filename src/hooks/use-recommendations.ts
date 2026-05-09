@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { fetchDashboardData } from '@/lib/mock-data';
-import type { TransactionType, CategoryGroup } from '@/types';
+import type { TransactionType, CategoryGroup, TransactionListData } from '@/types';
 import type { DashboardTransaction } from '@/types/dashboard';
 import type { RecommendationItem } from '@/components/features/transaction-input/types';
 
@@ -75,10 +74,14 @@ export function useRecommendations(
       // Fetch transactions for each month in parallel
       try {
         const results = await Promise.all(
-          monthsToFetch.map(({ year: y, month: m }) => fetchDashboardData(y, m))
+          monthsToFetch.map(({ year: y, month: m }) =>
+            apiClient.transactions.list<TransactionListData>({ year: y, month: m })
+          )
         );
         if (!cancelled) {
-          const txns = results.flatMap(d => d.transactions).filter(tx => tx.type === type);
+          const txns = results
+            .flatMap(result => result.transactions)
+            .filter(tx => tx.type === type);
           setAllTransactions(txns);
         }
       } catch {

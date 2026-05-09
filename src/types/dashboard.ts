@@ -54,3 +54,8 @@ export interface DashboardData {
   incomeByParentCategory?: HierarchicalCategoryExpense[];
   availableRange?: DashboardMonthRange;
 }
+
+export interface TransactionListData {
+  transactions: DashboardTransaction[];
+  availableRange?: DashboardMonthRange;
+}

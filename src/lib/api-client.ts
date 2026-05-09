@@ -130,6 +130,12 @@ export const apiClient = {
   },
 
   transactions: {
+    list<T>(
+      params: { year: number; month: number } | { startDate: string; endDate: string }
+    ): Promise<T> {
+      return request<T>(`/api/transactions${buildQuery(params)}`);
+    },
+
     create(data: {
       type: string;
       amount: number;

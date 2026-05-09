@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { POST } from '@/app/api/transactions/route';
+import { GET, POST } from '@/app/api/transactions/route';
 import { DELETE, PUT } from '@/app/api/transactions/[id]/route';
 import { transactionService } from '@/services/transaction-service';
+import type { TransactionListData } from '@/types';
 
 vi.mock('@/services/transaction-service', () => ({
   transactionService: {
+    list: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -13,6 +15,85 @@ vi.mock('@/services/transaction-service', () => ({
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+describe('GET /api/transactions', () => {
+  it('returns 400 when list query is missing', async () => {
+    const response = await GET(new Request('http://localhost/api/transactions'));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({ success: false, error: 'Missing transaction list query' });
+    expect(transactionService.list).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for an invalid month query', async () => {
+    const response = await GET(new Request('http://localhost/api/transactions?year=2026&month=13'));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(400);
+    expect(body.success).toBe(false);
+    expect(body.error).toBeTruthy();
+    expect(transactionService.list).not.toHaveBeenCalled();
+  });
+
+  it('returns monthly transactions', async () => {
+    const listData: TransactionListData = {
+      transactions: [
+        {
+          id: 'tx-1',
+          type: 'expense',
+          amount: 1200,
+          category: '식비',
+          description: 'Lunch',
+          date: '2026-05-06',
+          paymentMethod: 'Card',
+          user: 'Alice',
+        },
+      ],
+      availableRange: {
+        min: { year: 2026, month: 1 },
+        max: { year: 2026, month: 5 },
+      },
+    };
+    vi.mocked(transactionService.list).mockResolvedValue(listData);
+
+    const response = await GET(new Request('http://localhost/api/transactions?year=2026&month=5'));
+    const body = (await response.json()) as ApiBody<typeof listData>;
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ success: true, data: listData });
+    expect(transactionService.list).toHaveBeenCalledWith({ year: 2026, month: 5 });
+  });
+
+  it('returns range transactions', async () => {
+    vi.mocked(transactionService.list).mockResolvedValue({ transactions: [] });
+
+    const response = await GET(
+      new Request('http://localhost/api/transactions?startDate=2026-05-01&endDate=2026-05-31')
+    );
+    const body = (await response.json()) as ApiBody<TransactionListData>;
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ success: true, data: { transactions: [] } });
+    expect(transactionService.list).toHaveBeenCalledWith({
+      startDate: new Date('2026-05-01T00:00:00.000Z'),
+      endDate: new Date('2026-05-31T23:59:59.999Z'),
+    });
+  });
+
+  it('returns 500 when list throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(transactionService.list).mockRejectedValue(new Error('database failed'));
+
+    const response = await GET(new Request('http://localhost/api/transactions?year=2026&month=5'));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({ success: false, error: 'Failed to list transactions' });
+
+    consoleError.mockRestore();
+  });
 });
 
 describe('POST /api/transactions', () => {

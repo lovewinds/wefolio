@@ -1,10 +1,22 @@
 import { transactionRepository } from '@/repositories/transaction-repository';
 import { recurringTemplateRepository } from '@/repositories/recurring-template-repository';
-import { getMonthRangeUTC } from '@/lib/date-utils';
+import { formatDateString, getMonthRangeUTC } from '@/lib/date-utils';
 import type { BudgetTransaction, Prisma } from '@prisma/client';
-import type { TransactionInputOptions } from '@/types';
+import type {
+  DashboardMonthRange,
+  DashboardTransaction,
+  TransactionInputOptions,
+  TransactionListData,
+} from '@/types';
 
 type TransactionKind = 'income' | 'expense';
+type TransactionListParams = { year: number; month: number } | { startDate: Date; endDate: Date };
+
+type BudgetTransactionWithCategory = BudgetTransaction & {
+  category?: {
+    name: string;
+  } | null;
+};
 
 function normalizeAndSort(values: string[]): string[] {
   const deduped = new Set<string>();
@@ -13,6 +25,37 @@ function normalizeAndSort(values: string[]): string[] {
     if (trimmed) deduped.add(trimmed);
   });
   return Array.from(deduped).sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+function toDashboardTransaction(tx: BudgetTransactionWithCategory): DashboardTransaction {
+  return {
+    id: tx.id,
+    type: tx.type as TransactionKind,
+    amount: tx.amount,
+    category: tx.category?.name ?? 'Unknown',
+    description: tx.description ?? undefined,
+    date: formatDateString(tx.date),
+    paymentMethod: tx.paymentMethod ?? undefined,
+    user: tx.user ?? undefined,
+  };
+}
+
+function toDashboardMonthRange(
+  min: Date | null,
+  max: Date | null
+): DashboardMonthRange | undefined {
+  if (!min || !max) return undefined;
+
+  return {
+    min: {
+      year: min.getFullYear(),
+      month: min.getMonth() + 1,
+    },
+    max: {
+      year: max.getFullYear(),
+      month: max.getMonth() + 1,
+    },
+  };
 }
 
 export const transactionService = {
@@ -27,6 +70,23 @@ export const transactionService = {
   async getByMonth(year: number, month: number): Promise<BudgetTransaction[]> {
     const { start, end } = getMonthRangeUTC(year, month);
     return transactionRepository.findByDateRange(start, end);
+  },
+
+  async list(params: TransactionListParams): Promise<TransactionListData> {
+    const { start, end } =
+      'year' in params
+        ? getMonthRangeUTC(params.year, params.month)
+        : { start: params.startDate, end: params.endDate };
+
+    const [transactions, dateRange] = await Promise.all([
+      transactionRepository.findByDateRange(start, end),
+      transactionRepository.getDateRange(),
+    ]);
+
+    return {
+      transactions: (transactions as BudgetTransactionWithCategory[]).map(toDashboardTransaction),
+      availableRange: toDashboardMonthRange(dateRange.min, dateRange.max),
+    };
   },
 
   async getDateRange(): Promise<{ min: Date | null; max: Date | null }> {
