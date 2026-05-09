@@ -106,7 +106,7 @@ export function CategoryTransactionDetail({
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex flex-col gap-2 border-b border-zinc-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
             {title}
@@ -117,7 +117,7 @@ export function CategoryTransactionDetail({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <span className={`text-sm font-medium ${amountClass}`}>
             합계 {formatAmount(sorted.reduce((s, t) => s + t.amount, 0))}
           </span>
@@ -146,7 +146,7 @@ export function CategoryTransactionDetail({
 
       {/* Body: 2-column when parent with subcategories, single column otherwise */}
       {isParent && subcategoryStats.length >= 2 ? (
-        <div className="grid grid-cols-[1fr_1fr] divide-x divide-zinc-100 dark:divide-zinc-800">
+        <div className="grid grid-cols-1 divide-y divide-zinc-100 md:grid-cols-[1fr_1fr] md:divide-x md:divide-y-0 dark:divide-zinc-800">
           {/* Left: Subcategory breakdown */}
           <div className="px-4 py-3">
             <p className="mb-2 text-xs font-medium text-zinc-400 uppercase tracking-wide dark:text-zinc-500">

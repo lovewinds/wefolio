@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { List, Plus } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { MonthSelector } from '@/components/features/navigation';
 import { SummaryCardGroup, CategoryTransactionDetail } from '@/components/features/summary';
 import { IncomeExpenseChart, CategoryBreakdownChart } from '@/components/features/charts';
-import { RecentTransactions } from '@/components/features/transaction';
 import { PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
 import type { DashboardData } from '@/types';
@@ -88,26 +88,14 @@ export function MonthlySummaryView({
         href={`/summary/monthly/detail?year=${selectedYear}&month=${selectedMonth}`}
         className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
+        <List size={16} aria-hidden="true" />
         상세 보기
       </Link>
       <Link
         href={`/summary/monthly/input?year=${selectedYear}&month=${selectedMonth}`}
         className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          suppressHydrationWarning
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Plus size={16} aria-hidden="true" />
         거래 추가
       </Link>
     </>
@@ -128,28 +116,21 @@ export function MonthlySummaryView({
         actions={actions}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Left: CategoryBreakdownChart */}
-        <CategoryBreakdownChart
-          dataByType={categoryChartData}
-          value={activeChartType}
-          onValueChange={type => {
-            setActiveChartType(type);
-            setSelectedCategory(null);
-          }}
-          onItemClick={item => setSelectedCategory({ ...item, categoryType: activeChartType })}
-          selectedItemId={selectedCategory?.id}
-        />
+      <div className="space-y-4">
+        <SummaryCardGroup totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />
 
-        {/* Right: IncomeExpenseChart + inline summary */}
-        <div className="flex flex-col gap-4">
-          <SummaryCardGroup
-            totalIncome={totalIncome}
-            totalExpense={totalExpense}
-            balance={balance}
-            inline
-          />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
           <IncomeExpenseChart totalIncome={totalIncome} totalExpense={totalExpense} />
+          <CategoryBreakdownChart
+            dataByType={categoryChartData}
+            value={activeChartType}
+            onValueChange={type => {
+              setActiveChartType(type);
+              setSelectedCategory(null);
+            }}
+            onItemClick={item => setSelectedCategory({ ...item, categoryType: activeChartType })}
+            selectedItemId={selectedCategory?.id}
+          />
         </div>
       </div>
 
