@@ -29,41 +29,41 @@
 
 ## 현재 구현 상태
 
-| 영역                   | 상태      | 현재 구현                                                                                               | 남은 작업/주의점                                                             |
-| ---------------------- | --------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 프로젝트 구조          | `Done`    | `src/app`, `components`, `services`, `repositories`, `lib`, `types`, `prisma`로 계층화되어 있음         | 새 기능은 App/API, Service, Repository 책임 경계를 유지해야 함               |
-| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 고정 LNB, 다크 모드 토글, 월별 요약/자산 메뉴 제공                                | 루트 `/`는 Welcome 화면이고 실제 앱 진입점과 분리되어 있음                   |
-| 공통 UI                | `Partial` | Button, Input, Select, Tabs, Card, Combobox, EmptyState, PageContainer 존재                             | Modal, Toast, ConfirmDialog 등 일반 관리 UI에 필요한 컴포넌트는 부족함       |
-| Prisma 스키마          | `Done`    | 예산 거래/카테고리/반복 템플릿과 자산 기관/가족 구성원/계좌/종목/보유/가격/스냅샷/거래 모델 정의        | 마이그레이션 디렉터리는 없고 개발용 `db push` 중심으로 보임                  |
-| 데이터 접근 계층       | `Done`    | transaction, category, recurring-template, account, holding repository 구현                             | 복잡한 집계는 일부 service에서 Prisma 직접 호출을 병행함                     |
-| 서비스 계층            | `Partial` | transaction, category, dashboard, statistics, account, holding service 구현                             | 통계 서비스는 월/연/카테고리 일부만 있고 주간/기간 분석은 없음               |
-| API 응답 형식          | `Partial` | 대부분 `{ success, data, error }` 형태로 응답                                                           | 공통 response helper는 없고 route별로 직접 구성함                            |
-| 월별 요약              | `Done`    | `/summary/monthly`에서 DB 기반 월별 수입/지출, 잔액 우선 KPI, 수입/지출 비교, 카테고리 breakdown, 빈 상태 표시 | 반응형/다크 모드 확인은 `docs/manual-checklist.md` 기준으로 회귀 체크         |
-| 월별 상세 거래         | `Partial` | `/summary/monthly/detail`에서 거래 테이블, 필터 옵션, 수정/삭제 연결 제공                               | 데이터 로딩이 `fetchDashboardData` 경유라 mock/DB 전환 경로를 명확히 해야 함 |
-| 거래 입력              | `Partial` | `/summary/monthly/input`에서 단계형 입력, 저장 직후 목록, 수정/삭제, localStorage 기반 기본값 유지 제공 | 실제 전체 목록 조회 없이 현재 화면에서 저장한 항목 중심으로 동작함           |
-| 추천 입력              | `Partial` | 최근 3개월 거래와 반복 템플릿 기반 설명/카테고리/금액 추천 흐름 구현                                    | 최근 거래 조회가 `fetchDashboardData` 경유이며 추천 품질/정확도 검증 필요    |
-| 거래 API               | `Partial` | `POST /api/transactions`, `PUT/DELETE /api/transactions/[id]`, `GET /api/transactions/options` 구현     | `GET /api/transactions` 목록 조회와 개별 조회 API는 없음                     |
-| 카테고리               | `Partial` | 계층형 카테고리 모델과 `GET /api/categories` flat/grouped 조회 구현                                     | 카테고리 생성/수정/삭제 API와 관리 UI는 없음                                 |
-| 반복 템플릿            | `Partial` | Prisma 모델, repository, seed, `GET /api/templates` 조회 구현                                           | 템플릿 CRUD API/UI와 “템플릿 클릭 즉시 거래 생성” UX는 미완성                |
-| 연간 통계              | `Todo`    | 현재 전용 라우트와 화면 없음                                                                             | 실제 연간 집계, 차트, 상세 분석 API/UI 구현 필요                             |
-| 차트                   | `Partial` | 수입/지출 차트, 카테고리 breakdown, 자산 pie/line chart 컴포넌트 존재                                   | 연간/기간별 통계 차트와 export 기능은 없음                                   |
-| 자산 월별 현황         | `Done`    | `/asset/monthly`에서 월별 스냅샷 기반 총자산, 전월 대비, 보유 목록, 리스크 분포 표시                    | 스냅샷 데이터가 없으면 화면이 비어 보일 수 있어 빈 상태 검증 필요            |
-| 자산 포트폴리오        | `Done`    | `/asset/portfolio`에서 리스크/자산군 기반 포트폴리오 분석 표시                                          | 리밸런싱 목표나 권장 비중 같은 정책 기능은 없음                              |
-| 자산 추이              | `Done`    | `/asset/trend`에서 최근 6개월 기본 범위와 자산 추이 데이터 표시                                         | 사용자가 임의 기간을 선택하는 UX는 추가 검증 필요                            |
-| 자산 거래              | `Partial` | `/asset/transactions`에서 매수/매도/배당/이체 거래 조회, 입력, 삭제 흐름 구현                           | 거래 수정 API/UI는 없고, 가격/스냅샷 자동 반영 정책은 제한적임               |
-| 자산 기준 데이터 API   | `Partial` | 기관, 계좌, 종목, 구성원, 보유 목록 조회와 일부 생성 API 제공                                           | 기준 데이터 수정/삭제 UI와 전체 CRUD 정책은 미완성                           |
-| 자산 가격/스냅샷       | `Partial` | 가격 이력, 계좌 스냅샷, 보유 스냅샷 모델과 월별 조회 서비스 구현                                        | 외부 시세 API 연동 없음, 스냅샷 생성/관리 UX가 명확하지 않음                 |
-| 시드 데이터            | `Partial` | `prisma/seed.ts`, `seed-data.ts`, xlsx 기반 seed helper 존재                                            | 실제 실행 검증 이력은 문서화되어 있지 않음                                   |
-| 클라이언트 mock 데이터 | `Partial` | `src/lib/mock-data.ts`에 개발/테스트용 dashboard mock 및 fallback 성격의 fetch 함수 존재                | 운영 기준에서는 mock 의존 경로를 제거하거나 명시적으로 분리해야 함           |
-| 유효성 검증            | `Partial` | zod 기반 transaction, account, institution, asset-master, holding-transaction, common schema 존재       | route별 에러 메시지와 검증 정책 통일 필요                                    |
-| 테스트                 | `Done`    | Vitest + jsdom + React Testing Library 기반 `pnpm test` 스크립트와 service/API route/hook 테스트 존재   | SQLite test DB 통합 테스트와 E2E는 후속 범위                                 |
-| 빌드/검증 이력         | `Partial` | `pnpm test`, `pnpm lint` 실행 이력 문서화                                                               | 변경 영향 범위에 맞춰 필요 시 `pnpm build` 이력을 계속 남겨야 함             |
+| 영역                   | 상태      | 현재 구현                                                                                                                                                          | 남은 작업/주의점                                                       |
+| ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 프로젝트 구조          | `Done`    | `src/app`, `components`, `services`, `repositories`, `lib`, `types`, `prisma`로 계층화되어 있음                                                                    | 새 기능은 App/API, Service, Repository 책임 경계를 유지해야 함         |
+| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 고정 LNB, 다크 모드 토글, 월별 요약/자산 메뉴 제공                                                                                          | 루트 `/`는 `/budget/monthly`로 redirect됨                              |
+| 공통 UI                | `Partial` | Button, Input, Select, Tabs, Card, Combobox, EmptyState, PageContainer 존재                                                                                        | Modal, Toast, ConfirmDialog 등 일반 관리 UI에 필요한 컴포넌트는 부족함 |
+| Prisma 스키마          | `Done`    | 예산 거래/카테고리/반복 템플릿과 자산 기관/가족 구성원/계좌/종목/보유/가격/스냅샷/거래 모델 정의                                                                   | 마이그레이션 디렉터리는 없고 개발용 `db push` 중심으로 보임            |
+| 데이터 접근 계층       | `Done`    | transaction, category, recurring-template, account, holding repository 구현                                                                                        | 복잡한 집계는 일부 service에서 Prisma 직접 호출을 병행함               |
+| 서비스 계층            | `Partial` | transaction, category, dashboard, statistics, account, holding service 구현                                                                                        | 통계 서비스는 월/연/카테고리 일부만 있고 주간/기간 분석은 없음         |
+| API 응답 형식          | `Partial` | 대부분 `{ success, data, error }` 형태로 응답                                                                                                                      | 공통 response helper는 없고 route별로 직접 구성함                      |
+| 월별 요약              | `Done`    | `/budget/monthly`에서 DB 기반 월별 수입/지출, 잔액 우선 KPI, 수입/지출 비교, 카테고리 breakdown, 빈 상태, 최근 거래 표시                                           | 반응형/다크 모드 확인은 `docs/manual-checklist.md` 기준으로 회귀 체크  |
+| 월별 상세 거래         | `Partial` | `/budget/monthly?view=detail`에서 거래 테이블, 필터 옵션, 삭제, 인라인 입력 제공. `/budget/monthly/detail`은 새 URL로 redirect                                     | 거래 수정 전용 UI는 아직 제한적이며 수동 반응형 확인이 필요함          |
+| 거래 입력              | `Partial` | `/budget/monthly?input=open` 패널/시트에서 단계형 입력, 저장 직후 목록, 수정/삭제, localStorage 기반 기본값 유지 제공. `/budget/monthly/input`은 새 URL로 redirect | 실제 전체 목록 편집보다는 현재 입력 세션 저장 항목 중심으로 동작함     |
+| 추천 입력              | `Partial` | 최근 3개월 거래와 반복 템플릿 기반 설명/카테고리/금액 추천 흐름 구현                                                                                               | 최근 거래 조회는 거래 API를 사용하며 추천 품질/정확도 검증 필요        |
+| 거래 API               | `Partial` | `GET/POST /api/transactions`, `PUT/DELETE /api/transactions/[id]`, `GET /api/transactions/options` 구현                                                            | 개별 조회 API는 없음                                                   |
+| 카테고리               | `Partial` | 계층형 카테고리 모델과 `GET /api/categories` flat/grouped 조회 구현                                                                                                | 카테고리 생성/수정/삭제 API와 관리 UI는 없음                           |
+| 반복 템플릿            | `Partial` | Prisma 모델, repository, seed, `GET /api/templates` 조회 구현                                                                                                      | 템플릿 CRUD API/UI와 “템플릿 클릭 즉시 거래 생성” UX는 미완성          |
+| 연간 통계              | `Todo`    | 현재 전용 라우트와 화면 없음                                                                                                                                       | 실제 연간 집계, 차트, 상세 분석 API/UI 구현 필요                       |
+| 차트                   | `Partial` | 수입/지출 차트, 카테고리 breakdown, 자산 pie/line chart 컴포넌트 존재                                                                                              | 연간/기간별 통계 차트와 export 기능은 없음                             |
+| 자산 월별 현황         | `Done`    | `/asset/monthly`에서 월별 스냅샷 기반 총자산, 전월 대비, 보유 목록, 리스크 분포 표시                                                                               | 스냅샷 데이터가 없으면 화면이 비어 보일 수 있어 빈 상태 검증 필요      |
+| 자산 포트폴리오        | `Done`    | `/asset/portfolio`에서 리스크/자산군 기반 포트폴리오 분석 표시                                                                                                     | 리밸런싱 목표나 권장 비중 같은 정책 기능은 없음                        |
+| 자산 추이              | `Done`    | `/asset/trend`에서 최근 6개월 기본 범위와 자산 추이 데이터 표시                                                                                                    | 사용자가 임의 기간을 선택하는 UX는 추가 검증 필요                      |
+| 자산 거래              | `Partial` | `/asset/transactions`에서 매수/매도/배당/이체 거래 조회, 입력, 삭제 흐름 구현                                                                                      | 거래 수정 API/UI는 없고, 가격/스냅샷 자동 반영 정책은 제한적임         |
+| 자산 기준 데이터 API   | `Partial` | 기관, 계좌, 종목, 구성원, 보유 목록 조회와 일부 생성 API 제공                                                                                                      | 기준 데이터 수정/삭제 UI와 전체 CRUD 정책은 미완성                     |
+| 자산 가격/스냅샷       | `Partial` | 가격 이력, 계좌 스냅샷, 보유 스냅샷 모델과 월별 조회 서비스 구현                                                                                                   | 외부 시세 API 연동 없음, 스냅샷 생성/관리 UX가 명확하지 않음           |
+| 시드 데이터            | `Partial` | `prisma/seed.ts`, `seed-data.ts`, xlsx 기반 seed helper 존재                                                                                                       | 실제 실행 검증 이력은 문서화되어 있지 않음                             |
+| 클라이언트 mock 데이터 | `Partial` | `src/lib/mock-data.ts`에 개발/테스트용 dashboard mock 및 fallback 성격의 fetch 함수 존재                                                                           | 운영 기준에서는 mock 의존 경로를 제거하거나 명시적으로 분리해야 함     |
+| 유효성 검증            | `Partial` | zod 기반 transaction, account, institution, asset-master, holding-transaction, common schema 존재                                                                  | route별 에러 메시지와 검증 정책 통일 필요                              |
+| 테스트                 | `Done`    | Vitest + jsdom + React Testing Library 기반 `pnpm test` 스크립트와 service/API route/hook 테스트 존재                                                              | SQLite test DB 통합 테스트와 E2E는 후속 범위                           |
+| 빌드/검증 이력         | `Partial` | `pnpm test`, `pnpm lint` 실행 이력 문서화                                                                                                                          | 변경 영향 범위에 맞춰 필요 시 `pnpm build` 이력을 계속 남겨야 함       |
 
 ## 알려진 제약과 위험
 
-- 루트 `/`는 기본 Welcome 화면이며, 실제 앱의 주요 화면인 `/summary/monthly`로 redirect하지 않습니다.
-- `/summary/monthly/detail`과 추천 로직 일부는 `src/lib/mock-data.ts`의 `fetchDashboardData` 경유로 데이터를 가져옵니다. 실제 DB/API 경로와 mock 경로의 경계가 명확해야 합니다.
-- `GET /api/transactions` 목록 조회가 없어 거래 상세 화면과 외부 클라이언트에서 월별/기간별 거래 목록을 직접 조회하기 어렵습니다.
+- 루트 `/`는 실제 앱의 주요 화면인 `/budget/monthly`로 redirect합니다.
+- `/budget/monthly/detail`과 `/budget/monthly/input`은 호환 route로 유지되며 실제 화면은 `/budget/monthly`의 query state에서 열립니다.
+- `GET /api/transactions`는 월별/기간별 목록을 제공하지만 개별 거래 조회 API는 아직 없습니다.
 - 카테고리와 반복 템플릿은 조회 중심으로 구현되어 있고, 사용자 관리 UI와 생성/수정/삭제 API가 부족합니다.
 - 연간 통계 전용 화면은 현재 제공하지 않으며, 실제 기능 구현 시 라우트와 UI/API 설계가 필요합니다.
 - 자산 가격과 월별 스냅샷은 seed 또는 수동 데이터에 의존합니다. 외부 시세 API, 환율 API, 자동 스냅샷 생성 정책은 없습니다.
@@ -110,17 +110,22 @@
   - 2026-05-09: KPI 우선 레이아웃, 차트 카드 재배치, 빈 상태 개선 완료. `pnpm lint`와 `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` 통과
   - 2026-05-09: 브라우저에서 다크 모드/작은 화면 표시가 괜찮음을 사용자 확인. M002 완료 처리
 
-### M003. 수입/지출 실제 데이터 흐름 정리
+### M003. 월간 가계부 흐름 통합
 
-- 상태: 시작 전
-- 상세 문서: 시작 시 `m003-income-expense-data-flow.md` 생성 예정
+- 상태: 진행 중
+- 상세 문서: [m003-budget-monthly-flow-integration.md](./milestones/m003-budget-monthly-flow-integration.md)
 - Goal:
-  - [ ] 월별/기간별 거래 목록을 API로 직접 조회할 수 있다
-  - [ ] 월별 상세 화면이 mock 경유 없이 실제 거래 API 클라이언트를 사용한다
-  - [ ] 거래 입력 후 상세/요약 화면의 데이터 갱신 흐름이 검증되어 있다
-  - [ ] 루트 `/`의 앱 진입 정책이 결정되어 있다
+  - [x] 월별/기간별 거래 목록을 `GET /api/transactions`로 직접 조회할 수 있다
+  - [x] 월별 상세 목록과 추천 로직이 `fetchDashboardData` mock 경유 없이 실제 API 클라이언트를 사용한다
+  - [x] `/budget/monthly`에서 요약과 거래 목록을 같은 월 컨텍스트 안에서 전환할 수 있다
+  - [x] 추천 기반 거래 입력을 별도 페이지 이동 없이 패널/시트에서 사용할 수 있다
+  - [x] 거래 생성/수정/삭제 후 요약, 목록, 입력 패널의 데이터 갱신 흐름이 검증되어 있다
+  - [x] 기존 `/budget/monthly/detail`, `/budget/monthly/input` 진입 정책이 결정되어 끊긴 링크가 없다
+  - [ ] 모바일/데스크톱/다크 모드에서 탭, 패널, 표, CTA가 겹치지 않는다
 - 진행 이력:
-  - 아직 없음
+  - 2026-05-09: M003을 월간 가계부 흐름 통합으로 재정의하고 상세 계획 문서 생성
+  - 2026-05-09: 거래 목록 API, mock 경유 제거, 월간 허브 탭, 입력 패널, 기존 detail/input redirect 구현. 자동 검증 통과, 수동 반응형 확인 대기
+  - 2026-05-09: `거래 추가` CTA를 월 선택 헤더에서 `요약`/`거래 목록` 탭 행 우측으로 이동
 
 ### M004. 카테고리와 반복 템플릿 관리 완성
 
@@ -172,20 +177,33 @@
 
 ## 검증 이력
 
-| 일시             | 범위                     | 명령/방법      | 결과 | 비고                                                                       |
-| ---------------- | ------------------------ | -------------- | ---- | -------------------------------------------------------------------------- |
-| 2026-05-09 21:09 | 연간 통계 라우트 삭제    | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
-| 2026-05-09 21:09 | 연간 통계 라우트 삭제    | `pnpm lint`    | Pass | 라우트 삭제와 네비게이션 링크 제거 검증                                    |
-| 2026-05-09 17:59 | M002 수동 확인           | 브라우저 확인  | Pass | 사용자가 다크 모드/작은 화면 표시가 괜찮음을 확인                          |
-| 2026-05-09 17:52 | M002 자동 테스트         | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
-| 2026-05-09 17:51 | M002 build               | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 `pnpm build`는 Google Fonts TLS fetch 오류로 실패해 system TLS 옵션으로 재검증 |
-| 2026-05-09 17:48 | M002 lint                | `pnpm lint`    | Pass | 월별 요약 디자인 개선 코드 검증                                            |
-| 2026-05-07 23:02 | 마일스톤 문서 분리 체계  | 정적 문서 확인 | Pass | M001 상세 문서 추가, M001-M006 현황 요약과 운영 규칙 갱신                  |
-| 2026-05-06 22:26 | M001 lint                | `pnpm lint`    | Pass | 기존 `monthly-summary-view.tsx` unused import warning 1건                  |
-| 2026-05-06 22:26 | M001 자동 테스트         | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
-| 2026-05-06 22:06 | 검증 이력 일시 형식 변경 | 정적 문서 확인 | Pass | 검증 이력에 분 단위 시간을 남기도록 형식 변경                              |
-| 2026-05-06 22:05 | 마일스톤 우선순위 변경   | 정적 문서 확인 | Pass | 검증 체계 구축을 M001로 상향하고 기존 기능 마일스톤을 순연                 |
-| 2026-05-06 21:50 | project status 추가      | 정적 확인      | Pass | 현재 파일 구조, Prisma schema, route/service/repository 구현을 읽고 문서화 |
+| 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
+| ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-05-09 21:56 | M003 거래 추가 CTA 위치 조정       | `pnpm lint`                                                     | Pass | 탭 행 우측 CTA 배치 변경 검증                                                       |
+| 2026-05-09 21:52 | M003 탭 전환 라우터 갱신 반복 수정 | `pnpm exec tsc --noEmit`                                        | Pass | 자동 URL 동기화 effect 제거 후 타입 검증                                            |
+| 2026-05-09 21:52 | M003 탭 전환 라우터 갱신 반복 수정 | `pnpm lint`                                                     | Pass | 탭/입력/월 변경 이벤트 기반 URL 갱신 검증                                           |
+| 2026-05-09 21:52 | M003 탭 전환 라우터 갱신 반복 수정 | `pnpm test`                                                     | Pass | Vitest 6 files, 39 tests                                                            |
+| 2026-05-09 21:48 | M003 월간 가계부 흐름 통합         | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 최초 build는 Google Fonts 네트워크 fetch 실패. 네트워크 허용 후 재실행 통과         |
+| 2026-05-09 21:47 | M003 월간 가계부 흐름 통합         | `pnpm lint`                                                     | Pass | 거래 목록 API, 월간 허브 탭, 입력 패널, redirect route 검증                         |
+| 2026-05-09 21:47 | M003 월간 가계부 흐름 통합         | `pnpm test`                                                     | Pass | Vitest 6 files, 39 tests                                                            |
+| 2026-05-09 21:40 | M003 계획 수립                     | 정적 문서 확인                                                  | Pass | 월간 가계부 흐름 통합 마일스톤 상세 문서 생성 및 현황판 갱신                        |
+| 2026-05-09 21:25 | 가계부 라우트 URL 정리             | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | root redirect와 `.next` route manifest가 `/budget` 기준임을 확인                    |
+| 2026-05-09 21:25 | 가계부 라우트 URL 정리             | 구 경로 문자열 검색                                             | Pass | 소스와 `.next` 산출물에서 기존 가계부 화면 경로 제거 확인                           |
+| 2026-05-09 21:20 | 가계부 라우트 URL 정리             | `pnpm test`                                                     | Pass | Vitest 6 files, 34 tests                                                            |
+| 2026-05-09 21:20 | 가계부 라우트 URL 정리             | `pnpm lint`                                                     | Pass | `/budget` 라우트 이동과 내부 링크 변경 검증                                         |
+| 2026-05-09 21:20 | 가계부 라우트 URL 정리             | 구 경로 문자열 검색                                             | Pass | 기존 가계부 화면 경로 제거 확인                                                     |
+| 2026-05-09 21:09 | 연간 통계 라우트 삭제              | `pnpm test`                                                     | Pass | Vitest 6 files, 34 tests                                                            |
+| 2026-05-09 21:09 | 연간 통계 라우트 삭제              | `pnpm lint`                                                     | Pass | 라우트 삭제와 네비게이션 링크 제거 검증                                             |
+| 2026-05-09 17:59 | M002 수동 확인                     | 브라우저 확인                                                   | Pass | 사용자가 다크 모드/작은 화면 표시가 괜찮음을 확인                                   |
+| 2026-05-09 17:52 | M002 자동 테스트                   | `pnpm test`                                                     | Pass | Vitest 6 files, 34 tests                                                            |
+| 2026-05-09 17:51 | M002 build                         | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 `pnpm build`는 Google Fonts TLS fetch 오류로 실패해 system TLS 옵션으로 재검증 |
+| 2026-05-09 17:48 | M002 lint                          | `pnpm lint`                                                     | Pass | 월별 요약 디자인 개선 코드 검증                                                     |
+| 2026-05-07 23:02 | 마일스톤 문서 분리 체계            | 정적 문서 확인                                                  | Pass | M001 상세 문서 추가, M001-M006 현황 요약과 운영 규칙 갱신                           |
+| 2026-05-06 22:26 | M001 lint                          | `pnpm lint`                                                     | Pass | 기존 `monthly-summary-view.tsx` unused import warning 1건                           |
+| 2026-05-06 22:26 | M001 자동 테스트                   | `pnpm test`                                                     | Pass | Vitest 6 files, 34 tests                                                            |
+| 2026-05-06 22:06 | 검증 이력 일시 형식 변경           | 정적 문서 확인                                                  | Pass | 검증 이력에 분 단위 시간을 남기도록 형식 변경                                       |
+| 2026-05-06 22:05 | 마일스톤 우선순위 변경             | 정적 문서 확인                                                  | Pass | 검증 체계 구축을 M001로 상향하고 기존 기능 마일스톤을 순연                          |
+| 2026-05-06 21:50 | project status 추가                | 정적 확인                                                       | Pass | 현재 파일 구조, Prisma schema, route/service/repository 구현을 읽고 문서화          |
 
 ## 운영 규칙
 
