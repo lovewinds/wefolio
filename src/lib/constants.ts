@@ -22,6 +22,7 @@ export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
   { href: '/asset/monthly', label: '월별 현황' },
   { href: '/asset/trend', label: '자산 추이' },
   { href: '/asset/portfolio', label: '포트폴리오 분석' },
+  { href: '/asset/transactions', label: '자산 거래 상세' },
 ];
 
 // Risk Level

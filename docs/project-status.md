@@ -47,15 +47,15 @@
 | 반복 템플릿            | `Partial` | Prisma 모델, repository, seed, `GET /api/templates` 조회 구현                                                                                                      | 템플릿 CRUD API/UI와 “템플릿 클릭 즉시 거래 생성” UX는 미완성          |
 | 연간 통계              | `Todo`    | 현재 전용 라우트와 화면 없음                                                                                                                                       | 실제 연간 집계, 차트, 상세 분석 API/UI 구현 필요                       |
 | 차트                   | `Partial` | 수입/지출 차트, 카테고리 breakdown, 자산 pie/line chart 컴포넌트 존재                                                                                              | 연간/기간별 통계 차트와 export 기능은 없음                             |
-| 자산 월별 현황         | `Done`    | `/asset/monthly`에서 월별 스냅샷 기반 총자산, 전월 대비, 보유 목록, 리스크 분포 표시                                                                               | 스냅샷 데이터가 없으면 화면이 비어 보일 수 있어 빈 상태 검증 필요      |
+| 자산 월별 현황         | `Done`    | `/asset/monthly`에서 월별 스냅샷 기반 총자산, 전월 대비, 보유 목록, 리스크 분포 표시. 같은 월 컨텍스트에서 월말 자산 입력 패널 제공                                | 입력 패널의 모바일/다크 모드 수동 검증 필요                           |
 | 자산 포트폴리오        | `Done`    | `/asset/portfolio`에서 리스크/자산군 기반 포트폴리오 분석 표시                                                                                                     | 리밸런싱 목표나 권장 비중 같은 정책 기능은 없음                        |
 | 자산 추이              | `Done`    | `/asset/trend`에서 최근 6개월 기본 범위와 자산 추이 데이터 표시                                                                                                    | 사용자가 임의 기간을 선택하는 UX는 추가 검증 필요                      |
-| 자산 거래              | `Partial` | `/asset/transactions`에서 매수/매도/배당/이체 거래 조회, 입력, 삭제 흐름 구현                                                                                      | 거래 수정 API/UI는 없고, 가격/스냅샷 자동 반영 정책은 제한적임         |
+| 자산 거래              | `Partial` | `/asset/transactions`에서 매수/매도/배당/이체 거래 조회, 입력, 삭제 흐름 구현. 네비게이션에서는 자산 거래 상세 흐름으로 연결                                      | 거래 수정 API/UI는 없고, 가격/스냅샷 자동 반영 정책은 제한적임         |
 | 자산 기준 데이터 API   | `Partial` | 기관, 계좌, 종목, 구성원, 보유 목록 조회와 일부 생성 API 제공                                                                                                      | 기준 데이터 수정/삭제 UI와 전체 CRUD 정책은 미완성                     |
-| 자산 가격/스냅샷       | `Partial` | 가격 이력, 계좌 스냅샷, 보유 스냅샷 모델과 월별 조회 서비스 구현                                                                                                   | 외부 시세 API 연동 없음, 스냅샷 생성/관리 UX가 명확하지 않음           |
+| 자산 가격/스냅샷       | `Partial` | 가격 이력, 계좌 스냅샷, 보유 스냅샷 모델과 월별 조회 서비스, 전월 복사 기반 보유 스냅샷 수동 입력 API/UI 구현                                                     | 외부 시세 API 연동 없음, 계좌 현금 스냅샷 입력 UX는 별도 정리 필요     |
 | 시드 데이터            | `Partial` | `prisma/seed.ts`, `seed-data.ts`, xlsx 기반 seed helper 존재                                                                                                       | 실제 실행 검증 이력은 문서화되어 있지 않음                             |
 | 클라이언트 mock 데이터 | `Partial` | `src/lib/mock-data.ts`에 개발/테스트용 dashboard mock 및 fallback 성격의 fetch 함수 존재                                                                           | 운영 기준에서는 mock 의존 경로를 제거하거나 명시적으로 분리해야 함     |
-| 유효성 검증            | `Partial` | zod 기반 transaction, account, institution, asset-master, holding-transaction, common schema 존재                                                                  | route별 에러 메시지와 검증 정책 통일 필요                              |
+| 유효성 검증            | `Partial` | zod 기반 transaction, account, institution, asset-master, holding-transaction, asset-monthly-input, common schema 존재                                             | route별 에러 메시지와 검증 정책 통일 필요                              |
 | 테스트                 | `Done`    | Vitest + jsdom + React Testing Library 기반 `pnpm test` 스크립트와 service/API route/hook 테스트 존재                                                              | SQLite test DB 통합 테스트와 E2E는 후속 범위                           |
 | 빌드/검증 이력         | `Partial` | `pnpm test`, `pnpm lint` 실행 이력 문서화                                                                                                                          | 변경 영향 범위에 맞춰 필요 시 `pnpm build` 이력을 계속 남겨야 함       |
 
@@ -66,7 +66,7 @@
 - `GET /api/transactions`는 월별/기간별 목록을 제공하지만 개별 거래 조회 API는 아직 없습니다.
 - 카테고리와 반복 템플릿은 조회 중심으로 구현되어 있고, 사용자 관리 UI와 생성/수정/삭제 API가 부족합니다.
 - 연간 통계 전용 화면은 현재 제공하지 않으며, 실제 기능 구현 시 라우트와 UI/API 설계가 필요합니다.
-- 자산 가격과 월별 스냅샷은 seed 또는 수동 데이터에 의존합니다. 외부 시세 API, 환율 API, 자동 스냅샷 생성 정책은 없습니다.
+- 자산 가격과 월별 스냅샷은 seed 또는 수동 데이터에 의존합니다. 보유 스냅샷은 월별 입력 패널에서 수동 저장할 수 있지만, 외부 시세 API, 환율 API, 자동 스냅샷 생성 정책은 없습니다.
 - 자산 거래 삭제 시 보유 수량/평균단가는 재계산되지만, 과거 스냅샷이나 가격 이력과의 정합성 정책은 명확하지 않습니다.
 - 인증, 멀티 유저, 가족 그룹 권한 모델이 없으므로 현재 데이터는 단일 사용자 MVP 전제에 묶여 있습니다.
 - README는 create-next-app 기본 내용에 가깝고, 실제 WeFolio 실행/데이터 초기화 안내는 `AGENTS.md`와 이 문서에 더 가깝습니다.
@@ -153,16 +153,16 @@
 
 ### M006. 자산 데이터 관리 안정화
 
-- 상태: 시작 전
-- 상세 문서: 시작 시 `m006-asset-data-stabilization.md` 생성 예정
+- 상태: 진행 중
+- 상세 문서: [m006-asset-data-stabilization.md](./milestones/m006-asset-data-stabilization.md)
 - Goal:
   - [ ] 자산 기준 데이터 수정/삭제 정책과 UI가 정리되어 있다
   - [ ] 자산 거래를 수정할 수 있다
-  - [ ] 월별 스냅샷 생성/수정 UX 또는 자동 생성 정책이 결정되어 있다
+  - [x] 월별 스냅샷 생성/수정 UX 또는 자동 생성 정책이 결정되어 있다
   - [ ] 가격 이력과 환율 입력/외부 연동 방향이 결정되어 있다
   - [ ] 거래, 보유, 스냅샷 간 정합성 검증 로직이 있다
 - 진행 이력:
-  - 아직 없음
+  - 2026-05-09: 월말 자산 입력을 전월 스냅샷 복사 기반 패널로 구현. `GET/POST /api/asset/monthly-input` 추가, 자산 월별 현황 저장 후 갱신 흐름 연결
 
 ### M007. 문서 동기화
 
@@ -179,6 +179,10 @@
 
 | 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
 | ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-05-09 23:08 | M006 월말 자산 입력                | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 sandbox build는 Google Fonts fetch 실패. 네트워크 허용 후 재실행 통과          |
+| 2026-05-09 23:06 | M006 월말 자산 입력                | `pnpm test`                                                     | Pass | Vitest 7 files, 43 tests                                                            |
+| 2026-05-09 23:06 | M006 월말 자산 입력                | `pnpm lint`                                                     | Pass | 월말 입력 패널, API route, 문서 변경 검증                                           |
+| 2026-05-09 23:06 | M006 월말 자산 입력                | `pnpm exec tsc --noEmit`                                        | Pass | 월말 입력 API/UI 타입 검증                                                          |
 | 2026-05-09 22:17 | 자산 구성 비율 높이 확장           | `pnpm exec tsc --noEmit`                                        | Pass | 차트 카드가 부모 높이를 채우도록 flex/stretch 레이아웃 검증                         |
 | 2026-05-09 22:17 | 자산 구성 비율 높이 확장           | `pnpm lint`                                                     | Pass | 고정 차트 높이 제거와 부모 높이 사용 레이아웃 검증                                  |
 | 2026-05-09 22:15 | 자산 월별 현황 넓은 화면 레이아웃  | `pnpm exec tsc --noEmit`                                        | Pass | 요약 카드/자산 구성 비율 반응형 배치 변경 타입 검증                                 |

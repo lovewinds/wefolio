@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { FilePenLine, ListPlus } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { MonthSelector } from '@/components/features/navigation';
 import {
   AssetRiskPieChart,
   AssetHoldingTable,
   AssetMonthlySummaryCards,
+  MonthlyAssetInputPanel,
 } from '@/components/features/asset';
 import { PageContainer, EmptyState } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
@@ -63,6 +64,7 @@ export function MonthlyAssetView({
   const [data, setData] = useState<AssetMonthlyDataWithDelta>(initialData);
   const [isFetching, setIsFetching] = useState(false);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [isInputOpen, setIsInputOpen] = useState(false);
 
   const {
     selectedYear,
@@ -75,28 +77,28 @@ export function MonthlyAssetView({
     updateRangeFromData,
   } = useMonthNavigation({
     initialDate: { year: initialYear, month: initialMonth },
-    allowFutureNavigation: false,
+    allowFutureNavigation: true,
   });
+
+  const loadMonthlyData = useCallback(async () => {
+    try {
+      setIsFetching(true);
+      const result = await apiClient.asset.getMonthlyWithDelta<AssetMonthlyDataWithDelta>(
+        selectedYear,
+        selectedMonth
+      );
+      setData(result);
+    } catch {
+      // Keep previous data on error
+    } finally {
+      setIsFetching(false);
+    }
+  }, [selectedYear, selectedMonth]);
 
   useEffect(() => {
     if (selectedYear === initialYear && selectedMonth === initialMonth) return;
-
-    const loadData = async () => {
-      try {
-        setIsFetching(true);
-        const result = await apiClient.asset.getMonthlyWithDelta<AssetMonthlyDataWithDelta>(
-          selectedYear,
-          selectedMonth
-        );
-        setData(result);
-      } catch {
-        // Keep previous data on error
-      } finally {
-        setIsFetching(false);
-      }
-    };
-    loadData();
-  }, [selectedYear, selectedMonth, initialYear, initialMonth]);
+    loadMonthlyData();
+  }, [selectedYear, selectedMonth, initialYear, initialMonth, loadMonthlyData]);
 
   useEffect(() => {
     updateRangeFromData(data.availableRange);
@@ -146,13 +148,23 @@ export function MonthlyAssetView({
   const isEmpty = filteredData.holdings.length === 0 && filteredData.byRiskLevel.length === 0;
 
   const monthActions = (
-    <Link
-      href={`/asset/transactions?year=${selectedYear}&month=${selectedMonth}`}
-      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-    >
-      <Plus size={16} />
-      자산 거래 입력
-    </Link>
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setIsInputOpen(true)}
+        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+      >
+        <FilePenLine size={16} />
+        이번 달 자산 입력
+      </button>
+      <Link
+        href={`/asset/transactions?year=${selectedYear}&month=${selectedMonth}`}
+        className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+      >
+        <ListPlus size={16} />
+        자산 거래 상세
+      </Link>
+    </div>
   );
 
   return (
@@ -175,7 +187,7 @@ export function MonthlyAssetView({
       {isEmpty ? (
         <EmptyState
           title={`${selectedYear}년 ${selectedMonth}월 자산 스냅샷 데이터가 없습니다.`}
-          description="다른 월을 선택하거나 데이터를 추가해주세요."
+          description="이번 달 자산 입력에서 전월 스냅샷을 복사해 마감할 수 있습니다."
         />
       ) : (
         <>
@@ -209,6 +221,13 @@ export function MonthlyAssetView({
           />
         </>
       )}
+      <MonthlyAssetInputPanel
+        open={isInputOpen}
+        year={selectedYear}
+        month={selectedMonth}
+        onClose={() => setIsInputOpen(false)}
+        onSaved={loadMonthlyData}
+      />
     </PageContainer>
   );
 }

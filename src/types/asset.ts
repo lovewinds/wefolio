@@ -437,3 +437,73 @@ export interface AssetMonthlyDataWithDelta extends AssetMonthlyData {
   deltaPercent: number | null;
   prevByRiskLevel: RiskGroupDelta[];
 }
+
+// ============================================
+// 자산 월말 입력 타입
+// ============================================
+
+export type AssetMonthlyInputMode = 'create' | 'edit';
+
+export type AssetMonthlyInputStatus = '유지' | '증가' | '감소' | '신규' | '정리됨';
+
+export type AssetMonthlyInputType = 'value' | 'quantity';
+
+export interface AssetMonthlyInputRow {
+  holdingId: string;
+  accountId: string;
+  assetMasterId: string;
+  currentSnapshotId: string | null;
+  date: string;
+  assetName: string;
+  assetClass: string;
+  subClass: string | null;
+  riskLevel: string;
+  currency: string;
+  memberName: string;
+  accountName: string;
+  accountType: string;
+  institutionName: string;
+  inputType: AssetMonthlyInputType;
+  prevQuantity: number | null;
+  prevPriceOriginal: number | null;
+  prevExchangeRate: number | null;
+  prevPriceKRW: number | null;
+  prevTotalValueKRW: number | null;
+  quantity: number;
+  priceOriginal: number;
+  exchangeRate: number | null;
+  priceKRW: number;
+  totalValueKRW: number;
+  status: AssetMonthlyInputStatus;
+  isCurrentMissing: boolean;
+}
+
+export interface AssetMonthlyInputDraft {
+  year: number;
+  month: number;
+  date: string;
+  mode: AssetMonthlyInputMode;
+  prevMonth: { year: number; month: number };
+  prevTotalValue: number;
+  currentTotalValue: number;
+  deltaAmount: number;
+  rows: AssetMonthlyInputRow[];
+}
+
+export interface AssetMonthlyInputSaveRow {
+  holdingId?: string | null;
+  accountId: string;
+  assetMasterId: string;
+  date: string;
+  quantity: number;
+  priceOriginal: number;
+  exchangeRate?: number | null;
+  priceKRW: number;
+  totalValueKRW: number;
+}
+
+export interface AssetMonthlyInputSaveRequest {
+  year: number;
+  month: number;
+  rows: AssetMonthlyInputSaveRow[];
+}

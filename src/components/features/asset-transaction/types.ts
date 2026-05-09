@@ -56,6 +56,7 @@ export interface AssetMasterOption {
   name: string;
   currency: string;
   assetClass: string;
+  riskLevel?: string;
 }
 
 export interface HoldingOption {

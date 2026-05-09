@@ -15,6 +15,11 @@ import type {
   AssetClassSummary,
   HoldingWithAsset,
   PortfolioSummary,
+  AssetMonthlyInputDraft,
+  AssetMonthlyInputRow,
+  AssetMonthlyInputSaveRow,
+  AssetMonthlyInputStatus,
+  AssetMonthlyInputType,
 } from '@/types/asset';
 import { familyMemberService, institutionService, accountService } from './account-service';
 
@@ -485,7 +490,267 @@ function getPrevMonth(year: number, month: number): { year: number; month: numbe
   return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
 }
 
+function getMonthStart(year: number, month: number): Date {
+  return new Date(Date.UTC(year, month - 1, 1));
+}
+
+function getMonthEndSnapshotDate(year: number, month: number): Date {
+  return new Date(Date.UTC(year, month, 0));
+}
+
+function toDateInput(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function assertDateInMonth(dateString: string, year: number, month: number): Date {
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month
+  ) {
+    throw new Error('Snapshot date must be inside the selected month');
+  }
+  return date;
+}
+
+function getMonthlyInputStatus(
+  prevTotalValue: number | null,
+  currentTotalValue: number
+): AssetMonthlyInputStatus {
+  const prevValue = prevTotalValue ?? 0;
+  if (prevValue <= 0 && currentTotalValue > 0) return '신규';
+  if (prevValue > 0 && currentTotalValue === 0) return '정리됨';
+  if (currentTotalValue > prevValue) return '증가';
+  if (currentTotalValue < prevValue) return '감소';
+  return '유지';
+}
+
+function getMonthlyInputType(assetClass: string, accountType: string): AssetMonthlyInputType {
+  const valueOnlyTokens = ['deposit', 'savings', 'time_deposit', 'cma', 'cash'];
+  const lowerAssetClass = assetClass.toLowerCase();
+  const lowerAccountType = accountType.toLowerCase();
+
+  if (
+    assetClass.includes('예금') ||
+    assetClass.includes('현금') ||
+    accountType.includes('예금') ||
+    accountType.includes('적금') ||
+    accountType.toUpperCase().includes('CMA')
+  ) {
+    return 'value';
+  }
+
+  return valueOnlyTokens.some(
+    token => lowerAssetClass.includes(token) || lowerAccountType === token
+  )
+    ? 'value'
+    : 'quantity';
+}
+
+type SnapshotWithHolding = Prisma.HoldingValueSnapshotGetPayload<{
+  include: {
+    holding: {
+      include: {
+        assetMaster: true;
+        account: {
+          include: {
+            member: true;
+            institution: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+async function getSnapshotsByMonth(year: number, month: number): Promise<SnapshotWithHolding[]> {
+  const startOfMonth = getMonthStart(year, month);
+  const startOfNextMonth = new Date(Date.UTC(year, month, 1));
+
+  return prisma.holdingValueSnapshot.findMany({
+    where: {
+      date: {
+        gte: startOfMonth,
+        lt: startOfNextMonth,
+      },
+    },
+    include: {
+      holding: {
+        include: {
+          assetMaster: true,
+          account: {
+            include: {
+              member: true,
+              institution: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ holdingId: 'asc' }, { date: 'desc' }],
+  });
+}
+
+function latestSnapshotByHolding(
+  snapshots: SnapshotWithHolding[]
+): Map<string, SnapshotWithHolding> {
+  const map = new Map<string, SnapshotWithHolding>();
+  for (const snapshot of snapshots) {
+    if (!map.has(snapshot.holdingId)) {
+      map.set(snapshot.holdingId, snapshot);
+    }
+  }
+  return map;
+}
+
+function buildMonthlyInputRow(
+  holdingId: string,
+  prevSnapshot: SnapshotWithHolding | undefined,
+  currentSnapshot: SnapshotWithHolding | undefined,
+  targetDate: Date,
+  hasCurrentSnapshots: boolean
+): AssetMonthlyInputRow {
+  const sourceSnapshot = currentSnapshot ?? prevSnapshot;
+  if (!sourceSnapshot) {
+    throw new Error(`Missing snapshot data for holding: ${holdingId}`);
+  }
+
+  const { holding } = sourceSnapshot;
+  const { assetMaster, account } = holding;
+  const values = currentSnapshot ?? prevSnapshot;
+  const totalValueKRW = values?.totalValueKRW ?? 0;
+  const prevTotalValueKRW = prevSnapshot?.totalValueKRW ?? null;
+
+  return {
+    holdingId,
+    accountId: holding.accountId,
+    assetMasterId: holding.assetMasterId,
+    currentSnapshotId: currentSnapshot?.id ?? null,
+    date: currentSnapshot ? toDateInput(currentSnapshot.date) : toDateInput(targetDate),
+    assetName: assetMaster.name,
+    assetClass: assetMaster.assetClass,
+    subClass: assetMaster.subClass,
+    riskLevel: RISK_LEVEL_LABELS[assetMaster.riskLevel] ?? assetMaster.riskLevel,
+    currency: assetMaster.currency,
+    memberName: account.member.name,
+    accountName: account.name,
+    accountType: account.accountType,
+    institutionName: account.institution.name,
+    inputType: getMonthlyInputType(assetMaster.assetClass, account.accountType),
+    prevQuantity: prevSnapshot?.quantity ?? null,
+    prevPriceOriginal: prevSnapshot?.priceOriginal ?? null,
+    prevExchangeRate: prevSnapshot?.exchangeRate ?? null,
+    prevPriceKRW: prevSnapshot?.priceKRW ?? null,
+    prevTotalValueKRW,
+    quantity: values?.quantity ?? 0,
+    priceOriginal: values?.priceOriginal ?? 0,
+    exchangeRate: values?.exchangeRate ?? null,
+    priceKRW: values?.priceKRW ?? 0,
+    totalValueKRW,
+    status: getMonthlyInputStatus(prevTotalValueKRW, totalValueKRW),
+    isCurrentMissing: hasCurrentSnapshots && Boolean(prevSnapshot) && !currentSnapshot,
+  };
+}
+
 export const holdingValueSnapshotService = {
+  async getMonthlyInputDraft(year: number, month: number): Promise<AssetMonthlyInputDraft> {
+    const prev = getPrevMonth(year, month);
+    const targetDate = getMonthEndSnapshotDate(year, month);
+
+    const [prevSnapshots, currentSnapshots] = await Promise.all([
+      getSnapshotsByMonth(prev.year, prev.month),
+      getSnapshotsByMonth(year, month),
+    ]);
+
+    const prevMap = latestSnapshotByHolding(prevSnapshots);
+    const currentMap = latestSnapshotByHolding(currentSnapshots);
+    const holdingIds = Array.from(new Set([...prevMap.keys(), ...currentMap.keys()]));
+    const hasCurrentSnapshots = currentMap.size > 0;
+
+    const rows = holdingIds
+      .map(holdingId =>
+        buildMonthlyInputRow(
+          holdingId,
+          prevMap.get(holdingId),
+          currentMap.get(holdingId),
+          targetDate,
+          hasCurrentSnapshots
+        )
+      )
+      .sort((a, b) => {
+        const accountCompare =
+          `${a.memberName}:${a.institutionName}:${a.accountName}`.localeCompare(
+            `${b.memberName}:${b.institutionName}:${b.accountName}`,
+            'ko-KR'
+          );
+        return accountCompare || a.assetName.localeCompare(b.assetName, 'ko-KR');
+      });
+
+    const prevTotalValue = Array.from(prevMap.values()).reduce(
+      (sum, snapshot) => sum + snapshot.totalValueKRW,
+      0
+    );
+    const currentTotalValue = hasCurrentSnapshots
+      ? Array.from(currentMap.values()).reduce((sum, snapshot) => sum + snapshot.totalValueKRW, 0)
+      : rows.reduce((sum, row) => sum + row.totalValueKRW, 0);
+
+    return {
+      year,
+      month,
+      date: toDateInput(targetDate),
+      mode: hasCurrentSnapshots ? 'edit' : 'create',
+      prevMonth: prev,
+      prevTotalValue,
+      currentTotalValue,
+      deltaAmount: currentTotalValue - prevTotalValue,
+      rows,
+    };
+  },
+
+  async saveMonthlyInput(
+    year: number,
+    month: number,
+    rows: AssetMonthlyInputSaveRow[]
+  ): Promise<AssetMonthlyInputDraft> {
+    for (const row of rows) {
+      const date = assertDateInMonth(row.date, year, month);
+      let holdingId = row.holdingId ?? undefined;
+
+      if (!holdingId) {
+        const existingHolding = await holdingRepository.findByAccountAndAsset(
+          row.accountId,
+          row.assetMasterId
+        );
+
+        if (existingHolding) {
+          holdingId = existingHolding.id;
+        } else {
+          const createdHolding = await holdingRepository.create({
+            account: { connect: { id: row.accountId } },
+            assetMaster: { connect: { id: row.assetMasterId } },
+            quantity: row.quantity,
+            averageCostOriginal: row.priceOriginal,
+            averageCostKRW: row.priceKRW,
+            dataSource: 'snapshot',
+          });
+          holdingId = createdHolding.id;
+        }
+      }
+
+      await holdingValueSnapshotRepository.upsert(holdingId, date, {
+        quantity: row.quantity,
+        priceOriginal: row.priceOriginal,
+        exchangeRate: row.exchangeRate ?? null,
+        priceKRW: row.priceKRW,
+        totalValueKRW: row.totalValueKRW,
+        source: 'manual',
+      });
+    }
+
+    return this.getMonthlyInputDraft(year, month);
+  },
+
   async getMonthlyAssetData(year: number, month: number): Promise<MonthlyAssetData> {
     const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
     const startOfNextMonth = new Date(Date.UTC(year, month, 1));

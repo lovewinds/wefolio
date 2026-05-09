@@ -1,4 +1,4 @@
-import type { ApiResponse, DashboardData } from '@/types';
+import type { ApiResponse, DashboardData, AssetMonthlyInputSaveRequest } from '@/types';
 
 class ApiError extends Error {
   constructor(
@@ -45,6 +45,16 @@ export const apiClient = {
     },
     getMonthlyWithDelta<T>(year: number, month: number): Promise<T> {
       return request<T>(`/api/asset/monthly${buildQuery({ year, month, withDelta: 'true' })}`);
+    },
+    getMonthlyInput<T>(year: number, month: number): Promise<T> {
+      return request<T>(`/api/asset/monthly-input${buildQuery({ year, month })}`);
+    },
+    saveMonthlyInput<T>(data: AssetMonthlyInputSaveRequest): Promise<T> {
+      return request<T>('/api/asset/monthly-input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
     },
     getTrend<T>(
       startYear: number,
