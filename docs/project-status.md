@@ -32,7 +32,7 @@
 | 영역                   | 상태      | 현재 구현                                                                                               | 남은 작업/주의점                                                             |
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | 프로젝트 구조          | `Done`    | `src/app`, `components`, `services`, `repositories`, `lib`, `types`, `prisma`로 계층화되어 있음         | 새 기능은 App/API, Service, Repository 책임 경계를 유지해야 함               |
-| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 고정 LNB, 다크 모드 토글, 월별 요약/연간 요약/자산 메뉴 제공                     | 루트 `/`는 Welcome 화면이고 실제 앱 진입점과 분리되어 있음                   |
+| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 고정 LNB, 다크 모드 토글, 월별 요약/자산 메뉴 제공                                | 루트 `/`는 Welcome 화면이고 실제 앱 진입점과 분리되어 있음                   |
 | 공통 UI                | `Partial` | Button, Input, Select, Tabs, Card, Combobox, EmptyState, PageContainer 존재                             | Modal, Toast, ConfirmDialog 등 일반 관리 UI에 필요한 컴포넌트는 부족함       |
 | Prisma 스키마          | `Done`    | 예산 거래/카테고리/반복 템플릿과 자산 기관/가족 구성원/계좌/종목/보유/가격/스냅샷/거래 모델 정의        | 마이그레이션 디렉터리는 없고 개발용 `db push` 중심으로 보임                  |
 | 데이터 접근 계층       | `Done`    | transaction, category, recurring-template, account, holding repository 구현                             | 복잡한 집계는 일부 service에서 Prisma 직접 호출을 병행함                     |
@@ -45,7 +45,7 @@
 | 거래 API               | `Partial` | `POST /api/transactions`, `PUT/DELETE /api/transactions/[id]`, `GET /api/transactions/options` 구현     | `GET /api/transactions` 목록 조회와 개별 조회 API는 없음                     |
 | 카테고리               | `Partial` | 계층형 카테고리 모델과 `GET /api/categories` flat/grouped 조회 구현                                     | 카테고리 생성/수정/삭제 API와 관리 UI는 없음                                 |
 | 반복 템플릿            | `Partial` | Prisma 모델, repository, seed, `GET /api/templates` 조회 구현                                           | 템플릿 CRUD API/UI와 “템플릿 클릭 즉시 거래 생성” UX는 미완성                |
-| 연간 통계              | `Todo`    | `/statistics/yearly` 라우트와 연도 선택 UI placeholder 존재                                             | 실제 연간 집계, 차트, 상세 분석 API/UI 구현 필요                             |
+| 연간 통계              | `Todo`    | 현재 전용 라우트와 화면 없음                                                                             | 실제 연간 집계, 차트, 상세 분석 API/UI 구현 필요                             |
 | 차트                   | `Partial` | 수입/지출 차트, 카테고리 breakdown, 자산 pie/line chart 컴포넌트 존재                                   | 연간/기간별 통계 차트와 export 기능은 없음                                   |
 | 자산 월별 현황         | `Done`    | `/asset/monthly`에서 월별 스냅샷 기반 총자산, 전월 대비, 보유 목록, 리스크 분포 표시                    | 스냅샷 데이터가 없으면 화면이 비어 보일 수 있어 빈 상태 검증 필요            |
 | 자산 포트폴리오        | `Done`    | `/asset/portfolio`에서 리스크/자산군 기반 포트폴리오 분석 표시                                          | 리밸런싱 목표나 권장 비중 같은 정책 기능은 없음                              |
@@ -65,7 +65,7 @@
 - `/summary/monthly/detail`과 추천 로직 일부는 `src/lib/mock-data.ts`의 `fetchDashboardData` 경유로 데이터를 가져옵니다. 실제 DB/API 경로와 mock 경로의 경계가 명확해야 합니다.
 - `GET /api/transactions` 목록 조회가 없어 거래 상세 화면과 외부 클라이언트에서 월별/기간별 거래 목록을 직접 조회하기 어렵습니다.
 - 카테고리와 반복 템플릿은 조회 중심으로 구현되어 있고, 사용자 관리 UI와 생성/수정/삭제 API가 부족합니다.
-- `/statistics/yearly`는 화면 placeholder만 있으며 실제 연간 통계 기능은 구현되지 않았습니다.
+- 연간 통계 전용 화면은 현재 제공하지 않으며, 실제 기능 구현 시 라우트와 UI/API 설계가 필요합니다.
 - 자산 가격과 월별 스냅샷은 seed 또는 수동 데이터에 의존합니다. 외부 시세 API, 환율 API, 자동 스냅샷 생성 정책은 없습니다.
 - 자산 거래 삭제 시 보유 수량/평균단가는 재계산되지만, 과거 스냅샷이나 가격 이력과의 정합성 정책은 명확하지 않습니다.
 - 인증, 멀티 유저, 가족 그룹 권한 모델이 없으므로 현재 데이터는 단일 사용자 MVP 전제에 묶여 있습니다.
@@ -139,7 +139,7 @@
 - 상태: 시작 전
 - 상세 문서: 시작 시 `m005-statistics-expansion.md` 생성 예정
 - Goal:
-  - [ ] `/statistics/yearly`가 실제 연간 집계 데이터를 표시한다
+  - [ ] 연간 통계 화면이 실제 연간 집계 데이터를 표시한다
   - [ ] 월별 수입/지출 추이 차트를 확인할 수 있다
   - [ ] 카테고리별 연간/기간별 분석을 확인할 수 있다
   - [ ] 기간 선택, 증감률, CSV export 필요 여부가 결정되어 있다
@@ -174,6 +174,8 @@
 
 | 일시             | 범위                     | 명령/방법      | 결과 | 비고                                                                       |
 | ---------------- | ------------------------ | -------------- | ---- | -------------------------------------------------------------------------- |
+| 2026-05-09 21:09 | 연간 통계 라우트 삭제    | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
+| 2026-05-09 21:09 | 연간 통계 라우트 삭제    | `pnpm lint`    | Pass | 라우트 삭제와 네비게이션 링크 제거 검증                                    |
 | 2026-05-09 17:59 | M002 수동 확인           | 브라우저 확인  | Pass | 사용자가 다크 모드/작은 화면 표시가 괜찮음을 확인                          |
 | 2026-05-09 17:52 | M002 자동 테스트         | `pnpm test`    | Pass | Vitest 6 files, 34 tests                                                   |
 | 2026-05-09 17:51 | M002 build               | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 `pnpm build`는 Google Fonts TLS fetch 오류로 실패해 system TLS 옵션으로 재검증 |
