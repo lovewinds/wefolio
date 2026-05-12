@@ -6,9 +6,14 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Download,
+  Layers,
   Loader2,
   Plus,
   Save,
+  Trash2,
+  Upload,
+  Users,
   X,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -58,6 +63,25 @@ interface EditableMonthlyRow extends Omit<
 interface NewHoldingSelection {
   accountId: string;
   assetMasterId: string;
+}
+
+type GroupMode = 'member' | 'assetClass';
+
+interface MonthlyInputGroup {
+  key: string;
+  label: string;
+  rows: EditableMonthlyRow[];
+  totalValue: number;
+  missingCount: number;
+  filledCount: number;
+}
+
+interface LocalMonthlyInputDraft {
+  version: 1;
+  year: number;
+  month: number;
+  savedAt: string;
+  rows: EditableMonthlyRow[];
 }
 
 const numberInputClass =
@@ -196,6 +220,94 @@ function statusClass(status: AssetMonthlyInputStatus | null): string {
     : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
 }
 
+function getLocalDraftKey(year: number, month: number): string {
+  return `asset-monthly-input:${year}-${String(month).padStart(2, '0')}`;
+}
+
+function readLocalDraft(year: number, month: number): LocalMonthlyInputDraft | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(getLocalDraftKey(year, month));
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as LocalMonthlyInputDraft;
+    if (
+      parsed.version !== 1 ||
+      parsed.year !== year ||
+      parsed.month !== month ||
+      !Array.isArray(parsed.rows)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalDraft(year: number, month: number, rows: EditableMonthlyRow[]): string {
+  const savedAt = new Date().toISOString();
+  const payload: LocalMonthlyInputDraft = {
+    version: 1,
+    year,
+    month,
+    savedAt,
+    rows,
+  };
+  window.localStorage.setItem(getLocalDraftKey(year, month), JSON.stringify(payload));
+  return savedAt;
+}
+
+function removeLocalDraft(year: number, month: number) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(getLocalDraftKey(year, month));
+}
+
+function formatSavedAt(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getGroupKey(row: EditableMonthlyRow, groupMode: GroupMode): string {
+  return groupMode === 'member' ? row.memberName : row.assetClass;
+}
+
+function buildGroups(rows: EditableMonthlyRow[], groupMode: GroupMode): MonthlyInputGroup[] {
+  const groups = new Map<string, EditableMonthlyRow[]>();
+  for (const row of rows) {
+    const key = getGroupKey(row, groupMode);
+    const group = groups.get(key);
+    if (group) {
+      group.push(row);
+    } else {
+      groups.set(key, [row]);
+    }
+  }
+
+  return Array.from(groups.entries())
+    .map(([key, groupRows]) => ({
+      key,
+      label: key,
+      rows: groupRows,
+      totalValue: groupRows.reduce((sum, row) => {
+        const value = parseNumberInput(row.totalValueInput);
+        return sum + (value ?? 0);
+      }, 0),
+      missingCount: groupRows.filter(
+        row => (row.prevTotalValueKRW ?? 0) > 0 && row.totalValueInput.trim() === ''
+      ).length,
+      filledCount: groupRows.filter(row => row.totalValueInput.trim() !== '').length,
+    }))
+    .sort((a, b) => b.totalValue - a.totalValue || a.label.localeCompare(b.label, 'ko-KR'));
+}
+
 export function MonthlyAssetInputPanel({
   open,
   year,
@@ -213,6 +325,9 @@ export function MonthlyAssetInputPanel({
     assetMasterId: '',
   });
   const [showNewHoldingRow, setShowNewHoldingRow] = useState(false);
+  const [groupMode, setGroupMode] = useState<GroupMode>('member');
+  const [activeGroupKey, setActiveGroupKey] = useState<string>('all');
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,7 +349,15 @@ export function MonthlyAssetInputPanel({
         ]);
 
         setDraft(draftData);
-        setRows(draftData.rows.map(toEditableRow));
+        const localDraft = readLocalDraft(year, month);
+        if (localDraft) {
+          setRows(localDraft.rows);
+          setLocalDraftSavedAt(localDraft.savedAt);
+          setSuccessMessage('브라우저 임시저장본을 불러왔습니다.');
+        } else {
+          setRows(draftData.rows.map(toEditableRow));
+          setLocalDraftSavedAt(null);
+        }
         setInstitutions(institutionData);
         setAccounts(accountData);
         setAssetMasters(assetMasterData);
@@ -248,19 +371,19 @@ export function MonthlyAssetInputPanel({
     loadDraft();
   }, [open, year, month]);
 
-  const rowGroups = useMemo(() => {
-    const groups = new Map<string, EditableMonthlyRow[]>();
-    for (const row of rows) {
-      const key = `${row.memberName} · ${row.institutionName} · ${row.accountName}`;
-      const group = groups.get(key);
-      if (group) {
-        group.push(row);
-      } else {
-        groups.set(key, [row]);
-      }
+  const rowGroups = useMemo(() => buildGroups(rows, groupMode), [rows, groupMode]);
+
+  useEffect(() => {
+    if (activeGroupKey === 'all') return;
+    if (!rowGroups.some(group => group.key === activeGroupKey)) {
+      setActiveGroupKey('all');
     }
-    return Array.from(groups.entries());
-  }, [rows]);
+  }, [activeGroupKey, rowGroups]);
+
+  const visibleGroups = useMemo(() => {
+    if (activeGroupKey === 'all') return rowGroups;
+    return rowGroups.filter(group => group.key === activeGroupKey);
+  }, [activeGroupKey, rowGroups]);
 
   const prevTotalValue = draft?.prevTotalValue ?? 0;
   const currentTotalValue = useMemo(
@@ -275,6 +398,7 @@ export function MonthlyAssetInputPanel({
   const missingRows = rows.filter(
     row => (row.prevTotalValueKRW ?? 0) > 0 && row.totalValueInput.trim() === ''
   );
+  const filledRowCount = rows.filter(row => row.totalValueInput.trim() !== '').length;
 
   const updateRow = (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => {
     setRows(prev =>
@@ -351,46 +475,74 @@ export function MonthlyAssetInputPanel({
       institutions.find(item => item.id === account.institutionId)?.name ?? '기타';
     const inputType = getInputType(assetMaster.assetClass, account.accountType);
     const rowKey = `new-${newHolding.accountId}-${newHolding.assetMasterId}-${Date.now()}`;
+    const newRow: EditableMonthlyRow = {
+      rowKey,
+      holdingId: null,
+      accountId: account.id,
+      assetMasterId: assetMaster.id,
+      currentSnapshotId: null,
+      date: draft.date,
+      assetName: assetMaster.name,
+      assetClass: assetMaster.assetClass,
+      subClass: null,
+      riskLevel: assetMaster.riskLevel ?? '',
+      currency: assetMaster.currency,
+      memberName: account.memberName,
+      accountName: account.name,
+      accountType: account.accountType,
+      institutionName,
+      inputType,
+      prevQuantity: null,
+      prevPriceOriginal: null,
+      prevExchangeRate: null,
+      prevPriceKRW: null,
+      prevTotalValueKRW: null,
+      quantityInput: inputType === 'value' ? '1' : '',
+      priceOriginalInput: '',
+      exchangeRateInput: '',
+      priceKRWInput: '',
+      totalValueInput: '',
+      isCurrentMissing: false,
+      isExpanded: inputType === 'quantity',
+      isNew: true,
+    };
 
-    setRows(prev => [
-      ...prev,
-      {
-        rowKey,
-        holdingId: null,
-        accountId: account.id,
-        assetMasterId: assetMaster.id,
-        currentSnapshotId: null,
-        date: draft.date,
-        assetName: assetMaster.name,
-        assetClass: assetMaster.assetClass,
-        subClass: null,
-        riskLevel: assetMaster.riskLevel ?? '',
-        currency: assetMaster.currency,
-        memberName: account.memberName,
-        accountName: account.name,
-        accountType: account.accountType,
-        institutionName,
-        inputType,
-        prevQuantity: null,
-        prevPriceOriginal: null,
-        prevExchangeRate: null,
-        prevPriceKRW: null,
-        prevTotalValueKRW: null,
-        quantityInput: inputType === 'value' ? '1' : '',
-        priceOriginalInput: '',
-        exchangeRateInput: '',
-        priceKRWInput: '',
-        totalValueInput: '',
-        isCurrentMissing: false,
-        isExpanded: inputType === 'quantity',
-        isNew: true,
-      },
-    ]);
+    setRows(prev => [...prev, newRow]);
+    setActiveGroupKey(getGroupKey(newRow, groupMode));
     setNewHolding({ accountId: '', assetMasterId: '' });
     setShowNewHoldingRow(false);
   };
 
-  const handleSave = async () => {
+  const handleSaveLocalDraft = () => {
+    if (typeof window === 'undefined') return;
+    const savedAt = writeLocalDraft(year, month, rows);
+    setLocalDraftSavedAt(savedAt);
+    setSuccessMessage('임시 저장되었습니다.');
+    setError(null);
+  };
+
+  const handleLoadLocalDraft = () => {
+    const localDraft = readLocalDraft(year, month);
+    if (!localDraft) {
+      setLocalDraftSavedAt(null);
+      setError('불러올 임시저장본이 없습니다.');
+      return;
+    }
+
+    setRows(localDraft.rows);
+    setLocalDraftSavedAt(localDraft.savedAt);
+    setSuccessMessage('브라우저 임시저장본을 불러왔습니다.');
+    setError(null);
+  };
+
+  const handleDeleteLocalDraft = () => {
+    removeLocalDraft(year, month);
+    setLocalDraftSavedAt(null);
+    setSuccessMessage('임시저장본을 삭제했습니다.');
+    setError(null);
+  };
+
+  const handleUpload = async () => {
     if (!draft) return;
     if (missingRows.length > 0) {
       alert(
@@ -416,10 +568,12 @@ export function MonthlyAssetInputPanel({
       });
       setDraft(savedDraft);
       setRows(savedDraft.rows.map(toEditableRow));
-      setSuccessMessage('저장되었습니다.');
+      removeLocalDraft(year, month);
+      setLocalDraftSavedAt(null);
+      setSuccessMessage('업로드되었습니다.');
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '저장에 실패했습니다.');
+      setError(err instanceof Error ? err.message : '업로드에 실패했습니다.');
     } finally {
       setIsSaving(false);
     }
@@ -440,15 +594,42 @@ export function MonthlyAssetInputPanel({
                 {draft?.mode === 'edit' ? '기존 입력 수정' : '이번 달 자산 입력'}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={handleSaveLocalDraft}
+                disabled={isLoading || rows.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <Save size={16} />
+                임시 저장
+              </button>
+              <button
+                type="button"
+                onClick={handleLoadLocalDraft}
+                disabled={isLoading || !localDraftSavedAt}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <Download size={16} />
+                불러오기
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteLocalDraft}
+                disabled={isLoading || !localDraftSavedAt}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                title="임시저장 삭제"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={handleUpload}
                 disabled={isLoading || isSaving || rows.length === 0}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
-                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                전체 저장
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                업로드
               </button>
               <button
                 type="button"
@@ -470,6 +651,12 @@ export function MonthlyAssetInputPanel({
               tone={deltaAmount > 0 ? 'positive' : deltaAmount < 0 ? 'negative' : 'neutral'}
             />
           </div>
+
+          {localDraftSavedAt && (
+            <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              임시 저장 {formatSavedAt(localDraftSavedAt)}
+            </p>
+          )}
 
           {(error || successMessage || missingRows.length > 0) && (
             <div className="mt-3 space-y-2">
@@ -505,56 +692,128 @@ export function MonthlyAssetInputPanel({
               입력할 자산이 없습니다.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
-                  <thead className="bg-zinc-100 text-left text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                    <tr>
-                      <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                        자산명
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                        전월
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                        이번 달
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                        증감
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                        메모/상태
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rowGroups.map(([groupName, groupRows]) => (
-                      <Fragment key={groupName}>
-                        <tr className="bg-zinc-50 text-xs font-semibold text-zinc-500 dark:bg-zinc-900/80 dark:text-zinc-400">
-                          <td
-                            colSpan={5}
-                            className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                          >
-                            {groupName}
-                          </td>
-                        </tr>
-                        {groupRows.map(row => (
-                          <MonthlyInputTableRows
-                            key={row.rowKey}
-                            row={row}
-                            onUpdate={updateRow}
-                            onRemove={() => {
-                              if (!row.isNew) return;
-                              setRows(prev => prev.filter(item => item.rowKey !== row.rowKey));
-                            }}
-                          />
-                        ))}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
+            <>
+              <div className="mb-3 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm font-medium dark:border-zinc-800 dark:bg-zinc-900">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupMode('member');
+                        setActiveGroupKey('all');
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+                        groupMode === 'member'
+                          ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
+                      }`}
+                    >
+                      <Users size={15} />
+                      소유자별
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupMode('assetClass');
+                        setActiveGroupKey('all');
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
+                        groupMode === 'assetClass'
+                          ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
+                      }`}
+                    >
+                      <Layers size={15} />
+                      자산유형별
+                    </button>
+                  </div>
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {rows.length}개 중 {filledRowCount}개 입력
+                  </div>
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  <GroupButton
+                    label="전체"
+                    count={rows.length}
+                    filledCount={filledRowCount}
+                    totalValue={currentTotalValue}
+                    missingCount={missingRows.length}
+                    active={activeGroupKey === 'all'}
+                    onClick={() => setActiveGroupKey('all')}
+                  />
+                  {rowGroups.map(group => (
+                    <GroupButton
+                      key={group.key}
+                      label={group.label}
+                      count={group.rows.length}
+                      filledCount={group.filledCount}
+                      totalValue={group.totalValue}
+                      missingCount={group.missingCount}
+                      active={activeGroupKey === group.key}
+                      onClick={() => setActiveGroupKey(group.key)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+
+              <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
+                    <thead className="bg-zinc-100 text-left text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                      <tr>
+                        <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+                          자산명
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
+                          전월
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
+                          이번 달
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
+                          증감
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+                          메모/상태
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleGroups.map(group => (
+                        <Fragment key={group.key}>
+                          <tr className="bg-zinc-50 text-xs font-semibold text-zinc-500 dark:bg-zinc-900/80 dark:text-zinc-400">
+                            <td
+                              colSpan={5}
+                              className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span>{group.label}</span>
+                                <span>
+                                  {group.filledCount}/{group.rows.length} ·{' '}
+                                  {formatAmount(group.totalValue)}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          {group.rows.map(row => (
+                            <MonthlyInputTableRows
+                              key={row.rowKey}
+                              row={row}
+                              onUpdate={updateRow}
+                              onRemove={() => {
+                                if (!row.isNew) return;
+                                setRows(prev => prev.filter(item => item.rowKey !== row.rowKey));
+                              }}
+                            />
+                          ))}
+                        </Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
 
           {draft && (
@@ -652,6 +911,51 @@ function SummaryValue({
       <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
       <p className={`mt-1 text-base font-semibold ${toneClass}`}>{value}</p>
     </div>
+  );
+}
+
+function GroupButton({
+  label,
+  count,
+  filledCount,
+  totalValue,
+  missingCount,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  filledCount: number;
+  totalValue: number;
+  missingCount: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-w-[156px] rounded-lg border px-3 py-2 text-left transition ${
+        active
+          ? 'border-blue-500 bg-blue-50 text-blue-900 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-100'
+          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-sm font-semibold">{label}</span>
+        {missingCount > 0 && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+            {missingCount}
+          </span>
+        )}
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <span>
+          {filledCount}/{count}
+        </span>
+        <span className="font-medium">{formatAmount(totalValue)}</span>
+      </div>
+    </button>
   );
 }
 
