@@ -15,13 +15,13 @@ import type {
 } from './types';
 
 const baseInputClass =
-  'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-7 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const miniInputClass =
-  'h-6 w-full rounded border border-zinc-300 bg-white px-1.5 text-[11px] text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200';
+  'h-6 w-full rounded border border-hairline bg-surface px-1.5 text-[11px] text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none';
 
 const miniSelectClass =
-  'h-6 w-full rounded border border-zinc-300 bg-white px-1 text-[11px] text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200';
+  'h-6 w-full rounded border border-hairline bg-surface px-1 text-[11px] text-ink-muted focus:border-accent focus:outline-none';
 
 const CREATE_NEW = '__create_new__';
 
@@ -243,29 +243,29 @@ export const HoldingTransactionInputRowComponent = forwardRef<
     const getRowBgClass = () => {
       switch (row.status) {
         case 'saving':
-          return 'bg-blue-50/50 dark:bg-blue-900/20';
+          return 'bg-accent/5';
         case 'saved':
-          return 'bg-emerald-50/50 dark:bg-emerald-900/20';
+          return 'bg-gain/5';
         case 'error':
-          return 'bg-rose-50/50 dark:bg-rose-900/20';
+          return 'bg-loss/5';
         case 'editing':
-          return 'bg-amber-50/30 dark:bg-amber-900/10';
+          return 'bg-goal/5';
         default:
-          return 'bg-zinc-50/50 dark:bg-zinc-800/30';
+          return 'bg-canvas';
       }
     };
 
     const renderSaveButton = () => {
       if (row.status === 'saving') {
         return (
-          <span className="inline-flex h-7 w-7 items-center justify-center text-blue-500">
+          <span className="inline-flex h-7 w-7 items-center justify-center text-accent">
             <Loader2 size={14} className="animate-spin" />
           </span>
         );
       }
       if (row.status === 'saved') {
         return (
-          <span className="inline-flex h-7 w-7 items-center justify-center text-emerald-500">
+          <span className="inline-flex h-7 w-7 items-center justify-center text-gain">
             <Check size={14} />
           </span>
         );
@@ -276,9 +276,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
           onClick={() => onSave(rowIndex)}
           disabled={!canSave}
           className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-            canSave
-              ? 'text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/50'
-              : 'text-zinc-300 dark:text-zinc-600'
+            canSave ? 'text-accent hover:bg-accent/10' : 'text-ink-faint'
           }`}
           title={canSave ? '저장' : '계좌, 종목, 수량, 원화가격을 입력하세요'}
         >
@@ -287,17 +285,15 @@ export const HoldingTransactionInputRowComponent = forwardRef<
       );
     };
 
-    const td = `border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`;
+    const td = `border-r border-hairline px-2 ${rowPadding}`;
 
     const inlineActionBtnClass =
       'inline-flex h-5 w-5 items-center justify-center rounded text-[10px] transition-colors';
 
     return (
-      <tr className={`border-b border-zinc-200 dark:border-zinc-700 ${getRowBgClass()}`}>
+      <tr className={`border-b border-hairline ${getRowBgClass()}`}>
         {/* Save button */}
-        <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
-        >
+        <td className={`border-r border-hairline px-2 ${rowPadding} text-center`}>
           {renderSaveButton()}
         </td>
 
@@ -315,9 +311,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
         </td>
 
         {/* Member (read-only) */}
-        <td className={`${td} text-xs text-zinc-500 dark:text-zinc-400`}>
-          {selectedMemberName ?? '-'}
-        </td>
+        <td className={`${td} text-xs text-ink-subtle`}>{selectedMemberName ?? '-'}</td>
 
         {/* Institution */}
         <td className={td}>
@@ -344,7 +338,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                   type="button"
                   onClick={handleCreateInstitution}
                   disabled={isCreating || !newInst.name.trim()}
-                  className={`${inlineActionBtnClass} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50`}
+                  className={`${inlineActionBtnClass} bg-accent text-on-accent hover:bg-accent-press disabled:opacity-50`}
                 >
                   {isCreating ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -355,7 +349,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                 <button
                   type="button"
                   onClick={() => setCreatingInstitution(false)}
-                  className={`${inlineActionBtnClass} bg-zinc-300 text-zinc-600 hover:bg-zinc-400 dark:bg-zinc-600 dark:text-zinc-300`}
+                  className={`${inlineActionBtnClass} bg-surface-soft text-ink-muted hover:bg-hairline`}
                 >
                   <X size={10} />
                 </button>
@@ -425,7 +419,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                   disabled={
                     isCreating || !newAcct.name.trim() || !row.institutionId || !newAcct.memberId
                   }
-                  className={`${inlineActionBtnClass} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50`}
+                  className={`${inlineActionBtnClass} bg-accent text-on-accent hover:bg-accent-press disabled:opacity-50`}
                 >
                   {isCreating ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -436,7 +430,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                 <button
                   type="button"
                   onClick={() => setCreatingAccount(false)}
-                  className={`${inlineActionBtnClass} bg-zinc-300 text-zinc-600 hover:bg-zinc-400 dark:bg-zinc-600 dark:text-zinc-300`}
+                  className={`${inlineActionBtnClass} bg-surface-soft text-ink-muted hover:bg-hairline`}
                 >
                   <X size={10} />
                 </button>
@@ -502,7 +496,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                   type="button"
                   onClick={handleCreateAssetMaster}
                   disabled={isCreating || !newAsset.name.trim()}
-                  className={`${inlineActionBtnClass} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50`}
+                  className={`${inlineActionBtnClass} bg-accent text-on-accent hover:bg-accent-press disabled:opacity-50`}
                 >
                   {isCreating ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -513,7 +507,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
                 <button
                   type="button"
                   onClick={() => setCreatingAssetMaster(false)}
-                  className={`${inlineActionBtnClass} bg-zinc-300 text-zinc-600 hover:bg-zinc-400 dark:bg-zinc-600 dark:text-zinc-300`}
+                  className={`${inlineActionBtnClass} bg-surface-soft text-ink-muted hover:bg-hairline`}
                 >
                   <X size={10} />
                 </button>
@@ -623,7 +617,7 @@ export const HoldingTransactionInputRowComponent = forwardRef<
 
         {/* Total KRW (auto-calculated) */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} text-right text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400`}
+          className={`border-r border-hairline px-2 ${rowPadding} text-right text-xs text-ink-subtle`}
         >
           {(() => {
             const q = parseFloat(row.quantity);

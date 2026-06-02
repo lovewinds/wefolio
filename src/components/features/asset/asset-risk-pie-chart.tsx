@@ -76,8 +76,8 @@ export function AssetRiskPieChart({
   return (
     <Card className="flex h-full flex-col">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">자산 구성 비율</h3>
-        <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+        <h3 className="text-lg font-semibold text-ink">자산 구성 비율</h3>
+        <div className="flex rounded-full bg-surface-soft p-1 text-sm font-medium text-ink-muted">
           {[{ value: null, label: '전체' }, ...members.map(m => ({ value: m, label: m }))].map(
             option => {
               const isActive = option.value === selectedMember;
@@ -87,8 +87,8 @@ export function AssetRiskPieChart({
                   type="button"
                   className={`rounded-full px-3 py-1.5 transition ${
                     isActive
-                      ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                      : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                      ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                      : 'text-ink-subtle hover:text-ink'
                   }`}
                   onClick={() => onMemberChange(option.value)}
                 >
@@ -113,7 +113,7 @@ export function AssetRiskPieChart({
             borderWidth={0}
             enableArcLinkLabels={true}
             arcLinkLabelsSkipAngle={12}
-            arcLinkLabelsTextColor="#52525b"
+            arcLinkLabelsTextColor="var(--ink-subtle)"
             arcLinkLabelsThickness={1.5}
             arcLinkLabelsDiagonalLength={10}
             arcLinkLabelsStraightLength={8}
@@ -123,14 +123,14 @@ export function AssetRiskPieChart({
             enableArcLabels={false}
             onClick={datum => handleSegmentClick(datum.data.parentLabel)}
             tooltip={({ datum }) => (
-              <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
+              <div className="rounded-md bg-surface px-3 py-2 shadow-lg">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: datum.color }} />
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  <span className="text-sm font-medium text-ink-muted">
                     {datum.data.parentLabel} &gt; {datum.label}
                   </span>
                 </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                <div className="mt-1 text-sm text-ink-muted">
                   {formatAmount(datum.value)} (
                   {totalValue > 0 ? ((datum.value / totalValue) * 100).toFixed(1) : '0'}
                   %)
@@ -167,14 +167,14 @@ export function AssetRiskPieChart({
         {data.map(group => (
           <button
             key={group.riskLevel}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-surface-soft"
             onClick={() => handleSegmentClick(group.riskLevel)}
           >
             <div
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: RISK_LEVEL_COLORS[group.riskLevel] ?? '#6b7280' }}
             />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="text-xs text-ink-muted">
               {group.riskLevel} {group.percentage}%
             </span>
           </button>
@@ -182,7 +182,7 @@ export function AssetRiskPieChart({
       </div>
 
       {/* Total */}
-      <div className="mt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="mt-2 text-center text-sm text-ink-subtle">
         총 자산: {formatAmount(totalValue)}
       </div>
     </Card>

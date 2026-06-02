@@ -74,11 +74,9 @@ export function ActiveFieldInput({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <label className="text-lg font-medium text-zinc-700 dark:text-zinc-300">
+      <label className="text-lg font-medium text-ink-muted">
         {STEP_LABELS[field]}
-        {isOptional && (
-          <span className="ml-2 text-sm font-normal text-zinc-400 dark:text-zinc-500">(선택)</span>
-        )}
+        {isOptional && <span className="ml-2 text-sm font-normal text-ink-subtle">(선택)</span>}
       </label>
 
       <div className="w-full max-w-md">
@@ -101,7 +99,7 @@ export function ActiveFieldInput({
           <button
             type="button"
             onClick={onSkip}
-            className="text-sm text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+            className="text-sm text-ink-subtle hover:text-ink-muted"
           >
             건너뛰기
           </button>
@@ -110,7 +108,7 @@ export function ActiveFieldInput({
           <button
             type="button"
             onClick={onSave}
-            className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            className="rounded-lg bg-accent px-6 py-2 text-sm font-medium text-on-accent hover:bg-accent-press"
           >
             저장
           </button>
@@ -206,7 +204,7 @@ function FieldInput({
           value={value}
           onChange={e => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-lg text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+          className="w-full rounded-lg border border-hairline bg-surface px-4 py-3 text-lg text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
       );
 
@@ -404,19 +402,17 @@ const DescriptionInput = ({
         onKeyDown={handleInputKeyDown}
         onFocus={() => setShowSuggestions(true)}
         placeholder="내역 입력..."
-        className={`w-full rounded-lg border px-4 py-3 text-lg text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 dark:text-zinc-100 dark:placeholder:text-zinc-500 ${
+        className={`w-full rounded-lg border px-4 py-3 text-lg text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 ${
           showError
-            ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500 dark:border-rose-600 dark:bg-rose-950/20 dark:focus:border-rose-500 dark:focus:ring-rose-500'
-            : 'border-zinc-300 bg-white focus:border-blue-500 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:focus:border-blue-400 dark:focus:ring-blue-400'
+            ? 'loss-soft border-loss focus:border-loss focus:ring-loss'
+            : 'border-hairline bg-surface focus:border-accent focus:ring-accent'
         }`}
       />
 
-      {showError && (
-        <p className="mt-1.5 text-sm text-rose-500 dark:text-rose-400">내역을 입력해 주세요</p>
-      )}
+      {showError && <p className="mt-1.5 text-sm text-loss">내역을 입력해 주세요</p>}
 
       {visible && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-hairline bg-surface shadow-lg">
           {recommendations.map((item, idx) => (
             <button
               key={item.id}
@@ -426,24 +422,20 @@ const DescriptionInput = ({
               type="button"
               onClick={() => handleSelect(item)}
               onKeyDown={e => handleSuggestionKeyDown(e, idx)}
-              className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none dark:hover:bg-zinc-700/60 dark:focus:bg-zinc-700/60"
+              className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left hover:bg-canvas focus:bg-canvas focus:outline-none"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  {item.label}
-                </span>
+                <span className="truncate text-sm font-medium text-ink">{item.label}</span>
                 {item.count && item.count > 1 && (
-                  <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
-                    최근 {item.count}회
-                  </span>
+                  <span className="shrink-0 text-xs text-ink-subtle">최근 {item.count}회</span>
                 )}
                 {item.source === 'template' && (
-                  <span className="shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                  <span className="shrink-0 rounded-full accent-soft px-1.5 py-0.5 text-[10px] font-medium text-accent">
                     고정
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+              <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
                 <span>{item.categoryName}</span>
                 {item.paymentMethod && (
                   <>
@@ -514,11 +506,9 @@ const AmountInput = ({ value, amountHint, onChange, onConfirm, ref }: AmountInpu
         }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 pr-10 text-lg text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+        className="w-full rounded-lg border border-hairline bg-surface px-4 py-3 pr-10 text-lg text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       />
-      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500">
-        원
-      </span>
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-subtle">원</span>
     </div>
   );
 };
@@ -558,7 +548,7 @@ const TypeToggle = ({
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
+      className="flex gap-2 rounded-lg border border-hairline bg-surface-soft p-1 focus:outline-none focus:ring-2 focus:ring-accent"
     >
       <button
         type="button"
@@ -567,9 +557,7 @@ const TypeToggle = ({
           onConfirm();
         }}
         className={`flex-1 rounded-md px-6 py-3 text-lg font-medium ${
-          value === 'expense'
-            ? 'bg-rose-500 text-white'
-            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+          value === 'expense' ? 'bg-loss text-on-accent' : 'text-ink-subtle hover:text-ink-muted'
         }`}
       >
         지출
@@ -581,9 +569,7 @@ const TypeToggle = ({
           onConfirm();
         }}
         className={`flex-1 rounded-md px-6 py-3 text-lg font-medium ${
-          value === 'income'
-            ? 'bg-emerald-500 text-white'
-            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+          value === 'income' ? 'bg-gain text-on-accent' : 'text-ink-subtle hover:text-ink-muted'
         }`}
       >
         수입

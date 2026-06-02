@@ -25,17 +25,15 @@ export function SummaryCardGroup({
     balance < 0
       ? {
           label: '초과 지출',
-          container:
-            'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/70 dark:bg-rose-950/35 dark:text-rose-100',
-          amount: 'text-rose-700 dark:text-rose-300',
-          sub: 'text-rose-700/70 dark:text-rose-300/70',
+          container: 'loss-soft border-hairline text-ink',
+          amount: 'text-loss',
+          sub: 'text-loss',
         }
       : {
           label: balance === 0 ? '수지 균형' : '월간 잔액',
-          container:
-            'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-900/70 dark:bg-blue-950/35 dark:text-blue-100',
-          amount: 'text-blue-700 dark:text-blue-300',
-          sub: 'text-blue-700/70 dark:text-blue-300/70',
+          container: 'accent-soft border-hairline text-ink',
+          amount: 'text-accent',
+          sub: 'text-accent',
         };
 
   if (inline) {
@@ -60,10 +58,12 @@ export function SummaryCardGroup({
 
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <div className={`min-w-0 rounded-xl border p-5 shadow-sm sm:p-6 ${balanceTone.container}`}>
+      <div
+        className={`min-w-0 rounded-xl border p-5 shadow-[var(--shadow-1)] sm:p-6 ${balanceTone.container}`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold">{balanceTone.label}</p>
-          <span className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-300">
+          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-ink-muted">
             수입 - 지출
           </span>
         </div>
@@ -111,20 +111,22 @@ function MetricCard({
   const toneClass =
     tone === 'income'
       ? {
-          container: 'border-emerald-200 bg-white dark:border-emerald-900/70 dark:bg-zinc-800',
-          label: 'text-emerald-700 dark:text-emerald-300',
-          amount: 'text-emerald-700 dark:text-emerald-300',
-          bar: 'bg-emerald-500',
+          container: 'border-hairline bg-surface',
+          label: 'text-gain',
+          amount: 'text-gain',
+          bar: 'bg-gain',
         }
       : {
-          container: 'border-rose-200 bg-white dark:border-rose-900/70 dark:bg-zinc-800',
-          label: 'text-rose-700 dark:text-rose-300',
-          amount: 'text-rose-700 dark:text-rose-300',
-          bar: 'bg-rose-500',
+          container: 'border-hairline bg-surface',
+          label: 'text-loss',
+          amount: 'text-loss',
+          bar: 'bg-loss',
         };
 
   return (
-    <div className={`min-w-0 rounded-xl border p-4 shadow-sm ${toneClass.container}`}>
+    <div
+      className={`min-w-0 rounded-xl border p-4 shadow-[var(--shadow-1)] ${toneClass.container}`}
+    >
       {!simplify && <p className={`text-sm font-semibold ${toneClass.label}`}>{label}</p>}
       <p
         className={`mt-2 min-w-0 break-words text-2xl font-semibold tracking-normal [overflow-wrap:anywhere] ${toneClass.amount}`}
@@ -133,11 +135,11 @@ function MetricCard({
       </p>
       {!simplify && (
         <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center justify-between text-xs text-ink-subtle">
             <span>현금흐름 비중</span>
             <span>{Math.round(ratio)}%</span>
           </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-soft">
             <div
               className={`h-full rounded-full ${toneClass.bar}`}
               style={{ width: `${ratio}%` }}

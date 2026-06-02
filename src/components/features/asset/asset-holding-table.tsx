@@ -63,7 +63,7 @@ const accountTypeFilter: FilterFn<HoldingRow> = (row, columnId, filterValue) => 
 };
 
 const baseInputClass =
-  'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-7 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 function renderColumnFilter(column: Column<HoldingRow, unknown>) {
   const meta = column.columnDef.meta as ColumnMeta | undefined;
@@ -250,14 +250,10 @@ export function AssetHoldingTable({
         accessorFn: row => (row as HoldingRowWithDelta).deltaAmount ?? null,
         cell: ({ getValue }) => {
           const delta = getValue<number | null>();
-          if (delta === null) return <span className="text-zinc-300 dark:text-zinc-600">-</span>;
+          if (delta === null) return <span className="text-ink-faint">-</span>;
           const isPositive = delta > 0;
           const isZero = delta === 0;
-          const colorClass = isZero
-            ? 'text-zinc-500'
-            : isPositive
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400';
+          const colorClass = isZero ? 'text-ink-subtle' : isPositive ? 'text-gain' : 'text-loss';
           const sign = isPositive ? '+' : '';
           return (
             <span className={`text-xs font-medium ${colorClass}`}>
@@ -301,8 +297,8 @@ export function AssetHoldingTable({
   return (
     <Card className="mt-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">보유 자산 상세</h3>
-        <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+        <h3 className="text-lg font-semibold text-ink">보유 자산 상세</h3>
+        <div className="flex rounded-full bg-surface-soft p-1 text-sm font-medium text-ink-muted">
           {[{ value: null, label: '전체' }, ...members.map(m => ({ value: m, label: m }))].map(
             option => {
               const isActive = option.value === selectedMember;
@@ -312,8 +308,8 @@ export function AssetHoldingTable({
                   type="button"
                   className={`rounded-full px-3 py-1.5 transition ${
                     isActive
-                      ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                      : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                      ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                      : 'text-ink-subtle hover:text-ink'
                   }`}
                   onClick={() => onMemberChange(option.value)}
                 >
@@ -324,10 +320,10 @@ export function AssetHoldingTable({
           )}
         </div>
       </div>
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
         <div className="overflow-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-10 bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            <thead className="sticky top-0 z-10 bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => {
@@ -336,7 +332,7 @@ export function AssetHoldingTable({
                     return (
                       <th
                         key={header.id}
-                        className={`border-b border-r border-zinc-200 px-3 py-2 align-top dark:border-zinc-700 ${alignClass}`}
+                        className={`border-b border-r border-hairline px-3 py-2 align-top ${alignClass}`}
                       >
                         <button
                           type="button"
@@ -353,7 +349,7 @@ export function AssetHoldingTable({
                               <ArrowDown size={14} />
                             )
                           ) : (
-                            <ChevronsUpDown size={14} className="text-zinc-300" />
+                            <ChevronsUpDown size={14} className="text-ink-faint" />
                           )}
                         </button>
                         <div className="mt-2">{renderColumnFilter(header.column)}</div>
@@ -368,7 +364,7 @@ export function AssetHoldingTable({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                    className="px-3 py-8 text-center text-sm text-ink-subtle"
                   >
                     조건에 맞는 자산이 없습니다.
                   </td>
@@ -377,7 +373,7 @@ export function AssetHoldingTable({
                 table.getRowModel().rows.map(row => (
                   <tr
                     key={row.id}
-                    className="border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+                    className="border-b border-hairline transition-colors hover:bg-canvas"
                   >
                     {row.getVisibleCells().map(cell => {
                       const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
@@ -385,7 +381,7 @@ export function AssetHoldingTable({
                       return (
                         <td
                           key={cell.id}
-                          className={`border-r border-zinc-200 px-3 py-2 text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 ${alignClass}`}
+                          className={`border-r border-hairline px-3 py-2 text-ink-muted ${alignClass}`}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -399,27 +395,17 @@ export function AssetHoldingTable({
         </div>
 
         {/* Footer: total */}
-        <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-200 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <div className="flex items-center justify-between border-t border-hairline bg-surface-soft px-4 py-3 text-xs text-ink-muted">
           <span>
-            종목 수{' '}
-            <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-              {filteredRows.length}
-            </span>
-            개
+            종목 수 <span className="font-semibold text-ink">{filteredRows.length}</span>개
             {filteredRows.length !== holdings.length && (
-              <span className="text-zinc-400 dark:text-zinc-500"> / {holdings.length}</span>
+              <span className="text-ink-subtle"> / {holdings.length}</span>
             )}
           </span>
           <span>
-            합계{' '}
-            <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-              {formatAmount(filteredTotal)}
-            </span>
+            합계 <span className="font-semibold text-ink">{formatAmount(filteredTotal)}</span>
             {filteredRows.length !== holdings.length && (
-              <span className="text-zinc-400 dark:text-zinc-500">
-                {' '}
-                / {formatAmount(totalValue)}
-              </span>
+              <span className="text-ink-subtle"> / {formatAmount(totalValue)}</span>
             )}
           </span>
         </div>

@@ -58,14 +58,14 @@ export function DrillDownPieChart({
       <div className="mb-4 flex items-center gap-1 text-sm">
         {breadcrumb.map((crumb, idx) => (
           <span key={crumb.index} className="flex items-center gap-1">
-            {idx > 0 && <ChevronRight size={14} className="text-zinc-400" />}
+            {idx > 0 && <ChevronRight size={14} className="text-ink-faint" />}
             <button
               type="button"
               onClick={() => onBreadcrumbClick(crumb.index)}
               className={`rounded px-1.5 py-0.5 transition-colors ${
                 idx === breadcrumb.length - 1
-                  ? 'font-semibold text-zinc-900 dark:text-zinc-50'
-                  : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-zinc-800'
+                  ? 'font-semibold text-ink'
+                  : 'text-accent hover:accent-soft'
               }`}
             >
               {crumb.label}
@@ -88,7 +88,7 @@ export function DrillDownPieChart({
             borderWidth={0}
             enableArcLinkLabels={true}
             arcLinkLabelsSkipAngle={10}
-            arcLinkLabelsTextColor="#52525b"
+            arcLinkLabelsTextColor="var(--ink-subtle)"
             arcLinkLabelsThickness={1.5}
             arcLinkLabelsDiagonalLength={10}
             arcLinkLabelsStraightLength={8}
@@ -105,20 +105,18 @@ export function DrillDownPieChart({
               }
             }}
             tooltip={({ datum }) => (
-              <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
+              <div className="rounded-md bg-surface px-3 py-2 shadow-lg">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: datum.color }} />
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                    {datum.label}
-                  </span>
+                  <span className="text-sm font-medium text-ink-muted">{datum.label}</span>
                 </div>
-                <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                <div className="mt-1 text-sm text-ink-muted">
                   {formatAmount(datum.value)} (
                   {totalValue > 0 ? ((datum.value / totalValue) * 100).toFixed(1) : '0'}
                   %)
                 </div>
                 {datum.data.hasChildren && (
-                  <p className="mt-1 text-xs text-blue-500">클릭하여 상세 보기</p>
+                  <p className="mt-1 text-xs text-accent">클릭하여 상세 보기</p>
                 )}
               </div>
             )}
@@ -127,7 +125,7 @@ export function DrillDownPieChart({
             }}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+          <div className="flex h-full items-center justify-center text-sm text-ink-faint">
             데이터가 없습니다.
           </div>
         )}
@@ -141,11 +139,11 @@ export function DrillDownPieChart({
             type="button"
             onClick={() => item.hasChildren && onDrillDown(item.id)}
             className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
-              item.hasChildren ? 'cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700' : ''
+              item.hasChildren ? 'cursor-pointer hover:bg-surface-soft' : ''
             }`}
           >
             <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-            <span className="text-zinc-600 dark:text-zinc-400">
+            <span className="text-ink-muted">
               {item.label} {totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : 0}%
             </span>
           </button>

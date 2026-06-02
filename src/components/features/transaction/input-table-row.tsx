@@ -6,7 +6,7 @@ import type { CategoryGroup, TransactionType } from '@/types';
 import type { InputRow, InputTableRowRef } from './types';
 
 const baseInputClass =
-  'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-7 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 interface InputTableRowProps {
   row: InputRow;
@@ -70,29 +70,29 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
     const getRowBgClass = () => {
       switch (row.status) {
         case 'saving':
-          return 'bg-blue-50/50 dark:bg-blue-900/20';
+          return 'accent-soft';
         case 'saved':
-          return 'bg-emerald-50/50 dark:bg-emerald-900/20';
+          return 'gain-soft';
         case 'error':
-          return 'bg-rose-50/50 dark:bg-rose-900/20';
+          return 'loss-soft';
         case 'editing':
-          return 'bg-amber-50/30 dark:bg-amber-900/10';
+          return 'bg-goal/10';
         default:
-          return 'bg-zinc-50/50 dark:bg-zinc-800/30';
+          return 'bg-canvas';
       }
     };
 
     const renderSaveButton = () => {
       if (row.status === 'saving') {
         return (
-          <span className="inline-flex h-7 w-7 items-center justify-center text-blue-500">
+          <span className="inline-flex h-7 w-7 items-center justify-center text-accent">
             <Loader2 size={14} className="animate-spin" />
           </span>
         );
       }
       if (row.status === 'saved') {
         return (
-          <span className="inline-flex h-7 w-7 items-center justify-center text-emerald-500">
+          <span className="inline-flex h-7 w-7 items-center justify-center text-gain">
             <Check size={14} />
           </span>
         );
@@ -103,9 +103,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
           onClick={() => onSave(rowIndex)}
           disabled={!canSave}
           className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-            canSave
-              ? 'text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/50'
-              : 'text-zinc-300 dark:text-zinc-600'
+            canSave ? 'text-accent hover:bg-accent/10' : 'text-ink-faint'
           }`}
           title={canSave ? '저장' : '금액과 카테고리를 입력하세요'}
         >
@@ -115,10 +113,10 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
     };
 
     return (
-      <tr className={`border-b border-zinc-200 dark:border-zinc-700 ${getRowBgClass()}`}>
+      <tr className={`border-b border-hairline ${getRowBgClass()}`}>
         {/* Action column - Save button */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding} text-center`}
           style={{ width: columnWidths.action }}
         >
           {renderSaveButton()}
@@ -126,7 +124,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* Date */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding}`}
           style={{ width: columnWidths.date }}
         >
           <input
@@ -142,7 +140,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* Category */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding}`}
           style={{ width: columnWidths.category }}
         >
           <select
@@ -169,7 +167,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* Type - readonly display */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} text-zinc-500 dark:border-zinc-700 dark:text-zinc-400`}
+          className={`border-r border-hairline px-2 ${rowPadding} text-ink-subtle`}
           style={{ width: columnWidths.type }}
         >
           <span className="text-xs">{transactionType === 'income' ? '수입' : '지출'}</span>
@@ -177,7 +175,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* Payment Method */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding}`}
           style={{ width: columnWidths.paymentMethod }}
         >
           <select
@@ -199,7 +197,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* User */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding}`}
           style={{ width: columnWidths.user }}
         >
           <select
@@ -237,7 +235,7 @@ export const InputTableRow = forwardRef<InputTableRowRef, InputTableRowProps>(
 
         {/* Description */}
         <td
-          className={`border-r border-zinc-200 px-2 ${rowPadding} dark:border-zinc-700`}
+          className={`border-r border-hairline px-2 ${rowPadding}`}
           style={{ width: columnWidths.description }}
         >
           <input

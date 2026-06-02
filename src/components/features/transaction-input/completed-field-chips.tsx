@@ -77,18 +77,12 @@ export function CompletedFieldChips({
             onClick={() => onChipClick(stepIndex)}
             className={
               isPersisted
-                ? 'inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm text-blue-700 hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:bg-blue-900/40'
-                : 'inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-300'
+                ? 'inline-flex items-center gap-1 rounded-full border border-accent accent-soft px-3 py-1 text-sm text-accent hover:border-accent'
+                : 'inline-flex items-center gap-1 rounded-full border border-hairline bg-surface-soft px-3 py-1 text-sm text-ink-muted hover:border-accent hover:accent-soft hover:text-accent'
             }
           >
             {isPersisted && <PinIcon />}
-            <span
-              className={
-                isPersisted
-                  ? 'text-xs text-blue-400 dark:text-blue-500'
-                  : 'text-xs text-zinc-400 dark:text-zinc-500'
-              }
-            >
+            <span className={isPersisted ? 'text-xs text-accent' : 'text-xs text-ink-subtle'}>
               {STEP_LABELS[field]}
             </span>
             <span>{display}</span>

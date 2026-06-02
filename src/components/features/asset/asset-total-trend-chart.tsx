@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
+import { nivoTheme } from '@/lib/chart-theme';
 import type { AssetTrendEntry } from '@/types';
 
 interface AssetTotalTrendChartProps {
@@ -45,7 +46,7 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
       return [
         {
           id: '총 자산',
-          color: '#3b82f6',
+          color: 'var(--accent)',
           data: data.map(entry => ({
             x: `${entry.year}.${String(entry.month).padStart(2, '0')}`,
             y: entry.totalValue,
@@ -70,15 +71,13 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
   return (
     <Card>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">총 자산 추이</h3>
+        <h3 className="text-lg font-semibold text-ink">총 자산 추이</h3>
         {members.length > 1 && (
           <button
             type="button"
             onClick={() => setShowByMember(!showByMember)}
             className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-              showByMember
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+              showByMember ? 'accent-soft text-accent' : 'bg-surface-soft text-ink-subtle'
             }`}
           >
             {showByMember ? '합산 보기' : '구성원별 분리'}
@@ -104,7 +103,7 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
           pointBorderColor={{ from: 'serieColor' }}
           enableArea={!showByMember}
           areaOpacity={0.1}
-          colors={d => d.color ?? '#3b82f6'}
+          colors={d => d.color ?? 'var(--accent)'}
           axisBottom={{
             tickRotation: data.length > 8 ? -45 : 0,
             legendOffset: 40,
@@ -123,8 +122,8 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
           }}
           enableSlices="x"
           sliceTooltip={({ slice }) => (
-            <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
-              <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-md bg-surface px-3 py-2 shadow-lg">
+              <p className="mb-1 text-xs font-medium text-ink-subtle">
                 {slice.points[0].data.xFormatted}
               </p>
               {slice.points.map(point => (
@@ -133,23 +132,14 @@ export function AssetTotalTrendChart({ data }: AssetTotalTrendChartProps) {
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: point.seriesColor }}
                   />
-                  <span className="text-sm text-zinc-700 dark:text-zinc-200">
+                  <span className="text-sm text-ink-muted">
                     {point.seriesId}: {formatAmount(point.data.y as number)}
                   </span>
                 </div>
               ))}
             </div>
           )}
-          theme={{
-            axis: {
-              ticks: {
-                text: { fill: '#71717a', fontSize: 11 },
-              },
-            },
-            grid: {
-              line: { stroke: '#e4e4e7', strokeWidth: 1 },
-            },
-          }}
+          theme={nivoTheme}
         />
       </div>
     </Card>

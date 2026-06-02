@@ -46,10 +46,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className = '' }: TabsListProps) {
   return (
-    <div
-      className={`inline-flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800 ${className}`}
-      role="tablist"
-    >
+    <div className={`inline-flex rounded-lg bg-surface-soft p-1 ${className}`} role="tablist">
       {children}
     </div>
   );
@@ -71,9 +68,7 @@ export function TabsTrigger({ value, children, className = '' }: TabsTriggerProp
       aria-selected={isActive}
       onClick={() => setActiveTab(value)}
       className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-        isActive
-          ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
-          : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+        isActive ? 'bg-surface text-ink shadow-[var(--shadow-1)]' : 'text-ink-muted hover:text-ink'
       } ${className}`}
     >
       {children}

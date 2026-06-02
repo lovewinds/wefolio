@@ -214,8 +214,8 @@ export function MonthlySummaryView({
         onMonthChange={m => handleSelectDate(selectedYear, m)}
       />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        <div className="inline-flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800" role="tablist">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-3">
+        <div className="inline-flex rounded-lg bg-surface-soft p-1" role="tablist">
           <button
             type="button"
             role="tab"
@@ -226,8 +226,8 @@ export function MonthlySummaryView({
             }}
             className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeView === 'summary'
-                ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                : 'text-ink-subtle hover:text-ink'
             }`}
           >
             요약
@@ -243,8 +243,8 @@ export function MonthlySummaryView({
             }}
             className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeView === 'detail'
-                ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                : 'text-ink-subtle hover:text-ink'
             }`}
           >
             <List size={15} aria-hidden="true" />
@@ -257,7 +257,7 @@ export function MonthlySummaryView({
             setIsInputOpen(true);
             replaceMonthlyQuery({ inputOpen: true });
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-press"
         >
           <Plus size={16} aria-hidden="true" />
           거래 추가

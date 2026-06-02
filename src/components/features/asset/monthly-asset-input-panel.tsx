@@ -85,17 +85,17 @@ interface LocalMonthlyInputDraft {
 }
 
 const numberInputClass =
-  'h-8 w-full rounded-md border border-zinc-200 bg-white px-2 text-right text-sm text-zinc-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-right text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const selectClass =
-  'h-8 w-full rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const statusStyles: Record<AssetMonthlyInputStatus, string> = {
-  유지: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
-  증가: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  감소: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-  신규: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  정리됨: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  유지: 'bg-surface-soft text-ink-muted',
+  증가: 'gain-soft text-gain',
+  감소: 'loss-soft text-loss',
+  신규: 'accent-soft text-accent',
+  정리됨: 'bg-goal/10 text-goal',
 };
 
 function toEditableRow(row: AssetMonthlyInputRow): EditableMonthlyRow {
@@ -215,9 +215,7 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
 }
 
 function statusClass(status: AssetMonthlyInputStatus | null): string {
-  return status
-    ? statusStyles[status]
-    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+  return status ? statusStyles[status] : 'bg-goal/10 text-goal';
 }
 
 function getLocalDraftKey(year: number, month: number): string {
@@ -582,15 +580,15 @@ export function MonthlyAssetInputPanel({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/40">
-      <div className="absolute inset-y-0 right-0 flex w-full max-w-6xl flex-col bg-white shadow-2xl dark:bg-zinc-950 sm:w-[92vw]">
-        <header className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-6">
+    <div className="fixed inset-0 z-50 bg-ink/40">
+      <div className="absolute inset-y-0 right-0 flex w-full max-w-6xl flex-col bg-surface shadow-2xl sm:w-[92vw]">
+        <header className="border-b border-hairline px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm font-medium text-ink-subtle">
                 {year}년 {month}월 자산 마감
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+              <h2 className="mt-1 text-xl font-semibold text-ink">
                 {draft?.mode === 'edit' ? '기존 입력 수정' : '이번 달 자산 입력'}
               </h2>
             </div>
@@ -599,7 +597,7 @@ export function MonthlyAssetInputPanel({
                 type="button"
                 onClick={handleSaveLocalDraft}
                 disabled={isLoading || rows.length === 0}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />
                 임시 저장
@@ -608,7 +606,7 @@ export function MonthlyAssetInputPanel({
                 type="button"
                 onClick={handleLoadLocalDraft}
                 disabled={isLoading || !localDraftSavedAt}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Download size={16} />
                 불러오기
@@ -617,7 +615,7 @@ export function MonthlyAssetInputPanel({
                 type="button"
                 onClick={handleDeleteLocalDraft}
                 disabled={isLoading || !localDraftSavedAt}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-hairline bg-surface text-ink-subtle transition-colors hover:bg-loss/10 hover:text-loss disabled:cursor-not-allowed disabled:opacity-50"
                 title="임시저장 삭제"
               >
                 <Trash2 size={16} />
@@ -626,7 +624,7 @@ export function MonthlyAssetInputPanel({
                 type="button"
                 onClick={handleUpload}
                 disabled={isLoading || isSaving || rows.length === 0}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-press disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                 업로드
@@ -634,7 +632,7 @@ export function MonthlyAssetInputPanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-surface-soft hover:text-ink"
                 title="닫기"
               >
                 <X size={18} />
@@ -653,26 +651,22 @@ export function MonthlyAssetInputPanel({
           </div>
 
           {localDraftSavedAt && (
-            <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <p className="mt-2 text-xs font-medium text-ink-subtle">
               임시 저장 {formatSavedAt(localDraftSavedAt)}
             </p>
           )}
 
           {(error || successMessage || missingRows.length > 0) && (
             <div className="mt-3 space-y-2">
-              {error && (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
-                  {error}
-                </p>
-              )}
+              {error && <p className="rounded-lg loss-soft px-3 py-2 text-sm text-loss">{error}</p>}
               {successMessage && (
-                <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <p className="flex items-center gap-2 rounded-lg gain-soft px-3 py-2 text-sm text-gain">
                   <Check size={15} />
                   {successMessage}
                 </p>
               )}
               {missingRows.length > 0 && (
-                <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                <p className="flex items-center gap-2 rounded-lg bg-goal/10 px-3 py-2 text-sm text-goal">
                   <AlertTriangle size={15} />
                   전월 자산 {missingRows.length}개가 이번 달 금액 없이 남아 있습니다.
                 </p>
@@ -683,19 +677,19 @@ export function MonthlyAssetInputPanel({
 
         <div className="min-h-0 flex-1 overflow-auto px-4 py-4 sm:px-6">
           {isLoading ? (
-            <div className="flex h-64 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="flex h-64 items-center justify-center text-sm text-ink-subtle">
               <Loader2 size={18} className="mr-2 animate-spin" />
               불러오는 중
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-zinc-300 px-4 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+            <div className="rounded-lg border border-dashed border-hairline px-4 py-12 text-center text-sm text-ink-subtle">
               입력할 자산이 없습니다.
             </div>
           ) : (
             <>
               <div className="mb-3 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm font-medium dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex rounded-lg border border-hairline bg-surface-soft p-1 text-sm font-medium">
                     <button
                       type="button"
                       onClick={() => {
@@ -704,8 +698,8 @@ export function MonthlyAssetInputPanel({
                       }}
                       className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
                         groupMode === 'member'
-                          ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
+                          ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                          : 'text-ink-subtle hover:text-ink'
                       }`}
                     >
                       <Users size={15} />
@@ -719,15 +713,15 @@ export function MonthlyAssetInputPanel({
                       }}
                       className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
                         groupMode === 'assetClass'
-                          ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
+                          ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                          : 'text-ink-subtle hover:text-ink'
                       }`}
                     >
                       <Layers size={15} />
                       자산유형별
                     </button>
                   </div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <div className="text-sm text-ink-subtle">
                     {rows.length}개 중 {filledRowCount}개 입력
                   </div>
                 </div>
@@ -757,36 +751,23 @@ export function MonthlyAssetInputPanel({
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
-                    <thead className="bg-zinc-100 text-left text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                    <thead className="bg-surface-soft text-left text-xs font-semibold text-ink-subtle">
                       <tr>
-                        <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                          자산명
-                        </th>
-                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                          전월
-                        </th>
-                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                          이번 달
-                        </th>
-                        <th className="border-b border-zinc-200 px-3 py-2 text-right dark:border-zinc-800">
-                          증감
-                        </th>
-                        <th className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                          메모/상태
-                        </th>
+                        <th className="border-b border-hairline px-3 py-2">자산명</th>
+                        <th className="border-b border-hairline px-3 py-2 text-right">전월</th>
+                        <th className="border-b border-hairline px-3 py-2 text-right">이번 달</th>
+                        <th className="border-b border-hairline px-3 py-2 text-right">증감</th>
+                        <th className="border-b border-hairline px-3 py-2">메모/상태</th>
                       </tr>
                     </thead>
                     <tbody>
                       {visibleGroups.map(group => (
                         <Fragment key={group.key}>
-                          <tr className="bg-zinc-50 text-xs font-semibold text-zinc-500 dark:bg-zinc-900/80 dark:text-zinc-400">
-                            <td
-                              colSpan={5}
-                              className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                            >
+                          <tr className="bg-canvas text-xs font-semibold text-ink-subtle">
+                            <td colSpan={5} className="border-b border-hairline px-3 py-2">
                               <div className="flex items-center justify-between gap-3">
                                 <span>{group.label}</span>
                                 <span>
@@ -817,7 +798,7 @@ export function MonthlyAssetInputPanel({
           )}
 
           {draft && (
-            <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+            <div className="mt-4 rounded-lg border border-hairline bg-canvas p-3">
               {showNewHoldingRow ? (
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                   <select
@@ -857,7 +838,7 @@ export function MonthlyAssetInputPanel({
                       type="button"
                       onClick={handleAddHolding}
                       disabled={!newHolding.accountId || !newHolding.assetMasterId}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-action px-3 text-sm font-medium text-on-action transition-colors hover:bg-accent-press disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Plus size={15} />
                       추가
@@ -865,7 +846,7 @@ export function MonthlyAssetInputPanel({
                     <button
                       type="button"
                       onClick={() => setShowNewHoldingRow(false)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-surface-soft"
                       title="취소"
                     >
                       <X size={15} />
@@ -876,7 +857,7 @@ export function MonthlyAssetInputPanel({
                 <button
                   type="button"
                   onClick={() => setShowNewHoldingRow(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
                 >
                   <Plus size={15} />
                   자산 추가
@@ -900,15 +881,11 @@ function SummaryValue({
   tone?: 'positive' | 'negative' | 'neutral';
 }) {
   const toneClass =
-    tone === 'positive'
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : tone === 'negative'
-        ? 'text-rose-600 dark:text-rose-400'
-        : 'text-zinc-900 dark:text-zinc-100';
+    tone === 'positive' ? 'text-gain' : tone === 'negative' ? 'text-loss' : 'text-ink';
 
   return (
-    <div className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-900">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
+    <div className="rounded-lg bg-canvas px-3 py-2">
+      <p className="text-xs text-ink-subtle">{label}</p>
       <p className={`mt-1 text-base font-semibold ${toneClass}`}>{value}</p>
     </div>
   );
@@ -937,19 +914,19 @@ function GroupButton({
       onClick={onClick}
       className={`min-w-[156px] rounded-lg border px-3 py-2 text-left transition ${
         active
-          ? 'border-blue-500 bg-blue-50 text-blue-900 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-100'
-          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900'
+          ? 'border-accent accent-soft text-accent'
+          : 'border-hairline bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-sm font-semibold">{label}</span>
         {missingCount > 0 && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+          <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
             {missingCount}
           </span>
         )}
       </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-ink-subtle">
         <span>
           {filledCount}/{count}
         </span>
@@ -976,14 +953,14 @@ function MonthlyInputTableRows({
 
   return (
     <>
-      <tr className="border-b border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/60">
-        <td className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+      <tr className="border-b border-hairline hover:bg-canvas">
+        <td className="border-b border-hairline px-3 py-2">
           <div className="flex items-center gap-2">
             {row.inputType === 'quantity' ? (
               <button
                 type="button"
                 onClick={() => onUpdate(row.rowKey, 'isExpanded', !row.isExpanded)}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ink-faint hover:bg-surface-soft hover:text-ink-muted"
                 title={row.isExpanded ? '접기' : '펼치기'}
               >
                 {row.isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -992,19 +969,17 @@ function MonthlyInputTableRows({
               <span className="h-6 w-6" />
             )}
             <div className="min-w-0">
-              <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-                {row.assetName}
-              </p>
-              <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="truncate font-medium text-ink">{row.assetName}</p>
+              <p className="truncate text-xs text-ink-subtle">
                 {row.assetClass} · {row.currency}
               </p>
             </div>
           </div>
         </td>
-        <td className="border-b border-zinc-200 px-3 py-2 text-right text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
+        <td className="border-b border-hairline px-3 py-2 text-right text-ink-muted">
           {prevValue === null ? '-' : formatAmount(prevValue)}
         </td>
-        <td className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+        <td className="border-b border-hairline px-3 py-2">
           <input
             type="number"
             min="0"
@@ -1017,19 +992,19 @@ function MonthlyInputTableRows({
           />
         </td>
         <td
-          className={`border-b border-zinc-200 px-3 py-2 text-right font-medium dark:border-zinc-800 ${
+          className={`border-b border-hairline px-3 py-2 text-right font-medium ${
             delta === null
-              ? 'text-zinc-400'
+              ? 'text-ink-subtle'
               : delta > 0
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-gain'
                 : delta < 0
-                  ? 'text-rose-600 dark:text-rose-400'
-                  : 'text-zinc-500 dark:text-zinc-400'
+                  ? 'text-loss'
+                  : 'text-ink-subtle'
           }`}
         >
           {formatDelta(delta)}
         </td>
-        <td className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+        <td className="border-b border-hairline px-3 py-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(status)}`}>
               {isMissing || status === null ? '입력 필요' : status}
@@ -1038,7 +1013,7 @@ function MonthlyInputTableRows({
               <button
                 type="button"
                 onClick={onRemove}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-loss/10 hover:text-loss"
                 title="삭제"
               >
                 <X size={14} />
@@ -1048,11 +1023,11 @@ function MonthlyInputTableRows({
         </td>
       </tr>
       {row.inputType === 'quantity' && row.isExpanded && (
-        <tr className="bg-zinc-50/80 dark:bg-zinc-900/40">
-          <td colSpan={5} className="border-b border-zinc-200 px-3 py-3 dark:border-zinc-800">
+        <tr className="bg-surface-soft">
+          <td colSpan={5} className="border-b border-hairline px-3 py-3">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               <label className="space-y-1">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">수량</span>
+                <span className="text-xs font-medium text-ink-subtle">수량</span>
                 <input
                   type="number"
                   min="0"
@@ -1065,7 +1040,7 @@ function MonthlyInputTableRows({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">현재가</span>
+                <span className="text-xs font-medium text-ink-subtle">현재가</span>
                 <input
                   type="number"
                   min="0"
@@ -1078,7 +1053,7 @@ function MonthlyInputTableRows({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">환율</span>
+                <span className="text-xs font-medium text-ink-subtle">환율</span>
                 <input
                   type="number"
                   min="0"
@@ -1091,9 +1066,7 @@ function MonthlyInputTableRows({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  원화 현재가
-                </span>
+                <span className="text-xs font-medium text-ink-subtle">원화 현재가</span>
                 <input
                   type="number"
                   min="0"

@@ -137,12 +137,10 @@ export function CategoryBreakdownChart({
   });
 
   return (
-    <Card className="flex h-full min-h-[360px] flex-col border border-zinc-100 shadow-sm dark:border-zinc-700">
+    <Card className="flex h-full min-h-[360px] flex-col border border-hairline shadow-[var(--shadow-1)]">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">
-          카테고리별 {currentLabel}
-        </h3>
-        <div className="flex rounded-lg bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-200">
+        <h3 className="text-lg font-semibold text-ink">카테고리별 {currentLabel}</h3>
+        <div className="flex rounded-lg bg-surface-soft p-1 text-sm font-medium text-ink-muted">
           {typeOptions.map(option => {
             const isActive = option.value === currentValue;
             return (
@@ -151,8 +149,8 @@ export function CategoryBreakdownChart({
                 type="button"
                 className={`rounded-md px-3 py-1.5 transition ${
                   isActive
-                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                    ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                    : 'text-ink-subtle hover:text-ink'
                 }`}
                 onClick={() => {
                   if (!value) setInternalValue(option.value);
@@ -167,14 +165,12 @@ export function CategoryBreakdownChart({
       </div>
 
       {data.length === 0 || childData.length === 0 ? (
-        <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/70 px-4 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
+        <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-lg border border-dashed border-hairline bg-surface-soft px-4 text-center">
           <div>
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+            <p className="text-sm font-medium text-ink-muted">
               표시할 {currentLabel} 카테고리가 없습니다.
             </p>
-            <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-              거래가 생기면 카테고리 비중이 표시됩니다.
-            </p>
+            <p className="mt-1 text-sm text-ink-faint">거래가 생기면 카테고리 비중이 표시됩니다.</p>
           </div>
         </div>
       ) : (
@@ -189,7 +185,7 @@ export function CategoryBreakdownChart({
               activeOuterRadiusOffset={6}
               colors={d => d.data.color}
               borderWidth={1}
-              borderColor="#ffffff"
+              borderColor="var(--surface)"
               enableArcLinkLabels={false}
               enableArcLabels={false}
               onClick={datum => {
@@ -202,28 +198,26 @@ export function CategoryBreakdownChart({
                 });
               }}
               tooltip={({ datum }) => (
-                <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
+                <div className="rounded-md bg-surface px-3 py-2 shadow-lg">
                   <div className="flex items-center gap-2">
                     <div
                       className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: datum.color }}
                     />
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                    <span className="text-sm font-medium text-ink-muted">
                       {datum.data.parentLabel !== datum.label
                         ? `${datum.data.parentLabel} > ${datum.label}`
                         : datum.label}
                     </span>
                   </div>
-                  <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                    {formatAmount(datum.value)}
-                  </div>
+                  <div className="mt-1 text-sm text-ink-muted">{formatAmount(datum.value)}</div>
                 </div>
               )}
             />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="max-w-32 text-center">
-                <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">합계</p>
-                <p className="mt-1 break-words text-sm font-semibold text-zinc-700 [overflow-wrap:anywhere] dark:text-zinc-200">
+                <p className="text-xs font-medium text-ink-faint">합계</p>
+                <p className="mt-1 break-words text-sm font-semibold text-ink-muted [overflow-wrap:anywhere]">
                   {formatAmount(totalValue)}
                 </p>
               </div>
@@ -244,8 +238,8 @@ export function CategoryBreakdownChart({
                     type="button"
                     className={`w-full rounded-lg border px-3 py-2.5 text-left transition ${
                       isSelected
-                        ? 'border-zinc-400 bg-zinc-50 dark:border-zinc-500 dark:bg-zinc-900/60'
-                        : 'border-zinc-100 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:bg-zinc-900/40'
+                        ? 'border-hairline-strong bg-surface-soft'
+                        : 'border-hairline hover:border-hairline-strong hover:bg-surface-soft'
                     }`}
                     onClick={() =>
                       onItemClick?.({
@@ -262,11 +256,11 @@ export function CategoryBreakdownChart({
                             className="h-2.5 w-2.5 shrink-0 rounded-full"
                             style={{ backgroundColor: itemColor }}
                           />
-                          <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                          <span className="truncate text-sm font-medium text-ink-muted">
                             {item.label}
                           </span>
                         </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-soft">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${ratio}%`, backgroundColor: itemColor }}
@@ -274,10 +268,8 @@ export function CategoryBreakdownChart({
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-                          {formatAmount(item.value)}
-                        </p>
-                        <p className="text-xs text-zinc-400 dark:text-zinc-500">{ratio}%</p>
+                        <p className="text-sm font-semibold text-ink">{formatAmount(item.value)}</p>
+                        <p className="text-xs text-ink-faint">{ratio}%</p>
                       </div>
                     </div>
                   </button>
@@ -293,8 +285,8 @@ export function CategoryBreakdownChart({
                             type="button"
                             className={`flex min-w-0 items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left text-xs transition ${
                               isChildSelected
-                                ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-white'
-                                : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+                                ? 'bg-surface-soft text-ink'
+                                : 'text-ink-subtle hover:bg-surface-soft hover:text-ink-muted'
                             }`}
                             onClick={() =>
                               onItemClick?.({

@@ -279,7 +279,7 @@ export function HoldingTransactionTable({
   return (
     <section className="mt-6 space-y-4">
       <div className="flex items-center justify-end">
-        <div className="flex rounded-full bg-zinc-100 p-1 text-sm font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+        <div className="flex rounded-full bg-surface-soft p-1 text-sm font-medium text-ink-muted">
           {[
             { value: null, label: '전체' },
             ...members.map(m => ({ value: m.id, label: m.name })),
@@ -291,8 +291,8 @@ export function HoldingTransactionTable({
                 type="button"
                 className={`rounded-full px-3 py-1.5 transition ${
                   isActive
-                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white'
+                    ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                    : 'text-ink-subtle hover:text-ink'
                 }`}
                 onClick={() => handleMemberChange(option.value)}
               >
@@ -302,7 +302,7 @@ export function HoldingTransactionTable({
           })}
         </div>
       </div>
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1400px] table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
@@ -320,10 +320,10 @@ export function HoldingTransactionTable({
               <col style={{ width: columnWidths.totalKRW }} />
               <col style={{ width: columnWidths.notes }} />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            <thead className="sticky top-0 z-10 bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
-                  <th className="border-b border-r border-zinc-200 px-2 py-2 text-center align-top dark:border-zinc-700">
+                  <th className="border-b border-r border-hairline px-2 py-2 text-center align-top">
                     <span className="sr-only">액션</span>
                   </th>
                   {headerGroup.headers.map(header => {
@@ -339,7 +339,7 @@ export function HoldingTransactionTable({
                     return (
                       <th
                         key={header.id}
-                        className={`border-b border-r border-zinc-200 px-3 py-2 align-top dark:border-zinc-700 ${alignClass}`}
+                        className={`border-b border-r border-hairline px-3 py-2 align-top ${alignClass}`}
                       >
                         <button
                           type="button"
@@ -356,7 +356,7 @@ export function HoldingTransactionTable({
                               <ArrowDown size={14} />
                             )
                           ) : (
-                            <ChevronsUpDown size={14} className="text-zinc-300" />
+                            <ChevronsUpDown size={14} className="text-ink-faint" />
                           )}
                         </button>
                       </th>
@@ -370,7 +370,7 @@ export function HoldingTransactionTable({
                 <tr>
                   <td
                     colSpan={totalColSpan}
-                    className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                    className="px-3 py-8 text-center text-sm text-ink-subtle"
                   >
                     이 달의 자산 거래가 없습니다.
                   </td>
@@ -379,16 +379,14 @@ export function HoldingTransactionTable({
                 table.getRowModel().rows.map(row => (
                   <tr
                     key={row.id}
-                    className="border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+                    className="border-b border-hairline transition-colors hover:bg-canvas"
                   >
-                    <td
-                      className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
-                    >
+                    <td className={`border-r border-hairline px-2 ${rowPadding} text-center`}>
                       <button
                         type="button"
                         onClick={() => handleDeleteTransaction(row.original.id)}
                         disabled={isDeleting === row.original.id}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-rose-100 hover:text-rose-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-loss/10 hover:text-loss disabled:opacity-50"
                         title="삭제"
                       >
                         <Trash2 size={14} />
@@ -407,7 +405,7 @@ export function HoldingTransactionTable({
                       return (
                         <td
                           key={cell.id}
-                          className={`border-r border-zinc-200 px-3 ${rowPadding} text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 ${alignClass}`}
+                          className={`border-r border-hairline px-3 ${rowPadding} text-ink-muted ${alignClass}`}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -420,20 +418,18 @@ export function HoldingTransactionTable({
 
             {/* Summary */}
             <tbody>
-              <tr className="bg-zinc-200 dark:bg-zinc-800">
+              <tr className="bg-surface-soft">
                 <td
                   colSpan={totalColSpan}
-                  className="border-t border-zinc-200 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
+                  className="border-t border-hairline px-4 py-3 text-xs text-ink-muted"
                 >
                   <div className="flex items-center gap-3">
                     <span>
                       건수{' '}
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-                        {filteredTransactions.length}
-                      </span>
+                      <span className="font-semibold text-ink">{filteredTransactions.length}</span>
                       건
                       {selectedMemberId && filteredTransactions.length !== transactions.length && (
-                        <span className="ml-1 text-zinc-400">/ 전체 {transactions.length}건</span>
+                        <span className="ml-1 text-ink-subtle">/ 전체 {transactions.length}건</span>
                       )}
                     </span>
                   </div>
@@ -442,52 +438,28 @@ export function HoldingTransactionTable({
             </tbody>
 
             {/* Input section */}
-            <tbody className="text-xs text-zinc-600 dark:text-zinc-200">
-              <tr className="border-b-2 border-dashed border-zinc-300 bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800">
+            <tbody className="text-xs text-ink-muted">
+              <tr className="border-b-2 border-dashed border-hairline bg-surface-soft">
                 <td colSpan={totalColSpan} className="px-3 py-2">
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    새 자산 거래 입력
-                  </span>
+                  <span className="text-xs font-medium text-ink-subtle">새 자산 거래 입력</span>
                 </td>
               </tr>
-              <tr className="bg-zinc-100 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
-                <td className="border-b border-r border-zinc-200 px-2 py-1.5 text-center dark:border-zinc-700">
+              <tr className="bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
+                <td className="border-b border-r border-hairline px-2 py-1.5 text-center">
                   <span className="sr-only">저장</span>
                 </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  날짜
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  소유자
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  기관
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  계좌
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  종목
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  유형
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  수량
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  원가
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  원화가격
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  환율
-                </td>
-                <td className="border-b border-r border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
-                  총액(KRW)
-                </td>
-                <td className="border-b border-zinc-200 px-3 py-1.5 dark:border-zinc-700">메모</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">날짜</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">소유자</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">기관</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">계좌</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">종목</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">유형</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">수량</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">원가</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">원화가격</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">환율</td>
+                <td className="border-b border-r border-hairline px-3 py-1.5">총액(KRW)</td>
+                <td className="border-b border-hairline px-3 py-1.5">메모</td>
               </tr>
               {inputRows.map((row, idx) => (
                 <HoldingTransactionInputRowComponent

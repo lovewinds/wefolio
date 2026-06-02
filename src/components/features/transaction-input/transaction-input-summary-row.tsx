@@ -115,17 +115,16 @@ function SummaryFieldButton({
   const isPersisted = persistedFields.has(field);
 
   let toneClass =
-    'border-zinc-200/80 bg-white/70 text-zinc-500 hover:border-blue-200 hover:bg-blue-50/70 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/30 dark:hover:text-blue-300';
+    'border-hairline-soft bg-surface text-ink-subtle hover:border-accent hover:accent-soft hover:text-accent';
 
   if (isActive) {
-    toneClass =
-      'border-blue-200 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300';
+    toneClass = 'border-accent accent-soft text-accent shadow-[var(--shadow-1)]';
   } else if (isVisited && displayValue) {
     toneClass =
-      'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:border-blue-700 dark:hover:bg-blue-950/30 dark:hover:text-blue-300';
+      'border-hairline bg-surface-soft text-ink-muted hover:border-accent hover:accent-soft hover:text-accent';
   } else if (isFuture) {
     toneClass =
-      'border-zinc-200/60 bg-zinc-50/50 text-zinc-400 hover:border-blue-200 hover:bg-blue-50/60 hover:text-blue-600 dark:border-zinc-800 dark:bg-zinc-900/30 dark:text-zinc-500 dark:hover:border-blue-800 dark:hover:bg-blue-950/20 dark:hover:text-blue-400';
+      'border-hairline-soft bg-canvas text-ink-subtle hover:border-accent hover:accent-soft hover:text-accent';
   }
 
   const label = getDisplayValue(field, rawValue, currentStep, getCategoryName);
@@ -149,7 +148,7 @@ function SummaryFieldButton({
         {label}
       </span>
       {isPersisted && (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full accent-soft px-1.5 py-0.5 text-[10px] font-medium text-accent">
           <PinIcon />
         </span>
       )}
@@ -166,14 +165,14 @@ export function TransactionInputSummaryRow({
   rowFlash = false,
 }: TransactionInputSummaryRowProps) {
   const row3Flash = rowFlash
-    ? 'ring-2 ring-blue-400/60 transition-all duration-300'
+    ? 'ring-2 ring-accent/60 transition-all duration-300'
     : 'transition-all duration-300';
 
   return (
-    <div className="rounded-xl border border-blue-100 bg-linear-to-r from-blue-50 to-white p-3 dark:border-blue-900/70 dark:from-blue-950/20 dark:to-zinc-950">
+    <div className="rounded-xl border border-accent accent-soft p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200">입력 중인 거래</h3>
-        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+        <h3 className="text-sm font-medium text-ink-muted">입력 중인 거래</h3>
+        <span className="shrink-0 rounded-full bg-accent px-2 py-1 text-xs font-medium text-on-accent">
           현재: {FIELD_LABELS[STEP_FIELDS[currentStep]]}
         </span>
       </div>

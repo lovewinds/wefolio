@@ -1,0 +1,15 @@
+<svg width="300" height="80" viewBox="0 0 300 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="WeFolio">
+  <defs>
+    <linearGradient id="wfWarmL" x1="8" y1="14" x2="64" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ED9579"></stop>
+      <stop offset="1" stop-color="#E07856"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="14" width="52" height="52" rx="15.5" fill="url(#wfWarmL)"></rect>
+  <rect x="21" y="29.5" width="20" height="26" rx="5.3" fill="#FBF9F5" opacity="0.55" transform="rotate(-9 31 42)"></rect>
+  <rect x="28" y="27" width="20" height="26" rx="5.3" fill="#FBF9F5"></rect>
+  <rect x="32.5" y="34" width="11" height="2.7" rx="1.35" fill="#E07856"></rect>
+  <rect x="32.5" y="39.5" width="11" height="2.7" rx="1.35" fill="#ED9579"></rect>
+  <rect x="32.5" y="45" width="7" height="2.7" rx="1.35" fill="#F6D9C4"></rect>
+  <text x="78" y="51" font-family="Pretendard, system-ui, sans-serif" font-size="34" font-weight="700" letter-spacing="-1.1" fill="#211C18">We<tspan fill="#E07856">Folio</tspan></text>
+</svg>

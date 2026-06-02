@@ -1,0 +1,222 @@
+/* ============================================================================
+   WeFolio — Foundations: Color & Type
+   따뜻하고 부드러운 톤으로 가계의 자산을 관리하는 앱
+   ----------------------------------------------------------------------------
+   Two themes, one warm brand:
+     • LIGHT  — editorial monochrome + warm pastel color-blocks
+                (structure adapted from the Figma "Light" analysis)
+     • DARK   — deep warm-charcoal canvas + surface ladder + single accent
+                (structure adapted from the Linear "Dark" analysis)
+
+   LIGHT is the default at :root. Apply DARK with  <html data-theme="dark">  or
+   any ancestor carrying  [data-theme="dark"].
+
+   FONT NOTES: the sans family is now self-hosted **Pretendard** (brand font,
+   uploaded — wired via @font-face below). The mono family remains **JetBrains
+   Mono** from CDN (the specs reference proprietary figmaMono / Linear Mono,
+   which don't ship publicly; swap in a brand mono if one arrives).
+   ========================================================================== */
+
+/* Mono stays on CDN (no brand file uploaded). Sans is self-hosted Pretendard. */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@font-face{font-family:'Pretendard';font-weight:100;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Thin.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:200;font-style:normal;font-display:swap;src:url('fonts/Pretendard-ExtraLight.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:300;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Light.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:400;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Regular.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:500;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Medium.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:600;font-style:normal;font-display:swap;src:url('fonts/Pretendard-SemiBold.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:700;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Bold.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:800;font-style:normal;font-display:swap;src:url('fonts/Pretendard-ExtraBold.otf') format('opentype');}
+@font-face{font-family:'Pretendard';font-weight:900;font-style:normal;font-display:swap;src:url('fonts/Pretendard-Black.otf') format('opentype');}
+
+/* ----------------------------------------------------------------------------
+   1. BRAND CORE  — theme-independent identity tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* WeFolio warm coral — the brand signature, used scarcely for key moments */
+  --wf-brand:        #E07856;   /* primary coral */
+  --wf-brand-strong: #C9633F;   /* pressed / deepened coral */
+  --wf-brand-soft:   #ED9579;   /* hovered / lighter coral */
+
+  /* Money semantics (warm-tuned) */
+  --wf-gain:    #3E9C6B;   /* income, positive change */
+  --wf-loss:    #CE4B3C;   /* spending, negative change */
+  --wf-honey:   #E8B04B;   /* highlights, goals, savings */
+
+  /* Type families (see substitution note above) */
+  --font-display: 'Pretendard', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+  --font-body:    'Pretendard', 'SF Pro Text', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+  /* Radii — warmer / rounder than either source to suit a soft consumer app */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   18px;
+  --r-xl:   24px;
+  --r-xxl:  32px;
+  --r-pill: 999px;
+  --r-full: 9999px;
+
+  /* Spacing — 4px base */
+  --sp-xxs: 4px;
+  --sp-xs:  8px;
+  --sp-sm:  12px;
+  --sp-md:  16px;
+  --sp-lg:  24px;
+  --sp-xl:  32px;
+  --sp-xxl: 48px;
+  --sp-section: 88px;
+
+  /* ----- TYPE SCALE (shared across both themes) ----- */
+  /* Display uses SemiBold (600) + tight negative tracking (editorial). Pretendard
+     ships fixed weights, so the scale snaps to clean stops: 400/500/600/700. */
+  --t-display-xl-size: 72px;  --t-display-xl-wght: 600; --t-display-xl-lh: 1.02; --t-display-xl-ls: -2.2px;
+  --t-display-lg-size: 52px;  --t-display-lg-wght: 600; --t-display-lg-lh: 1.06; --t-display-lg-ls: -1.4px;
+  --t-display-md-size: 38px;  --t-display-md-wght: 600; --t-display-md-lh: 1.12; --t-display-md-ls: -0.9px;
+  --t-headline-size:   26px;  --t-headline-wght:   600; --t-headline-lh:   1.25; --t-headline-ls:   -0.5px;
+  --t-card-title-size: 20px;  --t-card-title-wght: 600; --t-card-title-lh: 1.3;  --t-card-title-ls: -0.3px;
+  --t-subhead-size:    20px;  --t-subhead-wght:    400; --t-subhead-lh:    1.45; --t-subhead-ls:    -0.2px;
+  --t-body-lg-size:    18px;  --t-body-lg-wght:    400; --t-body-lg-lh:    1.55; --t-body-lg-ls:    -0.1px;
+  --t-body-size:       16px;  --t-body-wght:       400; --t-body-lh:       1.55; --t-body-ls:       -0.05px;
+  --t-body-sm-size:    14px;  --t-body-sm-wght:    420; --t-body-sm-lh:    1.5;  --t-body-sm-ls:    0;
+  --t-caption-size:    12px;  --t-caption-wght:    480; --t-caption-lh:    1.4;  --t-caption-ls:    0.1px;
+  --t-button-size:     15px;  --t-button-wght:     560; --t-button-lh:     1.2;  --t-button-ls:     -0.1px;
+  --t-eyebrow-size:    12px;  --t-eyebrow-wght:    500; --t-eyebrow-lh:    1.3;  --t-eyebrow-ls:    0.8px;  /* mono, uppercase */
+  --t-mono-size:       13px;  --t-mono-wght:       400; --t-mono-lh:       1.5;  --t-mono-ls:       0;
+  --t-numeric-size:    34px;  --t-numeric-wght:    640; --t-numeric-lh:    1.1;  --t-numeric-ls:    -1px;   /* big money figures */
+}
+
+/* ----------------------------------------------------------------------------
+   2. LIGHT THEME (default)  — warm editorial
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas:        #FBF9F5;   /* warm off-white page */
+  --surface:       #FFFFFF;   /* white card body */
+  --surface-soft:  #F4F0E8;   /* warm tile / inset */
+  --surface-sunk:  #EFEAE0;   /* deeper inset (track, well) */
+
+  /* Ink */
+  --ink:        #211C18;      /* warm near-black, primary text */
+  --ink-muted:  #5C544B;      /* secondary text */
+  --ink-subtle: #8C8377;      /* tertiary / meta */
+  --ink-faint:  #B4ABA0;      /* disabled / placeholder */
+
+  /* Lines */
+  --hairline:        #E9E3D8;
+  --hairline-soft:   #F1ECE2;
+  --hairline-strong: #D9D1C3;
+
+  /* Brand on light */
+  --accent:        var(--wf-brand);
+  --accent-hover:  var(--wf-brand-soft);
+  --accent-press:  var(--wf-brand-strong);
+  --on-accent:     #FFFFFF;
+
+  /* Primary action surface (ink pill — editorial workhorse) */
+  --action:        #211C18;
+  --action-press:  #000000;
+  --on-action:     #FBF9F5;
+
+  /* Warm pastel color-blocks (the signature storytelling surfaces) */
+  --block-cream:  #F4ECD6;
+  --block-peach:  #F6D9C4;
+  --block-blush:  #F0D7D2;
+  --block-sage:   #D6E7D0;
+  --block-butter: #F7E8B6;
+  --block-lilac:  #DCD5F1;
+  --block-ink:    #211C18;   /* inverse dark block */
+  --on-block-ink: #FBF9F5;
+
+  /* Money semantics resolve to brand tokens */
+  --gain: var(--wf-gain);
+  --loss: var(--wf-loss);
+  --goal: var(--wf-honey);
+
+  /* Elevation — light & shadow-shy; color does the lifting */
+  --shadow-1: 0 1px 2px rgba(33,28,24,0.04), 0 2px 8px rgba(33,28,24,0.05);
+  --shadow-2: 0 4px 16px rgba(33,28,24,0.08), 0 1px 3px rgba(33,28,24,0.05);
+  --shadow-3: 0 18px 48px rgba(33,28,24,0.14);
+  --ring: 0 0 0 3px rgba(224,120,86,0.28);
+}
+
+/* ----------------------------------------------------------------------------
+   3. DARK THEME  — deep warm charcoal + single accent
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces — warm near-black canvas + 4-step ladder */
+  --canvas:        #0D0C0B;   /* warm near-black (not blue-tinted) */
+  --surface:       #16130F;   /* surface-1: cards, panels */
+  --surface-soft:  #1E1A14;   /* surface-2: featured / hovered */
+  --surface-sunk:  #100E0B;   /* recessed well */
+  --surface-2:     #1E1A14;
+  --surface-3:     #242019;
+  --surface-4:     #2A251D;
+
+  /* Ink */
+  --ink:        #F5F2EC;      /* warm light gray */
+  --ink-muted:  #D6CFC2;
+  --ink-subtle: #968E7E;
+  --ink-faint:  #635C4F;
+
+  /* Lines */
+  --hairline:        #2C2820;
+  --hairline-soft:   #211D17;
+  --hairline-strong: #3A352B;
+
+  /* Brand on dark — slightly lifted coral for contrast */
+  --accent:        #E8855F;
+  --accent-hover:  #F09B78;
+  --accent-press:  #D9744F;
+  --on-accent:     #1A1410;
+
+  /* Primary action = brand coral on dark */
+  --action:        #E8855F;
+  --action-press:  #D9744F;
+  --on-action:     #1A1410;
+
+  /* Color-blocks dim to deep warm tints (used sparingly on dark) */
+  --block-cream:  #2A2418;
+  --block-peach:  #2E2016;
+  --block-blush:  #2C1D1B;
+  --block-sage:   #1B2A1E;
+  --block-butter: #2E2814;
+  --block-lilac:  #211E2E;
+  --block-ink:    #16130F;
+  --on-block-ink: #F5F2EC;
+
+  --gain: #46A86B;
+  --loss: #E0685A;
+  --goal: #E8B04B;
+
+  /* Elevation — surface ladder + hairline carries depth, shadows minimal */
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-3: 0 24px 64px rgba(0,0,0,0.6);
+  --ring: 0 0 0 3px rgba(232,133,95,0.32);
+}
+
+/* ----------------------------------------------------------------------------
+   4. SEMANTIC TYPE CLASSES  — apply directly or copy the rules
+   -------------------------------------------------------------------------- */
+.t-display-xl { font-family: var(--font-display); font-size: var(--t-display-xl-size); font-weight: var(--t-display-xl-wght); line-height: var(--t-display-xl-lh); letter-spacing: var(--t-display-xl-ls); }
+.t-display-lg { font-family: var(--font-display); font-size: var(--t-display-lg-size); font-weight: var(--t-display-lg-wght); line-height: var(--t-display-lg-lh); letter-spacing: var(--t-display-lg-ls); }
+.t-display-md { font-family: var(--font-display); font-size: var(--t-display-md-size); font-weight: var(--t-display-md-wght); line-height: var(--t-display-md-lh); letter-spacing: var(--t-display-md-ls); }
+.t-headline   { font-family: var(--font-display); font-size: var(--t-headline-size);   font-weight: var(--t-headline-wght);   line-height: var(--t-headline-lh);   letter-spacing: var(--t-headline-ls); }
+.t-card-title { font-family: var(--font-display); font-size: var(--t-card-title-size); font-weight: var(--t-card-title-wght); line-height: var(--t-card-title-lh); letter-spacing: var(--t-card-title-ls); }
+.t-subhead    { font-family: var(--font-body);    font-size: var(--t-subhead-size);    font-weight: var(--t-subhead-wght);    line-height: var(--t-subhead-lh);    letter-spacing: var(--t-subhead-ls); }
+.t-body-lg    { font-family: var(--font-body);    font-size: var(--t-body-lg-size);    font-weight: var(--t-body-lg-wght);    line-height: var(--t-body-lg-lh);    letter-spacing: var(--t-body-lg-ls); }
+.t-body       { font-family: var(--font-body);    font-size: var(--t-body-size);       font-weight: var(--t-body-wght);       line-height: var(--t-body-lh);       letter-spacing: var(--t-body-ls); }
+.t-body-sm    { font-family: var(--font-body);    font-size: var(--t-body-sm-size);    font-weight: var(--t-body-sm-wght);    line-height: var(--t-body-sm-lh);    letter-spacing: var(--t-body-sm-ls); }
+.t-caption    { font-family: var(--font-body);    font-size: var(--t-caption-size);    font-weight: var(--t-caption-wght);    line-height: var(--t-caption-lh);    letter-spacing: var(--t-caption-ls); }
+.t-button     { font-family: var(--font-body);    font-size: var(--t-button-size);     font-weight: var(--t-button-wght);     line-height: var(--t-button-lh);     letter-spacing: var(--t-button-ls); }
+.t-eyebrow    { font-family: var(--font-mono);    font-size: var(--t-eyebrow-size);    font-weight: var(--t-eyebrow-wght);    line-height: var(--t-eyebrow-lh);    letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase; }
+.t-mono       { font-family: var(--font-mono);    font-size: var(--t-mono-size);       font-weight: var(--t-mono-wght);       line-height: var(--t-mono-lh);       letter-spacing: var(--t-mono-ls); }
+.t-numeric    { font-family: var(--font-display); font-size: var(--t-numeric-size);    font-weight: var(--t-numeric-wght);    line-height: var(--t-numeric-lh);    letter-spacing: var(--t-numeric-ls); font-variant-numeric: tabular-nums; }

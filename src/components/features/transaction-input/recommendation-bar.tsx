@@ -49,15 +49,15 @@ export function RecommendationBar({
   const lastMonth = recommendations.filter(r => r.source === 'lastMonth');
 
   return (
-    <div className="rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+    <div className="rounded-xl border border-hairline-soft bg-surface-soft p-3">
       <div className="mb-3 flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">빠른 입력</span>
+        <span className="text-xs font-semibold text-ink-subtle">빠른 입력</span>
       </div>
 
       <div className="space-y-3">
         {templates.length > 0 && (
           <div>
-            <div className="mb-1.5 flex items-center gap-1 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+            <div className="mb-1.5 flex items-center gap-1 text-xs font-medium text-ink-subtle">
               <BookmarkIcon />
               <span>고정 지출</span>
             </div>
@@ -67,13 +67,11 @@ export function RecommendationBar({
                   key={item.id}
                   type="button"
                   onClick={() => onSelect(item)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm text-violet-700 hover:border-violet-300 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:border-violet-700 dark:hover:bg-violet-900/30"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-accent accent-soft px-3 py-1.5 text-sm text-accent hover:border-accent"
                 >
                   <span>{item.label}</span>
                   {item.amount && (
-                    <span className="text-xs text-violet-400 dark:text-violet-500">
-                      {item.amount.toLocaleString()}원
-                    </span>
+                    <span className="text-xs text-accent">{item.amount.toLocaleString()}원</span>
                   )}
                 </button>
               ))}
@@ -83,7 +81,7 @@ export function RecommendationBar({
 
         {lastMonth.length > 0 && (
           <div>
-            <div className="mb-1.5 flex items-center gap-1 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+            <div className="mb-1.5 flex items-center gap-1 text-xs font-medium text-ink-subtle">
               <ClockIcon />
               <span>최근 카테고리</span>
             </div>
@@ -93,7 +91,7 @@ export function RecommendationBar({
                   key={item.id}
                   type="button"
                   onClick={() => onSelect(item)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-700"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1.5 text-sm text-ink-muted hover:border-hairline-strong hover:bg-canvas"
                 >
                   <span>{item.label}</span>
                 </button>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeFolio — 가족 자산 대시보드</title>
+<link rel="stylesheet" href="wefolio.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  /* toast */
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); z-index: 80;
+    background: var(--ink); color: var(--canvas); font-size: 14px; font-weight: 500; padding: 13px 20px; border-radius: var(--r-pill);
+    box-shadow: var(--shadow-3); opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; display: flex; align-items: center; gap: 9px; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="lib/tweaks-panel.jsx"></script>
+  <script src="data.js"></script>
+  <script type="text/babel" src="charts.jsx"></script>
+  <script type="text/babel" src="views-insight.jsx"></script>
+  <script type="text/babel" src="views-manage.jsx"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const WF = window.WF;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "dark": true,
+      "accent": [
+        "#E07856",
+        "#ED9579",
+        "#C9633F"
+      ],
+      "chartStyle": "donut",
+      "decomp": "waterfall"
+    }/*EDITMODE-END*/;
+
+    const NAV = [
+      { group: '인사이트', items: [
+        { id: 'overview', label: '개요', icon: 'layout-dashboard' },
+        { id: 'profit', label: '투자 수익 현황', icon: 'trending-up' },
+        { id: 'trend', label: '자산 추이', icon: 'line-chart' },
+        { id: 'composition', label: '구성별 분해', icon: 'pie-chart' },
+        { id: 'decomposition', label: '자산 증가 분해', icon: 'split', star: true },
+      ]},
+      { group: '기록', items: [
+        { id: 'input', label: '월별 스냅샷 입력', icon: 'square-pen' },
+      ]},
+      { group: '설정', items: [
+        { id: 'base', label: '기준 데이터', icon: 'database' },
+      ]},
+    ];
+    const TITLES = {
+      overview: ['DASHBOARD', '우리 집 자산'],
+      profit: ['INSIGHT · FR-C1', '투자 수익 현황'],
+      trend: ['INSIGHT · FR-C3', '자산 추이'],
+      composition: ['INSIGHT · FR-C2 · C4', '구성 & 비중'],
+      decomposition: ['INSIGHT · FR-C5 ★', '자산 증가 분해'],
+      input: ['RECORD · FR-B', '월별 스냅샷 입력'],
+      base: ['SETTINGS · FR-A', '기준 데이터'],
+    };
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [route, setRoute] = useState('decomposition');
+      const [mi, setMi] = useState(WF.MONTHS.length - 1); // 최신월
+      const [toast, setToast] = useState(null);
+      const toastTimer = useRef(null);
+
+      // theme
+      useEffect(() => { document.documentElement.setAttribute('data-theme', t.dark ? 'dark' : 'light'); }, [t.dark]);
+      // accent override
+      useEffect(() => {
+        const [main, hover, press] = Array.isArray(t.accent) ? t.accent : [t.accent, t.accent, t.accent];
+        const r = document.documentElement.style;
+        r.setProperty('--accent', main); r.setProperty('--acc', main);
+        r.setProperty('--accent-hover', hover); r.setProperty('--accent-press', press);
+        r.setProperty('--wf-brand', main); r.setProperty('--wf-brand-soft', hover); r.setProperty('--wf-brand-strong', press);
+        if (t.dark) { r.setProperty('--action', main); r.setProperty('--action-press', press); }
+        else { r.removeProperty('--action'); r.removeProperty('--action-press'); }
+      }, [t.accent, t.dark]);
+
+      function showToast(msg) {
+        setToast(msg);
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(null), 2400);
+      }
+
+      const showMonth = route !== 'base';
+      const [eb, title] = TITLES[route];
+
+      let view;
+      if (route === 'overview') view = <window.OverviewView mi={mi} />;
+      else if (route === 'profit') view = <window.ProfitView mi={mi} />;
+      else if (route === 'trend') view = <window.TrendView mi={mi} />;
+      else if (route === 'composition') view = <window.CompositionView mi={mi} chartStyle={t.chartStyle} />;
+      else if (route === 'decomposition') view = <window.DecompositionView mi={mi} variant={t.decomp} setVariant={v => setTweak('decomp', v)} />;
+      else if (route === 'input') view = <window.SnapshotInputView mi={mi} onToast={showToast} />;
+      else if (route === 'base') view = <window.BaseDataView onToast={showToast} />;
+
+      return (
+        <div className="wf-app shell">
+          {/* SIDEBAR */}
+          <aside className="sidebar">
+            <div className="sb-brand">
+              <img src="assets/wefolio-mark.svg" alt="" />
+              <span className="sb-wm">We<span>Folio</span></span>
+            </div>
+            {NAV.map(g => (
+              <div className="sb-group" key={g.group}>
+                <div className="sb-group-label">{g.group}</div>
+                {g.items.map(it => (
+                  <button key={it.id} className={'nav-item' + (route === it.id ? ' on' : '')} onClick={() => setRoute(it.id)}>
+                    <window.Icon name={it.icon} size={18} color="currentColor" />
+                    {it.label}
+                    {it.star && <span className="star">★</span>}
+                  </button>
+                ))}
+              </div>
+            ))}
+            <div className="sb-foot">
+              <div className="sb-house">
+                <span className="ava">우리</span>
+                <div><div className="hn">우리 집</div><div className="hs">지완 · 지아</div></div>
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN */}
+          <div className="main">
+            <header className="topbar">
+              <div className="tb-title">
+                <span className="tb-eyebrow">{eb}</span>
+                <h1>{title}</h1>
+              </div>
+              <div className="tb-spacer"></div>
+              {showMonth && (
+                <div className="monthsel">
+                  <button disabled={mi === 0} onClick={() => setMi(m => Math.max(0, m - 1))}><window.Icon name="chevron-left" size={18} color="currentColor" /></button>
+                  <span className="mlabel">{WF.MONTH_LABEL[WF.MONTHS[mi]]}</span>
+                  <button disabled={mi === WF.MONTHS.length - 1} onClick={() => setMi(m => Math.min(WF.MONTHS.length - 1, m + 1))}><window.Icon name="chevron-right" size={18} color="currentColor" /></button>
+                </div>
+              )}
+              <div className="seg">
+                <button className={!t.dark ? 'on' : ''} onClick={() => setTweak('dark', false)}><window.Icon name="sun" size={14} color="currentColor" /> Light</button>
+                <button className={t.dark ? 'on' : ''} onClick={() => setTweak('dark', true)}><window.Icon name="moon" size={14} color="currentColor" /> Dark</button>
+              </div>
+            </header>
+
+            <main className="content">{view}</main>
+          </div>
+
+          {/* TOAST */}
+          <div className={'toast' + (toast ? ' show' : '')}><window.Icon name="check-circle-2" size={16} color="currentColor" />{toast}</div>
+
+          {/* TWEAKS */}
+          <TweaksPanel>
+            <TweakSection label="테마" />
+            <TweakToggle label="다크 모드" value={t.dark} onChange={v => setTweak('dark', v)} />
+            <TweakColor label="강조 색상" value={t.accent}
+              options={[["#E07856","#ED9579","#C9633F"],["#1F8A5B","#3BAE76","#176B45"],["#2A6FDB","#5790EA","#1F55AC"],["#7A5AE0","#977BEC","#5E41BF"]]}
+              onChange={v => setTweak('accent', v)} />
+            <TweakSection label="차트" />
+            <TweakRadio label="구성 분해 스타일" value={t.chartStyle} options={['donut', 'bar']} onChange={v => setTweak('chartStyle', v)} />
+            <TweakRadio label="증가 분해 (★) 기본 보기" value={t.decomp} options={['waterfall', 'monthly', 'cards']} onChange={v => setTweak('decomp', v)} />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 1.75 } });
+  </script>
+</body>
+</html>

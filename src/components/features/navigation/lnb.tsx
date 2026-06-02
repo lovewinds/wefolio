@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useSyncExternalStore } from 'react';
@@ -33,9 +34,8 @@ export function LNB() {
   const pathname = usePathname();
   const isDark = useTheme();
 
-  const toggleDarkMode = () => {
-    const newIsDark = !isDark;
-    if (newIsDark) {
+  const setTheme = (dark: boolean) => {
+    if (dark) {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
       localStorage.setItem('theme', 'dark');
@@ -48,49 +48,54 @@ export function LNB() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-16 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex h-full flex-col items-center">
-        <header className="flex h-16 w-full items-center justify-center border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">W</h1>
-        </header>
+    <aside className="sidebar">
+      <div className="sb-brand">
+        <Image src="/brand/wefolio-mark.svg" alt="" width={30} height={30} priority />
+        <span className="sb-wm">
+          We<span>Folio</span>
+        </span>
+      </div>
 
-        <nav className="flex-1 py-4">
-          <ul className="space-y-2">
-            {NAV_ITEMS.map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    title={item.label}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                      isActive
-                        ? 'bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900'
-                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
-                    }`}
-                  >
-                    <Icon size={20} strokeWidth={1.5} suppressHydrationWarning />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+      <div className="sb-group">
+        <div className="sb-group-label">메뉴</div>
+        {NAV_ITEMS.map(item => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
+              <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
 
-        <footer className="pb-4">
+      <div className="sb-foot">
+        <div className="seg" style={{ marginBottom: 12, width: '100%' }}>
           <button
-            onClick={toggleDarkMode}
-            title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            type="button"
+            className={!isDark ? 'on' : ''}
+            onClick={() => setTheme(false)}
+            style={{ flex: 1, justifyContent: 'center' }}
           >
-            {isDark ? (
-              <Sun size={20} strokeWidth={1.5} suppressHydrationWarning />
-            ) : (
-              <Moon size={20} strokeWidth={1.5} suppressHydrationWarning />
-            )}
+            <Sun size={14} strokeWidth={1.75} suppressHydrationWarning /> Light
           </button>
-        </footer>
+          <button
+            type="button"
+            className={isDark ? 'on' : ''}
+            onClick={() => setTheme(true)}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            <Moon size={14} strokeWidth={1.75} suppressHydrationWarning /> Dark
+          </button>
+        </div>
+        <div className="sb-house">
+          <span className="ava">우리</span>
+          <div>
+            <div className="hn">우리 집</div>
+            <div className="hs">지완 · 지아</div>
+          </div>
+        </div>
       </div>
     </aside>
   );

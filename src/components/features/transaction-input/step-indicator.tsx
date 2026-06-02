@@ -14,10 +14,10 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
           key={idx}
           className={`h-1.5 rounded-full ${
             idx === currentStep
-              ? 'w-6 bg-blue-500 dark:bg-blue-400'
+              ? 'w-6 bg-accent'
               : idx < currentStep
-                ? 'w-1.5 bg-blue-300 dark:bg-blue-600'
-                : 'w-1.5 bg-zinc-200 dark:bg-zinc-700'
+                ? 'w-1.5 bg-accent-hover'
+                : 'w-1.5 bg-surface-soft'
           }`}
         />
       ))}

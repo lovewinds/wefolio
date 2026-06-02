@@ -1,15 +1,29 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
+import { JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+const pretendard = localFont({
+  variable: '--font-pretendard',
+  display: 'swap',
+  src: [
+    { path: './fonts/Pretendard-Thin.otf', weight: '100', style: 'normal' },
+    { path: './fonts/Pretendard-ExtraLight.otf', weight: '200', style: 'normal' },
+    { path: './fonts/Pretendard-Light.otf', weight: '300', style: 'normal' },
+    { path: './fonts/Pretendard-Regular.otf', weight: '400', style: 'normal' },
+    { path: './fonts/Pretendard-Medium.otf', weight: '500', style: 'normal' },
+    { path: './fonts/Pretendard-SemiBold.otf', weight: '600', style: 'normal' },
+    { path: './fonts/Pretendard-Bold.otf', weight: '700', style: 'normal' },
+    { path: './fonts/Pretendard-ExtraBold.otf', weight: '800', style: 'normal' },
+    { path: './fonts/Pretendard-Black.otf', weight: '900', style: 'normal' },
+  ],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains-mono',
   subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -40,7 +54,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${pretendard.variable} ${jetbrainsMono.variable} antialiased`}
       >
         {children}
       </body>

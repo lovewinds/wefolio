@@ -1,0 +1,15 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="WeFolio">
+  <defs>
+    <linearGradient id="wfWarm" x1="12" y1="8" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ED9579"></stop>
+      <stop offset="1" stop-color="#E07856"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="88" height="88" rx="26" fill="url(#wfWarm)"></rect>
+  
+  <rect x="26" y="30" width="34" height="44" rx="9" fill="#FBF9F5" opacity="0.55" transform="rotate(-9 43 52)"></rect>
+  <rect x="38" y="26" width="34" height="44" rx="9" fill="#FBF9F5"></rect>
+  <rect x="46" y="38" width="18" height="4.4" rx="2.2" fill="#E07856"></rect>
+  <rect x="46" y="47" width="18" height="4.4" rx="2.2" fill="#ED9579"></rect>
+  <rect x="46" y="56" width="11" height="4.4" rx="2.2" fill="#F6D9C4"></rect>
+</svg>

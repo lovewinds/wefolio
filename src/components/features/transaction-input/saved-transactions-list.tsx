@@ -64,7 +64,7 @@ export function SavedTransactionsList({
 
   return (
     <div className="mt-8">
-      <h3 className="mb-3 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      <h3 className="mb-3 text-sm font-medium text-ink-subtle">
         이번 세션 저장 내역 ({transactions.length}건)
       </h3>
       <div className="space-y-2">
@@ -76,36 +76,30 @@ export function SavedTransactionsList({
               key={tx.id}
               className={`flex items-center justify-between rounded-lg border px-4 py-2.5 transition-opacity ${
                 isEditing
-                  ? 'border-blue-200 bg-blue-50/50 opacity-60 dark:border-blue-800 dark:bg-blue-950/20'
-                  : 'border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50'
+                  ? 'border-accent accent-soft opacity-60'
+                  : 'border-hairline-soft bg-surface-soft'
               }`}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span
                   className={`shrink-0 text-xs font-medium ${
-                    tx.type === 'expense'
-                      ? 'text-rose-500 dark:text-rose-400'
-                      : 'text-emerald-500 dark:text-emerald-400'
+                    tx.type === 'expense' ? 'text-loss' : 'text-gain'
                   }`}
                 >
                   {tx.type === 'expense' ? '지출' : '수입'}
                 </span>
-                <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">
-                  {tx.categoryName}
-                </span>
+                <span className="truncate text-sm text-ink-muted">{tx.categoryName}</span>
                 {tx.description && (
-                  <span className="hidden truncate text-sm text-zinc-400 dark:text-zinc-500 sm:inline">
+                  <span className="hidden truncate text-sm text-ink-subtle sm:inline">
                     {tx.description}
                   </span>
                 )}
               </div>
               <div className="ml-3 flex shrink-0 items-center gap-2">
                 {tx.user && (
-                  <span className="hidden text-xs text-zinc-400 dark:text-zinc-500 sm:inline">
-                    {tx.user}
-                  </span>
+                  <span className="hidden text-xs text-ink-subtle sm:inline">{tx.user}</span>
                 )}
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <span className="text-sm font-medium text-ink-muted">
                   {tx.amount.toLocaleString()}원
                 </span>
                 {isEditing ? (
@@ -113,7 +107,7 @@ export function SavedTransactionsList({
                     type="button"
                     onClick={onCancelEdit}
                     title="편집 취소"
-                    className="rounded p-0.5 text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300"
+                    className="rounded p-0.5 text-accent hover:text-accent-press"
                   >
                     <XIcon />
                   </button>
@@ -123,7 +117,7 @@ export function SavedTransactionsList({
                       type="button"
                       onClick={() => onEdit(tx)}
                       title="수정"
-                      className="rounded p-0.5 text-zinc-400 hover:text-blue-500 dark:text-zinc-500 dark:hover:text-blue-400"
+                      className="rounded p-0.5 text-ink-subtle hover:text-accent"
                     >
                       <PencilIcon />
                     </button>
@@ -131,7 +125,7 @@ export function SavedTransactionsList({
                       type="button"
                       onClick={() => onDelete(tx.id)}
                       title="삭제"
-                      className="rounded p-0.5 text-zinc-400 hover:text-rose-500 dark:text-zinc-500 dark:hover:text-rose-400"
+                      className="rounded p-0.5 text-ink-subtle hover:text-loss"
                     >
                       <TrashIcon />
                     </button>

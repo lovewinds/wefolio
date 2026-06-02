@@ -89,7 +89,7 @@ export function AssetTrendView({ initialData, availableRange }: AssetTrendViewPr
     <PageContainer isFetching={isFetching}>
       <section className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">자산 추이</h2>
+          <h2 className="text-xl font-bold text-ink">자산 추이</h2>
           <PeriodSelector selectedMonths={periodMonths} onSelect={handlePeriodChange} />
         </div>
       </section>

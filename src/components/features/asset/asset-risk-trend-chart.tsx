@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
+import { nivoTheme } from '@/lib/chart-theme';
 import { RISK_LEVEL_COLORS } from '@/lib/constants';
 import type { AssetTrendEntry } from '@/types';
 
@@ -36,14 +37,12 @@ export function AssetRiskTrendChart({ data }: AssetRiskTrendChartProps) {
   return (
     <Card className="mt-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">위험등급별 추이</h3>
+        <h3 className="text-lg font-semibold text-ink">위험등급별 추이</h3>
         <button
           type="button"
           onClick={() => setShowPercent(!showPercent)}
           className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-            showPercent
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-              : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+            showPercent ? 'accent-soft text-accent' : 'bg-surface-soft text-ink-subtle'
           }`}
         >
           {showPercent ? '금액 보기' : '비율 보기'}
@@ -74,29 +73,20 @@ export function AssetRiskTrendChart({ data }: AssetRiskTrendChartProps) {
           labelSkipHeight={20}
           enableLabel={false}
           tooltip={({ id, value, indexValue }) => (
-            <div className="rounded-md bg-white px-3 py-2 shadow-lg dark:bg-zinc-800">
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{indexValue}</p>
+            <div className="rounded-md bg-surface px-3 py-2 shadow-lg">
+              <p className="text-xs text-ink-subtle">{indexValue}</p>
               <div className="flex items-center gap-2">
                 <div
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: RISK_LEVEL_COLORS[id as string] ?? '#6b7280' }}
                 />
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                <span className="text-sm font-medium text-ink-muted">
                   {id}: {showPercent ? `${Number(value).toFixed(1)}%` : formatAmount(Number(value))}
                 </span>
               </div>
             </div>
           )}
-          theme={{
-            axis: {
-              ticks: {
-                text: { fill: '#71717a', fontSize: 11 },
-              },
-            },
-            grid: {
-              line: { stroke: '#e4e4e7', strokeWidth: 1 },
-            },
-          }}
+          theme={nivoTheme}
         />
       </div>
 
@@ -108,7 +98,7 @@ export function AssetRiskTrendChart({ data }: AssetRiskTrendChartProps) {
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: RISK_LEVEL_COLORS[level] ?? '#6b7280' }}
             />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">{level}</span>
+            <span className="text-xs text-ink-muted">{level}</span>
           </div>
         ))}
       </div>

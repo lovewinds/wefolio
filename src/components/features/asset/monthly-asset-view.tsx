@@ -152,14 +152,14 @@ export function MonthlyAssetView({
       <button
         type="button"
         onClick={() => setIsInputOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+        className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-press"
       >
         <FilePenLine size={16} />
         이번 달 자산 입력
       </button>
       <Link
         href={`/asset/transactions?year=${selectedYear}&month=${selectedMonth}`}
-        className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
       >
         <ListPlus size={16} />
         자산 거래 상세

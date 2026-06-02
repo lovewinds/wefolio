@@ -75,7 +75,7 @@ function AssetTransactionsContent() {
   if (!transactions && isFetching) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+        <div className="text-ink-muted">Loading...</div>
       </main>
     );
   }
@@ -83,7 +83,7 @@ function AssetTransactionsContent() {
   if (error && transactions.length === 0) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <div className="text-rose-600 dark:text-rose-400">{error}</div>
+        <div className="text-loss">{error}</div>
       </main>
     );
   }
@@ -91,7 +91,7 @@ function AssetTransactionsContent() {
   const actions = (
     <Link
       href={`/asset/monthly?year=${selectedYear}&month=${selectedMonth}`}
-      className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+      className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
     >
       자산 현황
     </Link>
@@ -132,7 +132,7 @@ export default function AssetTransactionsPage() {
     <Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center">
-          <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+          <div className="text-ink-muted">Loading...</div>
         </main>
       }
     >

@@ -192,17 +192,13 @@ export function SequentialTransactionForm({
     <div className="mx-auto max-w-lg">
       {/* Status feedback */}
       {form.status === 'saving' && (
-        <div className="mb-4 text-center text-sm text-zinc-400 dark:text-zinc-500">저장 중...</div>
+        <div className="mb-4 text-center text-sm text-ink-subtle">저장 중...</div>
       )}
       {form.status === 'saved' && (
-        <div className="mb-4 text-center text-sm text-emerald-500 dark:text-emerald-400">
-          저장 완료
-        </div>
+        <div className="mb-4 text-center text-sm text-gain">저장 완료</div>
       )}
       {form.status === 'error' && (
-        <div className="mb-4 text-center text-sm text-rose-500 dark:text-rose-400">
-          {form.errorMessage}
-        </div>
+        <div className="mb-4 text-center text-sm text-loss">{form.errorMessage}</div>
       )}
 
       {/* Current transaction summary */}

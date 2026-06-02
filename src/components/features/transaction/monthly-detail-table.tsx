@@ -92,7 +92,7 @@ const globalTextFilter: FilterFn<DashboardTransaction> = (row, _columnId, filter
 };
 
 const baseInputClass =
-  'h-7 w-full rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400';
+  'h-7 w-full rounded-md border border-hairline bg-surface px-2 text-xs text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const columnWidths = {
   action: '40px',
@@ -362,11 +362,7 @@ export function MonthlyDetailTable({
           const type = row.original.type;
           return (
             <span
-              className={
-                type === 'income'
-                  ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                  : 'font-semibold text-rose-600 dark:text-rose-400'
-              }
+              className={type === 'income' ? 'font-semibold text-gain' : 'font-semibold text-loss'}
             >
               {type === 'income' ? '+' : '-'}
               {formatAmount(amount)}
@@ -469,7 +465,7 @@ export function MonthlyDetailTable({
             value={globalFilter ?? ''}
             onChange={event => setGlobalFilter(event.target.value)}
             placeholder="검색: 카테고리/메모/사용자"
-            className="h-9 min-w-[220px] rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            className="h-9 min-w-[220px] rounded-lg border border-hairline bg-surface px-3 text-sm text-ink-muted shadow-[var(--shadow-1)] focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <Button variant="ghost" size="sm" onClick={resetFilters}>
             <RotateCcw size={14} />
@@ -477,14 +473,14 @@ export function MonthlyDetailTable({
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="flex items-center rounded-lg border border-hairline bg-surface p-1">
             <button
               type="button"
               onClick={() => setDensity('comfortable')}
               className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                 density === 'comfortable'
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                  ? 'bg-accent text-on-accent'
+                  : 'text-ink-subtle hover:bg-surface-soft'
               }`}
             >
               기본
@@ -494,8 +490,8 @@ export function MonthlyDetailTable({
               onClick={() => setDensity('compact')}
               className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                 density === 'compact'
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                  ? 'bg-accent text-on-accent'
+                  : 'text-ink-subtle hover:bg-surface-soft'
               }`}
             >
               촘촘
@@ -503,17 +499,17 @@ export function MonthlyDetailTable({
           </div>
 
           <details className="relative">
-            <summary className="list-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
+            <summary className="list-none rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-ink-muted shadow-[var(--shadow-1)] hover:bg-surface-soft">
               컬럼 보기
             </summary>
-            <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-zinc-200 bg-white p-2 text-xs text-zinc-600 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-hairline bg-surface p-2 text-xs text-ink-muted shadow-lg">
               {table.getAllLeafColumns().map(column => (
                 <label key={column.id} className="flex items-center gap-2 px-2 py-1">
                   <input
                     type="checkbox"
                     checked={column.getIsVisible()}
                     onChange={column.getToggleVisibilityHandler()}
-                    className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600"
+                    className="h-3.5 w-3.5 rounded border-hairline text-accent"
                   />
                   <span>{String(column.columnDef.header)}</span>
                 </label>
@@ -528,15 +524,15 @@ export function MonthlyDetailTable({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
         <div className="max-h-[600px] overflow-auto">
           <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-10 bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            <thead className="sticky top-0 z-10 bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {/* Action column header */}
                   <th
-                    className="border-b border-r border-zinc-200 px-2 py-2 text-center align-top dark:border-zinc-700"
+                    className="border-b border-r border-hairline px-2 py-2 text-center align-top"
                     style={{ width: columnWidths.action }}
                   >
                     <span className="sr-only">액션</span>
@@ -552,7 +548,7 @@ export function MonthlyDetailTable({
                     return (
                       <th
                         key={header.id}
-                        className={`border-b border-r border-zinc-200 px-3 py-2 align-top dark:border-zinc-700 ${alignClass}`}
+                        className={`border-b border-r border-hairline px-3 py-2 align-top ${alignClass}`}
                         style={meta?.width ? { width: meta.width } : undefined}
                       >
                         <button
@@ -570,7 +566,7 @@ export function MonthlyDetailTable({
                               <ArrowDown size={14} />
                             )
                           ) : (
-                            <ChevronsUpDown size={14} className="text-zinc-300" />
+                            <ChevronsUpDown size={14} className="text-ink-faint" />
                           )}
                         </button>
                         <div className="mt-2">{renderColumnFilter(header.column)}</div>
@@ -587,7 +583,7 @@ export function MonthlyDetailTable({
                 <tr>
                   <td
                     colSpan={table.getVisibleLeafColumns().length + 1}
-                    className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                    className="px-3 py-8 text-center text-sm text-ink-subtle"
                   >
                     조건에 맞는 거래가 없습니다.
                   </td>
@@ -596,18 +592,18 @@ export function MonthlyDetailTable({
                 table.getRowModel().rows.map(row => (
                   <tr
                     key={row.id}
-                    className="border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+                    className="border-b border-hairline transition-colors hover:bg-surface-soft"
                   >
                     {/* Delete button cell */}
                     <td
-                      className={`border-r border-zinc-200 px-2 ${rowPadding} text-center dark:border-zinc-700`}
+                      className={`border-r border-hairline px-2 ${rowPadding} text-center`}
                       style={{ width: columnWidths.action }}
                     >
                       <button
                         type="button"
                         onClick={() => handleDeleteTransaction(row.original.id)}
                         disabled={isDeleting === row.original.id}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-rose-100 hover:text-rose-600 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-loss/10 hover:text-loss disabled:opacity-50"
                         title="삭제"
                       >
                         <Trash2 size={14} />
@@ -624,7 +620,7 @@ export function MonthlyDetailTable({
                       return (
                         <td
                           key={cell.id}
-                          className={`border-r border-zinc-200 px-3 ${rowPadding} text-zinc-700 dark:border-zinc-700 dark:text-zinc-200 ${alignClass}`}
+                          className={`border-r border-hairline px-3 ${rowPadding} text-ink-muted ${alignClass}`}
                           style={meta?.width ? { width: meta.width } : undefined}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -638,24 +634,20 @@ export function MonthlyDetailTable({
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-200 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-surface-soft px-4 py-3 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-3">
             <span>
-              건수{' '}
-              <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-                {filteredRows.length}
-              </span>
-              건
+              건수 <span className="font-semibold text-ink">{filteredRows.length}</span>건
             </span>
             <span>
               수입{' '}
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold text-gain">
                 {formatAmount(filteredSummary.income)}
               </span>
             </span>
             <span>
               지출{' '}
-              <span className="font-semibold text-rose-600 dark:text-rose-400">
+              <span className="font-semibold text-loss">
                 {formatAmount(filteredSummary.expense)}
               </span>
             </span>
@@ -664,9 +656,9 @@ export function MonthlyDetailTable({
               <span
                 className={`font-semibold ${
                   {
-                    positive: 'text-emerald-600 dark:text-emerald-400',
-                    negative: 'text-rose-600 dark:text-rose-400',
-                    neutral: 'text-zinc-700 dark:text-zinc-200',
+                    positive: 'text-gain',
+                    negative: 'text-loss',
+                    neutral: 'text-ink-muted',
                   }[netAmount > 0 ? 'positive' : netAmount < 0 ? 'negative' : 'neutral']
                 }`}
               >
@@ -678,7 +670,7 @@ export function MonthlyDetailTable({
             <select
               value={table.getState().pagination.pageSize}
               onChange={event => table.setPageSize(Number(event.target.value))}
-              className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="h-7 rounded-md border border-hairline bg-surface px-2 text-xs text-ink-muted"
             >
               {[10, 20, 50].map(size => (
                 <option key={size} value={size}>
@@ -690,7 +682,7 @@ export function MonthlyDetailTable({
               type="button"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="rounded-md border border-zinc-200 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+              className="rounded-md border border-hairline px-2 py-1 disabled:opacity-40"
             >
               이전
             </button>
@@ -698,13 +690,13 @@ export function MonthlyDetailTable({
               type="button"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="rounded-md border border-zinc-200 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+              className="rounded-md border border-hairline px-2 py-1 disabled:opacity-40"
             >
               다음
             </button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-white text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-surface text-xs text-ink-muted">
           <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
               <col style={{ width: columnWidths.action }} />
@@ -718,23 +710,21 @@ export function MonthlyDetailTable({
             </colgroup>
             <tbody>
               {/* Separator row with type toggle */}
-              <tr className="border-b-2 border-dashed border-zinc-300 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800">
+              <tr className="border-b-2 border-dashed border-hairline-strong bg-surface-soft">
                 <td
                   colSpan={table.getVisibleLeafColumns().length + 1}
-                  className="border-b border-r border-zinc-200 px-3 py-2 dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      새 거래 입력:
-                    </span>
-                    <div className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-900">
+                    <span className="text-xs font-medium text-ink-subtle">새 거래 입력:</span>
+                    <div className="flex items-center rounded-lg border border-hairline bg-surface p-0.5">
                       <button
                         type="button"
                         onClick={() => setInputTransactionType('expense')}
                         className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                           inputTransactionType === 'expense'
-                            ? 'bg-rose-500 text-white'
-                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                            ? 'bg-loss text-on-accent'
+                            : 'text-ink-subtle hover:bg-surface-soft'
                         }`}
                       >
                         지출
@@ -744,8 +734,8 @@ export function MonthlyDetailTable({
                         onClick={() => setInputTransactionType('income')}
                         className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                           inputTransactionType === 'income'
-                            ? 'bg-emerald-500 text-white'
-                            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                            ? 'bg-gain text-on-accent'
+                            : 'text-ink-subtle hover:bg-surface-soft'
                         }`}
                       >
                         수입
@@ -756,51 +746,51 @@ export function MonthlyDetailTable({
               </tr>
 
               {/* Input area column headers (no filters) */}
-              <tr className="bg-zinc-200 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+              <tr className="bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
                 <td
-                  className="border-b border-r border-zinc-200 px-2 py-2 text-center dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-2 py-2 text-center"
                   style={{ width: columnWidths.action }}
                 >
                   <span className="sr-only">액션</span>
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.date }}
                 >
                   날짜
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.category }}
                 >
                   카테고리
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.type }}
                 >
                   유형
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.paymentMethod }}
                 >
                   결제 수단
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.user }}
                 >
                   사용자
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-right dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-right"
                   style={{ width: columnWidths.amount }}
                 >
                   금액
                 </td>
                 <td
-                  className="border-b border-r border-zinc-200 px-3 py-2 text-left dark:border-zinc-700"
+                  className="border-b border-r border-hairline px-3 py-2 text-left"
                   style={{ width: columnWidths.description }}
                 >
                   메모

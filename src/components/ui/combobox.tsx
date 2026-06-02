@@ -176,16 +176,14 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
 
     const renderOptions = () => {
       if (filtered.length === 0) {
-        return (
-          <li className="px-3 py-2 text-sm text-zinc-400 dark:text-zinc-500">검색 결과 없음</li>
-        );
+        return <li className="px-3 py-2 text-sm text-ink-faint">검색 결과 없음</li>;
       }
 
       if (filteredGroups) {
         let flatIdx = 0;
         return filteredGroups.map(group => (
           <li key={group.label}>
-            <div className="px-3 py-1.5 text-xs font-semibold text-zinc-400 uppercase dark:text-zinc-500">
+            <div className="px-3 py-1.5 text-xs font-semibold text-ink-faint uppercase">
               {group.label}
             </div>
             <ul>
@@ -199,8 +197,8 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
                     aria-selected={idx === highlightedIndex}
                     className={`cursor-pointer px-3 py-2 text-sm ${
                       idx === highlightedIndex
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                        : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700/50'
+                        ? 'accent-soft text-accent'
+                        : 'text-ink-muted hover:bg-surface-soft'
                     }`}
                     onMouseDown={e => {
                       e.preventDefault();
@@ -211,9 +209,7 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
                     {opt.icon && <span className="mr-1.5">{opt.icon}</span>}
                     {opt.label}
                     {opt.sublabel && (
-                      <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">
-                        {opt.sublabel}
-                      </span>
+                      <span className="ml-2 text-xs text-ink-faint">{opt.sublabel}</span>
                     )}
                   </li>
                 );
@@ -231,8 +227,8 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
           aria-selected={idx === highlightedIndex}
           className={`cursor-pointer px-3 py-2 text-sm ${
             idx === highlightedIndex
-              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-              : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700/50'
+              ? 'accent-soft text-accent'
+              : 'text-ink-muted hover:bg-surface-soft'
           }`}
           onMouseDown={e => {
             e.preventDefault();
@@ -242,9 +238,7 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
         >
           {opt.icon && <span className="mr-1.5">{opt.icon}</span>}
           {opt.label}
-          {opt.sublabel && (
-            <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">{opt.sublabel}</span>
-          )}
+          {opt.sublabel && <span className="ml-2 text-xs text-ink-faint">{opt.sublabel}</span>}
         </li>
       ));
     };
@@ -257,7 +251,7 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
           value={inputText}
           autoFocus={autoFocus}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-lg text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+          className="w-full rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-lg text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           onChange={e => {
             setInputText(e.target.value);
             setIsOpen(true);
@@ -280,7 +274,7 @@ export const Combobox = forwardRef<ComboboxHandle, ComboboxProps>(
             id={listboxId}
             ref={listRef}
             role="listbox"
-            className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+            className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-hairline bg-surface py-1 shadow-lg"
           >
             {renderOptions()}
           </ul>

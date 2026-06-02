@@ -32,25 +32,26 @@ export const RISK_LEVEL_LABELS: Record<string, string> = {
   aggressive: '위험자산',
 };
 
+// Warm-tuned palette (matches design tokens: gain/accent/loss)
 export const RISK_LEVEL_COLORS: Record<string, string> = {
-  안전자산: '#22c55e',
-  중립자산: '#3b82f6',
-  위험자산: '#ef4444',
+  안전자산: '#3e9c6b', // gain
+  중립자산: '#e07856', // accent coral
+  위험자산: '#ce4b3c', // loss
 };
 
 export const RISK_LEVEL_TEXT_COLORS: Record<string, string> = {
-  안전자산: 'text-emerald-600 dark:text-emerald-400',
-  중립자산: 'text-blue-600 dark:text-blue-400',
-  위험자산: 'text-rose-600 dark:text-rose-400',
+  안전자산: 'text-gain',
+  중립자산: 'text-accent',
+  위험자산: 'text-loss',
 };
 
 export const RISK_LEVEL_CHILD_PALETTES: Record<string, string[]> = {
-  안전자산: ['#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0'],
-  중립자산: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'],
-  위험자산: ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca'],
+  안전자산: ['#2f7c54', '#3e9c6b', '#5fb285', '#8fcaa6', '#bfe0cd'],
+  중립자산: ['#c9633f', '#e07856', '#ed9579', '#f3b5a0', '#f8d4c7'],
+  위험자산: ['#a93b2e', '#ce4b3c', '#dd7264', '#e89e94', '#f2c8c1'],
 };
 
-export const DEFAULT_CHILD_COLORS = ['#6b7280', '#9ca3af', '#d1d5db'];
+export const DEFAULT_CHILD_COLORS = ['#8c8377', '#b4aba0', '#d9d1c3'];
 
 // Account Type Categories
 export const PENSION_ACCOUNT_TYPES = ['연금저축', 'IRP', 'ISA'] as const;
@@ -74,6 +75,6 @@ export const HOLDING_TRANSACTION_TYPE_LABELS: Record<string, string> = {
 
 // Chart Colors
 export const CHART_COLORS = {
-  income: '#10b981',
-  expense: '#f43f5e',
+  income: '#3e9c6b', // gain
+  expense: '#ce4b3c', // loss
 } as const;

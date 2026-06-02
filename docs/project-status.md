@@ -1,6 +1,6 @@
 # Project Status
 
-최종 갱신: 2026-05-09
+최종 갱신: 2026-06-02
 
 이 문서는 WeFolio의 현재 구현 상태, 알려진 제약, 마일스톤 현황을 관리하는 기준 문서입니다. 프로젝트 개요와 개발 명령어는 루트 `AGENTS.md`를, 초기 개발 계획은 `ROADMAP.md`를 참고합니다. 단, `ROADMAP.md`는 초기 계획 기준이라 현재 코드와 차이가 있을 수 있으며, 이 문서는 현재 코드 기준 상태를 우선합니다.
 
@@ -32,8 +32,9 @@
 | 영역                   | 상태      | 현재 구현                                                                                                                                                          | 남은 작업/주의점                                                       |
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | 프로젝트 구조          | `Done`    | `src/app`, `components`, `services`, `repositories`, `lib`, `types`, `prisma`로 계층화되어 있음                                                                    | 새 기능은 App/API, Service, Repository 책임 경계를 유지해야 함         |
-| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 고정 LNB, 다크 모드 토글, 월별 요약/자산 메뉴 제공                                                                                          | 루트 `/`는 `/budget/monthly`로 redirect됨                              |
-| 공통 UI                | `Partial` | Button, Input, Select, Tabs, Card, Combobox, EmptyState, PageContainer 존재                                                                                        | Modal, Toast, ConfirmDialog 등 일반 관리 UI에 필요한 컴포넌트는 부족함 |
+| 앱 레이아웃/네비게이션 | `Partial` | `(app)` 그룹 레이아웃, 248px 라벨형 사이드바(브랜드/가구 푸터/라이트·다크 세그먼트 토글), 월별 요약/자산 메뉴 제공. 새 디자인 셸 양식 적용(M008)                     | 루트 `/`는 `/budget/monthly`로 redirect됨. IA 재편은 M009 계획        |
+| 공통 UI                | `Partial` | Button, Input, Select, Tabs, Card, Combobox, EmptyState, PageContainer 존재. 새 디자인 토큰(시맨틱 색상/타이포/라운드) 적용(M008)                                   | Modal, Toast, ConfirmDialog 등 일반 관리 UI에 필요한 컴포넌트는 부족함 |
+| 디자인 시스템          | `Done`    | 웜 코랄/크림 팔레트 + Pretendard/JetBrains Mono + 라이트/다크 토큰을 `globals.css`에 이식, Tailwind `@theme inline` 시맨틱 유틸리티로 노출(M008)                    | 차트는 Nivo 유지·색상만 재정의. 정보구조·신규 화면은 M009 범위        |
 | Prisma 스키마          | `Done`    | 예산 거래/카테고리/반복 템플릿과 자산 기관/가족 구성원/계좌/종목/보유/가격/스냅샷/거래 모델 정의                                                                   | 마이그레이션 디렉터리는 없고 개발용 `db push` 중심으로 보임            |
 | 데이터 접근 계층       | `Done`    | transaction, category, recurring-template, account, holding repository 구현                                                                                        | 복잡한 집계는 일부 service에서 Prisma 직접 호출을 병행함               |
 | 서비스 계층            | `Partial` | transaction, category, dashboard, statistics, account, holding service 구현                                                                                        | 통계 서비스는 월/연/카테고리 일부만 있고 주간/기간 분석은 없음         |
@@ -176,10 +177,40 @@
 - 진행 이력:
   - 아직 없음
 
+### M008. 디자인 시스템 적용
+
+- 상태: 완료
+- 상세 문서: [m008-design-system-migration.md](./milestones/m008-design-system-migration.md)
+- Goal:
+  - [x] 디자인 토큰이 `globals.css`에 이식되고 Tailwind 시맨틱 유틸리티로 노출된다
+  - [x] 폰트가 Pretendard + JetBrains Mono로 교체된다
+  - [x] 앱 셸(사이드바/탑바 토글/월 선택)이 새 디자인 양식으로 재구성된다 (IA·라우트 유지)
+  - [x] 공유 UI 프리미티브와 기능 컴포넌트가 시맨틱 토큰으로 치환된다 (`dark:` 색상 변형 제거)
+  - [x] Nivo 차트가 새 웜 팔레트로 재색칠된다
+- 진행 이력:
+  - 2026-06-02: 시각 시스템만 적용(IA·가계부·Nivo 유지). 토큰/폰트/셸/UI/차트/기능 컴포넌트 스윕 완료. 잔여 레거시 색상 유틸리티 0건. lint/tsc/test/build 통과
+
+### M009. 정보구조(IA) 재편 & 신규 인사이트 화면
+
+- 상태: 시작 전 (계획 문서만 작성)
+- 상세 문서: [m009-ia-restructure-and-new-insights.md](./milestones/m009-ia-restructure-and-new-insights.md)
+- Goal:
+  - [ ] 새 디자인 IA와 현재 라우트 매핑·갭이 확정되고 가계부 포함 통합 내비게이션이 결정된다
+  - [ ] 투자 수익 현황(FR-C1) 화면이 정의·구현된다
+  - [ ] 자산 증가 분해(FR-C5) 워터폴 화면이 정의·구현된다
+  - [ ] 기존 화면 재배치·명칭/redirect 호환 정책이 결정된다
+- 진행 이력:
+  - 2026-06-02: M008(시각 시스템) 적용 중 식별된 IA 차이·신규 화면(투자 수익 현황, 자산 증가 분해 워터폴)을 계획 문서로 정리
+
 ## 검증 이력
 
 | 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
 | ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-06-02       | M008 디자인 시스템 적용            | `pnpm dev` 렌더 확인                                            | Pass | 전 라우트 200, `.shell/.sidebar/.nav-item` 렌더, 컴파일 CSS에 웜 토큰(#fbf9f5/#e07856) 생성, 레거시 클래스 누출 0 |
+| 2026-06-02       | M008 디자인 시스템 적용            | `pnpm build`                                                    | Pass | 23개 라우트 정적/동적 생성 성공                                                     |
+| 2026-06-02       | M008 디자인 시스템 적용            | `pnpm test`                                                     | Pass | Vitest 7 files, 43 tests                                                            |
+| 2026-06-02       | M008 디자인 시스템 적용            | `pnpm exec tsc --noEmit`                                        | Pass | 폰트/토큰/셸/차트 타입 검증                                                         |
+| 2026-06-02       | M008 디자인 시스템 적용            | `pnpm lint`                                                     | Pass | 색상 스윕 후 잔여 레거시 색상 유틸리티 0건. `docs-new/` lint 제외                   |
 | 2026-05-09 23:16 | M006 입력 패널 검토 흐름 보완      | `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 기본 sandbox build는 Google Fonts fetch 실패. 네트워크 허용 후 재실행 통과          |
 | 2026-05-09 23:15 | M006 입력 패널 검토 흐름 보완      | `pnpm test`                                                     | Pass | Vitest 7 files, 43 tests                                                            |
 | 2026-05-09 23:15 | M006 입력 패널 검토 흐름 보완      | `pnpm lint`                                                     | Pass | 소유자별/자산유형별 그룹, localStorage 임시저장 UI 검증                             |
