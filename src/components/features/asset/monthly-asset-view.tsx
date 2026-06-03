@@ -168,7 +168,7 @@ export function MonthlyAssetView({
   );
 
   return (
-    <PageContainer isFetching={isFetching}>
+    <PageContainer isFetching={isFetching} className="flush-top">
       <section className="mb-8">
         <MonthSelector
           year={selectedYear}
