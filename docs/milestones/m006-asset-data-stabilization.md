@@ -7,10 +7,12 @@
 ## Goals
 
 - [ ] 자산 기준 데이터 수정/삭제 정책과 UI가 정리되어 있다
-- [ ] 자산 거래를 수정할 수 있다
+- [ ] 자산 거래를 수정할 수 있다 (비권위 보조 화면으로 유지 — 우선순위 하향)
 - [x] 월별 스냅샷 생성/수정 UX 또는 자동 생성 정책이 결정되어 있다
-- [ ] 가격 이력과 환율 입력/외부 연동 방향이 결정되어 있다
-- [ ] 거래, 보유, 스냅샷 간 정합성 검증 로직이 있다
+- [x] 가격 이력과 환율 입력/외부 연동 방향이 결정되어 있다 (환율 **수동 입력** 확정, 외부 API 미사용 — [분석 문서](../work-items/asset-recurring-input-analysis.md))
+- [ ] 스냅샷을 SSOT로 고정하고 거래를 비권위로 격리한다 (거래 입력이 `Holding`/스냅샷 값을 자동으로 덮어쓰지 않음)
+
+> 2026-06-04 결정 반영: 모델은 **스냅샷 전용 + 일자(`snapshotDate`) 키**로 통일하고, 거래 기록/화면은 **삭제하지 않고 비권위 보조로 유지**한다. 디자인 SSOT는 `docs-new/data-model.md`·`asset-management.md`(ADR 개정본). 배경·결정은 [자산 반복 입력 진단 문서](../work-items/asset-recurring-input-analysis.md) 참조.
 
 ## Goal 상세
 
@@ -26,9 +28,16 @@
 - 수량형 자산은 수량, 현재가, 환율, 원화 현재가를 입력하고 평가금액을 자동 계산하되 수정할 수 있습니다.
 - 당월 일부 스냅샷이 이미 있으면 기존 입력 수정 모드로 열고, 전월에는 있었지만 당월 입력이 빠진 행은 저장 전에 막습니다.
 
+### 스냅샷 SSOT + 거래 비권위 격리 (진행 중)
+
+- [x] increment 1: 거래(`record`/`delete`)가 `Holding.quantity/averageCostKRW`를 자동 갱신하지 않도록 격리. `saveMonthlyInput`이 최신 스냅샷 수량을 `Holding.quantity`에 동기화.
+- [ ] increment 2: `holdingService.getWithCurrentValue`가 현재가를 `AssetPrice` 대신 최신 스냅샷(`priceKRW`)에서 읽도록 전환(포트폴리오 현재값을 스냅샷 기반으로 통일).
+- [ ] increment 3: 평균단가(cost basis) 입력 경로. 현재 `HoldingValueSnapshot`은 평가액만 담고 평균단가가 없어, 스냅샷이 `Holding.averageCostKRW`를 갱신하지 못한다. 디자인의 `HoldingSnapshot.avgCostKRW`처럼 스냅샷·입력 폼에 평균단가를 추가해야 원금/수익이 스냅샷만으로 정합해진다.
+- 참고: `recordBuy`/`recordSell`/`updateHoldingAfterTransaction`는 호출처 없는 레거시(거래→Holding 재계산 커플링)다. 거래 화면 재도입 방향 확정 시 정리한다.
+
 ### 남은 범위
 
-자산 기준 데이터의 수정/삭제 UI, 자산 거래 수정, 외부 시세/환율 연동, 거래 기반 보유 수량과 월별 스냅샷 사이의 정합성 검증은 후속 작업입니다.
+자산 기준 데이터의 수정/삭제 UI, 자산 거래 수정은 후속 작업입니다. 외부 시세/환율 연동은 **수동 입력으로 확정**되어 닫혔습니다.
 
 ## Tasks
 
@@ -38,6 +47,7 @@
 | 2026-05-09 | `/asset/monthly` 입력 패널 추가 | 전월 복사, 상태 표시, 수량형/평가금액형 입력, 자산 추가 흐름 구현    |
 | 2026-05-09 | 검증 및 문서 갱신               | API route 테스트, 체크리스트, 프로젝트 상태 문서 갱신                |
 | 2026-05-09 | 입력 패널 검토 흐름 보완        | 소유자별/자산유형별 그룹 확인과 localStorage 임시저장/불러오기 추가 |
+| 2026-06-04 | 거래 비권위 격리 (increment 1)  | `record()`/`delete()`에서 Holding 재계산 제거, `saveMonthlyInput`이 최신 스냅샷 수량으로 `Holding.quantity` 동기화. TDD(3 테스트 추가) |
 
 ## 트러블슈팅
 

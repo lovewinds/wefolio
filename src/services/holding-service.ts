@@ -272,8 +272,8 @@ export const holdingTransactionService = {
       notes: notes ?? null,
     });
 
-    await this.updateHoldingAfterTransaction(holding.id);
-
+    // 거래는 비권위(non-authoritative) 보조 기록이다. 스냅샷이 SSOT이므로
+    // 거래 입력이 Holding 현재 상태를 자동으로 덮어쓰지 않는다.
     return transaction;
   },
 
@@ -405,9 +405,8 @@ export const holdingTransactionService = {
   },
 
   async delete(id: string): Promise<HoldingTransaction> {
-    const transaction = await holdingTransactionRepository.delete(id);
-    await this.updateHoldingAfterTransaction(transaction.holdingId);
-    return transaction;
+    // 거래는 비권위 보조 기록이므로 삭제해도 Holding을 재계산하지 않는다.
+    return holdingTransactionRepository.delete(id);
   },
 };
 
@@ -713,6 +712,8 @@ export const holdingValueSnapshotService = {
     month: number,
     rows: AssetMonthlyInputSaveRow[]
   ): Promise<AssetMonthlyInputDraft> {
+    const touchedHoldingIds = new Set<string>();
+
     for (const row of rows) {
       const date = assertDateInMonth(row.date, year, month);
       let holdingId = row.holdingId ?? undefined;
@@ -746,6 +747,17 @@ export const holdingValueSnapshotService = {
         totalValueKRW: row.totalValueKRW,
         source: 'manual',
       });
+
+      touchedHoldingIds.add(holdingId);
+    }
+
+    // 스냅샷을 SSOT로 고정: 최신 스냅샷 수량을 Holding 현재 상태에 반영한다.
+    // (평균단가는 스냅샷에 없으므로 보존한다.)
+    for (const holdingId of touchedHoldingIds) {
+      const latest = await holdingValueSnapshotRepository.findLatestByHoldingId(holdingId);
+      if (latest) {
+        await holdingRepository.update(holdingId, { quantity: latest.quantity });
+      }
     }
 
     return this.getMonthlyInputDraft(year, month);

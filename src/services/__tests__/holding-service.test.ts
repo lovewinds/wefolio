@@ -3,6 +3,7 @@ import {
   assetPriceRepository,
   holdingRepository,
   holdingTransactionRepository,
+  holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
 import {
   holdingService,
@@ -26,12 +27,20 @@ vi.mock('@/repositories/holding-repository', () => ({
   },
   holdingRepository: {
     findByAccountId: vi.fn(),
+    findByAccountAndAsset: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
     updateQuantity: vi.fn(),
   },
   holdingTransactionRepository: {
     findByHoldingId: vi.fn(),
+    create: vi.fn(),
+    delete: vi.fn(),
   },
-  holdingValueSnapshotRepository: {},
+  holdingValueSnapshotRepository: {
+    upsert: vi.fn(),
+    findLatestByHoldingId: vi.fn(),
+  },
 }));
 
 vi.mock('@/services/account-service', () => ({
@@ -266,6 +275,80 @@ describe('holdingValueSnapshotService', () => {
     });
 
     monthlySpy.mockRestore();
+  });
+});
+
+describe('holdingTransactionService 비권위 격리', () => {
+  it('record는 거래만 생성하고 Holding을 재계산하지 않는다', async () => {
+    const now = new Date('2026-05-01T00:00:00.000Z');
+    vi.mocked(holdingRepository.findByAccountAndAsset).mockResolvedValue({
+      id: 'holding-1',
+      accountId: 'account-1',
+      assetMasterId: 'asset-1',
+      quantity: 5,
+      averageCostOriginal: 1000,
+      averageCostKRW: 1000,
+      dataSource: 'transaction',
+      createdAt: now,
+      updatedAt: now,
+    } as unknown as Awaited<ReturnType<typeof holdingRepository.findByAccountAndAsset>>);
+    vi.mocked(holdingTransactionRepository.create).mockResolvedValue({ id: 'tx-1' } as never);
+    vi.mocked(holdingTransactionRepository.findByHoldingId).mockResolvedValue([]);
+
+    await holdingTransactionService.record('account-1', 'asset-1', 'buy', now, 3, 1000, 1000);
+
+    expect(holdingRepository.updateQuantity).not.toHaveBeenCalled();
+    expect(holdingRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('delete는 거래만 삭제하고 Holding을 재계산하지 않는다', async () => {
+    vi.mocked(holdingTransactionRepository.delete).mockResolvedValue({
+      id: 'tx-1',
+      holdingId: 'holding-1',
+    } as never);
+    vi.mocked(holdingTransactionRepository.findByHoldingId).mockResolvedValue([]);
+
+    await holdingTransactionService.delete('tx-1');
+
+    expect(holdingRepository.updateQuantity).not.toHaveBeenCalled();
+  });
+});
+
+describe('holdingValueSnapshotService.saveMonthlyInput', () => {
+  it('스냅샷 저장 후 최신 스냅샷 수량으로 Holding.quantity를 동기화한다', async () => {
+    const draftSpy = vi
+      .spyOn(holdingValueSnapshotService, 'getMonthlyInputDraft')
+      .mockResolvedValue({} as never);
+    vi.mocked(holdingValueSnapshotRepository.upsert).mockResolvedValue({} as never);
+    vi.mocked(holdingValueSnapshotRepository.findLatestByHoldingId).mockResolvedValue({
+      id: 'snap-1',
+      holdingId: 'holding-1',
+      date: new Date('2026-05-31T00:00:00.000Z'),
+      quantity: 12,
+      priceOriginal: 100,
+      exchangeRate: null,
+      priceKRW: 100,
+      totalValueKRW: 1200,
+      source: 'manual',
+      createdAt: new Date('2026-05-31T00:00:00.000Z'),
+    } as never);
+
+    await holdingValueSnapshotService.saveMonthlyInput(2026, 5, [
+      {
+        holdingId: 'holding-1',
+        accountId: 'account-1',
+        assetMasterId: 'asset-1',
+        date: '2026-05-31',
+        quantity: 12,
+        priceOriginal: 100,
+        exchangeRate: null,
+        priceKRW: 100,
+        totalValueKRW: 1200,
+      },
+    ] as unknown as Parameters<typeof holdingValueSnapshotService.saveMonthlyInput>[2]);
+
+    expect(holdingRepository.update).toHaveBeenCalledWith('holding-1', { quantity: 12 });
+    draftSpy.mockRestore();
   });
 });
 
