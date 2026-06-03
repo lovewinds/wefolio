@@ -1,11 +1,20 @@
 # 데이터 모델
 
-자산 도메인을 **간결하게 재설계**한 데이터 모델이다. 핵심 변화는 거래 기록·가격 이력 테이블을
-없애고, **월별 스냅샷 2종(현금/종목)** 으로 단순화한 것이다.
+자산 도메인을 **간결하게 재설계**한 데이터 모델이다. 핵심 변화는 가격 이력·계좌 스냅샷 테이블을
+**스냅샷 2종(현금/종목)** 으로 통합하고, 스냅샷을 단일 진실원천(SSOT)으로 삼은 것이다.
+
+> **입력 주기(2026-06-04 결정)**: 스냅샷 키는 월이 아니라 **일자(`snapshotDate`)** 기준이다.
+> 기본 사용 흐름은 월말 마감이지만, 필요하면 **주 단위 등 임의 시점**으로도 스냅샷을 찍을 수 있다.
+> (구 설계는 `yearMonth` 월 단위 키였으나 주 단위 확장성을 위해 일자 키로 일반화했다.)
+
+> **거래 기록(2026-06-04 결정)**: `HoldingTransaction`/거래 화면은 **제거하지 않고 비권위(non-authoritative)
+> 보조 테이블로 유지**한다. 향후 재도입 가능성을 위한 것이며, 스냅샷이 항상 진실원천이다.
+> 거래 입력이 `Holding` 현재 상태나 스냅샷 값을 자동으로 덮어쓰지 않는다. ([ADR](./asset-management.md#adr-거래-기록-테이블을-두지-않는다) 참조)
 
 ## 1. 도메인 분리
 
 가계부와 자산 관리는 **독립**적으로 운영한다 (통합 분석 없음). 기존 원칙을 유지한다.
+내비게이션에서도 가계부는 자산과 분리된 **별도 최상위 그룹**으로 둔다.
 
 ---
 
@@ -96,7 +105,7 @@ model AssetMaster {
 }
 ```
 
-### 보유 + 월별 스냅샷 (핵심)
+### 보유 + 스냅샷 (핵심)
 
 ```prisma
 // 계좌 × 종목 = 보유 단위. 현재 상태를 들고 있다.
@@ -112,11 +121,11 @@ model Holding {
   @@unique([accountId, assetMasterId])   // 계좌당 종목 1개 (동일 종목 다중 계좌 보유 허용)
 }
 
-// 종목 월별 스냅샷 — 투자 자산의 단일 진실원천(SSOT)
+// 종목 스냅샷 — 투자 자산의 단일 진실원천(SSOT)
 model HoldingSnapshot {
   id              String   @id @default(cuid())
   holdingId       String
-  yearMonth       String                  // "2024-12" (월 단위 키)
+  snapshotDate    DateTime                // 스냅샷 기준일 (월말 기본, 주 단위 등 임의 시점 허용)
   quantity        Float                   // 수량
   avgCostKRW      Float                   // 평균단가(원화) → 원금 = quantity × avgCostKRW
   currentPriceKRW Float                   // 현재가(원화) → 평가액 = quantity × currentPriceKRW
@@ -124,21 +133,21 @@ model HoldingSnapshot {
 
   holding         Holding  @relation(fields: [holdingId], references: [id])
 
-  @@unique([holdingId, yearMonth])
-  @@index([yearMonth])
+  @@unique([holdingId, snapshotDate])
+  @@index([snapshotDate])
 }
 
-// 계좌 현금 월별 스냅샷 — 현금 자산의 단일 진실원천(SSOT)
+// 계좌 현금 스냅샷 — 현금 자산의 단일 진실원천(SSOT)
 model CashSnapshot {
   id            String   @id @default(cuid())
   accountId     String
-  yearMonth     String                    // "2024-12"
-  cashBalanceKRW Float                     // 해당 월말 현금 잔고(원화)
+  snapshotDate  DateTime                  // 스냅샷 기준일 (월말 기본, 주 단위 등 임의 시점 허용)
+  cashBalanceKRW Float                     // 해당 시점 현금 잔고(원화)
 
   account       Account  @relation(fields: [accountId], references: [id])
 
-  @@unique([accountId, yearMonth])
-  @@index([yearMonth])
+  @@unique([accountId, snapshotDate])
+  @@index([snapshotDate])
 }
 ```
 
@@ -146,15 +155,20 @@ model CashSnapshot {
 
 | 폐기 | 대체 |
 |------|------|
-| `HoldingTransaction` | 없음 — 거래 기록 미사용, 상태 직접 수정 ([ADR](./asset-management.md#adr-거래-기록-테이블을-두지-않는다)) |
 | `AssetPrice` | `HoldingSnapshot.currentPriceKRW` 에 통합 (가격 이력 = 스냅샷 이력) |
 | `AccountSnapshot` | `CashSnapshot` + 종목 스냅샷 집계로 대체 (현금/평가액을 별도 저장하지 않음) |
-| `HoldingValueSnapshot` | `HoldingSnapshot` 으로 통합 (원금·평가액 동시 보유) |
+| `HoldingValueSnapshot` | `HoldingSnapshot` 으로 통합 (원금·평가액 동시 보유, `date` → `snapshotDate`) |
 | `Holding.quantity/averageCostKRW` (현재상태 컬럼) | 최신 `HoldingSnapshot` 으로 대체 |
 
-> 설계 단순화 포인트: 기존엔 "현재 상태(Holding)"와 "월별 이력(Snapshot)"이 분리되어 어긋났다.
-> 새 모델에서 **현재 상태 = 최신 월 스냅샷**이므로 격차가 발생할 수 없다.
-> `yearMonth` 문자열 키를 써서 "월 단위" 의미를 모델에 명시한다(기존 `date` 기준일 모호성 제거).
+### 유지(비권위) 모델
+
+| 모델 | 위상 |
+|------|------|
+| `HoldingTransaction` | **비권위 보조**로 유지 — 향후 재도입 대비. 스냅샷이 SSOT이며, 거래 입력은 `Holding`·스냅샷을 자동으로 덮어쓰지 않는다. ([ADR](./asset-management.md#adr-거래-기록-테이블을-두지-않는다)) |
+
+> 설계 단순화 포인트: 기존엔 "현재 상태(Holding)"와 "이력(Snapshot)"이 분리되어 어긋났다.
+> 새 모델에서 **현재 상태 = 최신 스냅샷**이므로 격차가 발생할 수 없다.
+> 키는 `snapshotDate`(DateTime) — 월말 기본이되 주 단위 등 임의 시점 스냅샷을 같은 스키마로 수용한다.
 
 ---
 
@@ -192,7 +206,7 @@ model BudgetRecurringTemplate {
 | F | 분류 | `AssetMaster.subClass` (SUB_CLASS로 정규화, 없으면 null) |
 | D | 위험/안전 | `AssetMaster.riskLevel` (RISK_LEVEL로 정규화) |
 | N | 환율 | `HoldingSnapshot.exchangeRate` (환율>1 → `currency=USD`, 그 외 KRW·null) |
-| J | 기준일자 | → `HoldingSnapshot.yearMonth` ("YYYY-MM"으로 변환) |
+| J | 기준일자 | → `HoldingSnapshot.snapshotDate` (해당 월 기준일 DateTime으로 변환) |
 | K | 보유개수 | `HoldingSnapshot.quantity` |
 | L | 개당가격 | `HoldingSnapshot.avgCostKRW` **및** `currentPriceKRW` 초기값 |
 | O | 원화금액 | 검증용(= quantity × currentPriceKRW). 현금형은 평가액으로 사용 |

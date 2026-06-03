@@ -1,16 +1,14 @@
 # Current Work
 
-최종 갱신: 2026-06-03
+최종 갱신: 2026-06-04
 
 이 문서는 작업 조정판입니다. 각 작업의 상세 목표, 성공 기준, 진행 로그는 `docs/work-items/*.md`에 기록하고, 이 문서에는 진행 중인 작업의 소유권과 충돌 위험만 유지합니다.
 
 ## Active Sessions
 
-현재 활성 작업 세션 없음.
-
 | Task | Worktree | Branch | Owner | Status | Last Verification |
 |------|----------|--------|-------|--------|-------------------|
-| — | — | — | — | — | — |
+| [자산 반복 입력 진단](work-items/asset-recurring-input-analysis.md) | — | main | 분석 세션 | In Progress | 2026-06-04 인용 경로 확인 |
 
 ## Integration Queue
 
