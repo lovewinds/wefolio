@@ -57,14 +57,14 @@ export async function insertAssetSeedData(
     // 1. 가족 구성원 upsert
     let memberId = memberCache.get(snapshot.memberName);
     if (!memberId) {
-      const existing = await prisma.familyMember.findUnique({
+      const existing = await prisma.member.findUnique({
         where: { name: snapshot.memberName },
       });
 
       if (existing) {
         memberId = existing.id;
       } else {
-        const created = await prisma.familyMember.create({
+        const created = await prisma.member.create({
           data: {
             name: snapshot.memberName,
             color: getNextMemberColor(),
@@ -80,14 +80,14 @@ export async function insertAssetSeedData(
     // 2. 금융기관 upsert
     let institutionId = institutionCache.get(snapshot.institutionName);
     if (!institutionId) {
-      const existing = await prisma.assetInstitution.findUnique({
+      const existing = await prisma.institution.findUnique({
         where: { name: snapshot.institutionName },
       });
 
       if (existing) {
         institutionId = existing.id;
       } else {
-        const created = await prisma.assetInstitution.create({
+        const created = await prisma.institution.create({
           data: {
             name: snapshot.institutionName,
             type: inferInstitutionType(snapshot.institutionName),
@@ -154,7 +154,6 @@ export async function insertAssetSeedData(
             name: snapshot.accountName,
             accountType: snapshot.accountType,
             currency: snapshot.currency,
-            cashBalance: 0, // 스냅샷에서는 개별 종목 가치만 추적
           },
         });
         accountId = created.id;
@@ -164,7 +163,7 @@ export async function insertAssetSeedData(
       accountCache.set(accountKey, accountId);
     }
 
-    // 5. 보유 종목 upsert
+    // 5. 보유 종목 upsert (현재 상태 캐시 컬럼 없음 — 연결만 생성)
     const holdingKey = `${accountId}:${assetMasterId}`;
     let holdingId = holdingCache.get(holdingKey);
     if (!holdingId) {
@@ -179,28 +178,11 @@ export async function insertAssetSeedData(
 
       if (existingHolding) {
         holdingId = existingHolding.id;
-        // 수량 업데이트 (최신 스냅샷 기준)
-        await prisma.holding.update({
-          where: { id: holdingId },
-          data: {
-            quantity: snapshot.quantity,
-            averageCostOriginal: snapshot.priceOriginal,
-            averageCostKRW: snapshot.exchangeRate
-              ? snapshot.priceOriginal * snapshot.exchangeRate
-              : snapshot.priceOriginal,
-          },
-        });
       } else {
         const created = await prisma.holding.create({
           data: {
             accountId,
             assetMasterId,
-            quantity: snapshot.quantity,
-            averageCostOriginal: snapshot.priceOriginal,
-            averageCostKRW: snapshot.exchangeRate
-              ? snapshot.priceOriginal * snapshot.exchangeRate
-              : snapshot.priceOriginal,
-            dataSource: 'snapshot',
           },
         });
         holdingId = created.id;
@@ -209,53 +191,43 @@ export async function insertAssetSeedData(
       holdingCache.set(holdingKey, holdingId);
     }
 
-    // 6. 보유 종목 스냅샷 upsert
-    const existingSnapshot = await prisma.holdingValueSnapshot.findUnique({
+    // 6. 보유 종목 스냅샷 upsert (SSOT)
+    // 원화 환산값 = 원통화 가격 × 환율(외화) / 원통화 가격(원화).
+    // 평균단가는 엑셀에 없으므로 현재가와 동일하게 적재(수익 0에서 출발, 이후 사용자 보정).
+    // 외화 입력값(priceOriginal/avgCostOriginal)은 손실 없이 보존, 원화 종목은 null.
+    const isForeign = Boolean(snapshot.exchangeRate);
+    const krwPrice = isForeign
+      ? snapshot.priceOriginal * (snapshot.exchangeRate as number)
+      : snapshot.priceOriginal;
+    const snapshotData = {
+      quantity: snapshot.quantity,
+      avgCostKRW: krwPrice,
+      currentPriceKRW: krwPrice,
+      exchangeRate: snapshot.exchangeRate ?? null,
+      priceOriginal: isForeign ? snapshot.priceOriginal : null,
+      avgCostOriginal: isForeign ? snapshot.priceOriginal : null,
+    };
+
+    const existingSnapshot = await prisma.holdingSnapshot.findUnique({
       where: {
-        holdingId_date: {
+        holdingId_snapshotDate: {
           holdingId,
-          date: snapshot.date,
+          snapshotDate: snapshot.date,
         },
       },
     });
 
     if (existingSnapshot) {
-      // 기존 스냅샷 업데이트
-      await prisma.holdingValueSnapshot.update({
+      await prisma.holdingSnapshot.update({
         where: { id: existingSnapshot.id },
-        data: {
-          quantity: snapshot.quantity,
-          priceOriginal: snapshot.priceOriginal,
-          exchangeRate: snapshot.exchangeRate,
-          priceKRW: snapshot.exchangeRate
-            ? snapshot.priceOriginal * snapshot.exchangeRate
-            : snapshot.priceOriginal,
-          // 평균단가는 엑셀에 없으므로 현재가와 동일하게 적재(수익 0에서 출발).
-          avgCostKRW: snapshot.exchangeRate
-            ? snapshot.priceOriginal * snapshot.exchangeRate
-            : snapshot.priceOriginal,
-          totalValueKRW: snapshot.totalValueKRW,
-          source: 'import',
-        },
+        data: snapshotData,
       });
     } else {
-      // 새 스냅샷 생성
-      await prisma.holdingValueSnapshot.create({
+      await prisma.holdingSnapshot.create({
         data: {
           holdingId,
-          date: snapshot.date,
-          quantity: snapshot.quantity,
-          priceOriginal: snapshot.priceOriginal,
-          exchangeRate: snapshot.exchangeRate,
-          priceKRW: snapshot.exchangeRate
-            ? snapshot.priceOriginal * snapshot.exchangeRate
-            : snapshot.priceOriginal,
-          // 평균단가는 엑셀에 없으므로 현재가와 동일하게 적재(수익 0에서 출발).
-          avgCostKRW: snapshot.exchangeRate
-            ? snapshot.priceOriginal * snapshot.exchangeRate
-            : snapshot.priceOriginal,
-          totalValueKRW: snapshot.totalValueKRW,
-          source: 'import',
+          snapshotDate: snapshot.date,
+          ...snapshotData,
         },
       });
       snapshotsCreated++;
