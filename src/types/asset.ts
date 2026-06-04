@@ -2,44 +2,19 @@
 // 자산 관리 시스템 타입 정의
 // ============================================
 
-// 금융기관 타입
+// enum성 상수 타입은 src/constants/asset.ts(SSOT)에서 파생한다.
+import type {
+  AccountType,
+  AssetClass,
+  AssetSubClass,
+  RiskLevel,
+  Currency,
+} from '@/constants/asset';
+
+export type { AccountType, AssetClass, AssetSubClass, RiskLevel, Currency };
+
+// 금융기관 타입 (표시용 라벨)
 export type AssetInstitutionType = '은행' | '증권';
-
-// 계좌 타입
-export type AccountType =
-  | '예금' // 저축예금
-  | '적금' // 정기예금
-  | '청약' // 청약
-  | '종합' // 일반 증권계좌
-  | 'CMA' // CMA
-  | '연금저축' // 연금저축
-  | 'IRP' // IRP
-  | 'ISA' // ISA
-  | '코인' // 코인
-  | '금현물'; // 금현물
-
-// 자산 분류
-export type AssetClass =
-  | '주식' // 주식
-  | '채권' // 채권
-  | '예금' // 예금
-  | '금' // 금
-  | '펀드' // 펀드
-  | 'ETF' // ETF
-  | '코인'; // 코인
-
-// 자산 세부 분류
-export type AssetSubClass =
-  | '성장' // 성장
-  | '배당' // 배당
-  | '국채' // 국채
-  | '회사채'; // 회사채
-
-// 위험 수준
-export type RiskLevel = '안전자산' | '중립자산' | '위험자산';
-
-// 통화
-export type Currency = 'KRW' | 'USD';
 
 // 거래 유형
 export type HoldingTransactionType =
@@ -48,15 +23,6 @@ export type HoldingTransactionType =
   | '배당' // 배당
   | '이체입고' // 이체입고
   | '이체출고'; // 이체출고
-
-// 데이터 소스
-export type DataSource = '스냅샷' | '거래';
-
-// 가격 소스
-export type PriceSource = 'API' | '수기';
-
-// 스냅샷 소스
-export type SnapshotSource = '수기' | '가져오기' | 'API';
 
 // ============================================
 // 기본 인터페이스
@@ -71,7 +37,7 @@ export interface AssetInstitutionBase {
 }
 
 // 가족 구성원
-export interface FamilyMemberBase {
+export interface MemberBase {
   id: string;
   name: string;
   color?: string | null;
@@ -87,7 +53,6 @@ export interface AssetMasterBase {
   subClass?: AssetSubClass | null;
   riskLevel: RiskLevel;
   currency: Currency;
-  metadata?: string | null;
   isActive: boolean;
 }
 
@@ -99,22 +64,17 @@ export interface AccountBase {
   name: string;
   accountType: AccountType;
   currency: Currency;
-  cashBalance: number;
   isActive: boolean;
 }
 
-// 보유 종목
+// 보유 종목 (계좌×종목 연결. 현재 상태는 최신 스냅샷에서 파생)
 export interface HoldingBase {
   id: string;
   accountId: string;
   assetMasterId: string;
-  quantity: number;
-  averageCostOriginal?: number | null;
-  averageCostKRW: number;
-  dataSource: DataSource;
 }
 
-// 매수/매도 거래
+// 매수/매도 거래 (비권위 보조)
 export interface HoldingTransactionBase {
   id: string;
   holdingId: string;
@@ -125,21 +85,28 @@ export interface HoldingTransactionBase {
   exchangeRate?: number | null;
   priceKRW: number;
   totalKRW: number;
-  fees?: number | null;
   notes?: string | null;
 }
 
-// 보유 종목 스냅샷
-export interface HoldingValueSnapshotBase {
+// 보유 종목 스냅샷 (SSOT)
+export interface HoldingSnapshotBase {
   id: string;
   holdingId: string;
-  date: Date;
+  snapshotDate: Date;
   quantity: number;
-  priceOriginal: number;
+  avgCostKRW: number;
+  currentPriceKRW: number;
   exchangeRate?: number | null;
-  priceKRW: number;
-  totalValueKRW: number;
-  source: SnapshotSource;
+  priceOriginal?: number | null;
+  avgCostOriginal?: number | null;
+}
+
+// 계좌 현금 스냅샷 (SSOT)
+export interface CashSnapshotBase {
+  id: string;
+  accountId: string;
+  snapshotDate: Date;
+  cashBalanceKRW: number;
 }
 
 // ============================================
@@ -154,7 +121,7 @@ export interface AssetInstitutionFormData {
 }
 
 // 가족 구성원 생성/수정
-export interface FamilyMemberFormData {
+export interface MemberFormData {
   name: string;
   color?: string;
   isActive?: boolean;
@@ -168,7 +135,6 @@ export interface AssetMasterFormData {
   subClass?: AssetSubClass;
   riskLevel?: RiskLevel;
   currency?: Currency;
-  metadata?: string;
   isActive?: boolean;
 }
 
@@ -179,7 +145,6 @@ export interface AccountFormData {
   name: string;
   accountType: AccountType;
   currency?: Currency;
-  cashBalance?: number;
   isActive?: boolean;
 }
 
@@ -187,13 +152,9 @@ export interface AccountFormData {
 export interface HoldingFormData {
   accountId: string;
   assetMasterId: string;
-  quantity: number;
-  averageCostOriginal?: number;
-  averageCostKRW: number;
-  dataSource?: DataSource;
 }
 
-// 거래 생성
+// 거래 생성 (비권위 보조)
 export interface HoldingTransactionFormData {
   holdingId: string;
   transactionType: HoldingTransactionType;
@@ -203,21 +164,7 @@ export interface HoldingTransactionFormData {
   exchangeRate?: number;
   priceKRW: number;
   totalKRW: number;
-  fees?: number;
   notes?: string;
-}
-
-// ============================================
-// 메타데이터 타입
-// ============================================
-
-// AssetMaster.metadata JSON 구조
-export interface AssetMetadata {
-  isin?: string;
-  exchange?: string;
-  sector?: string;
-  country?: string;
-  [key: string]: string | undefined;
 }
 
 // ============================================
