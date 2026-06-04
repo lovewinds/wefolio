@@ -3,7 +3,7 @@ import type {
   AssetMaster,
   Holding,
   HoldingTransaction,
-  HoldingValueSnapshot,
+  HoldingSnapshot,
   Prisma,
 } from '@prisma/client';
 
@@ -25,9 +25,9 @@ export const assetMasterRepository = {
     });
   },
 
-  async findBySymbol(symbol: string, currency: string = 'KRW'): Promise<AssetMaster | null> {
+  async findByNameAndCurrency(name: string, currency: string = 'KRW'): Promise<AssetMaster | null> {
     return prisma.assetMaster.findUnique({
-      where: { symbol_currency: { symbol, currency } },
+      where: { name_currency: { name, currency } },
     });
   },
 
@@ -133,18 +133,6 @@ export const holdingRepository = {
     });
   },
 
-  async updateQuantity(
-    id: string,
-    quantity: number,
-    averageCostKRW: number,
-    averageCostOriginal?: number | null
-  ): Promise<Holding> {
-    return prisma.holding.update({
-      where: { id },
-      data: { quantity, averageCostKRW, averageCostOriginal },
-    });
-  },
-
   async findAllWithAccountAndAsset() {
     return prisma.holding.findMany({
       include: {
@@ -168,7 +156,7 @@ export const holdingRepository = {
 };
 
 // ============================================
-// HoldingTransaction Repository
+// HoldingTransaction Repository (비권위 보조)
 // ============================================
 
 export const holdingTransactionRepository = {
@@ -253,23 +241,23 @@ export const holdingTransactionRepository = {
 };
 
 // ============================================
-// HoldingValueSnapshot Repository
+// HoldingSnapshot Repository (SSOT)
 // ============================================
 
 export const holdingValueSnapshotRepository = {
-  async findByHoldingId(holdingId: string): Promise<HoldingValueSnapshot[]> {
-    return prisma.holdingValueSnapshot.findMany({
+  async findByHoldingId(holdingId: string): Promise<HoldingSnapshot[]> {
+    return prisma.holdingSnapshot.findMany({
       where: { holdingId },
-      orderBy: { date: 'desc' },
+      orderBy: { snapshotDate: 'desc' },
     });
   },
 
   async findByHoldingIdAndDate(
     holdingId: string,
-    date: Date
-  ): Promise<HoldingValueSnapshot | null> {
-    return prisma.holdingValueSnapshot.findUnique({
-      where: { holdingId_date: { holdingId, date } },
+    snapshotDate: Date
+  ): Promise<HoldingSnapshot | null> {
+    return prisma.holdingSnapshot.findUnique({
+      where: { holdingId_snapshotDate: { holdingId, snapshotDate } },
     });
   },
 
@@ -277,58 +265,57 @@ export const holdingValueSnapshotRepository = {
     holdingId: string,
     startDate: Date,
     endDate: Date
-  ): Promise<HoldingValueSnapshot[]> {
-    return prisma.holdingValueSnapshot.findMany({
+  ): Promise<HoldingSnapshot[]> {
+    return prisma.holdingSnapshot.findMany({
       where: {
         holdingId,
-        date: {
+        snapshotDate: {
           gte: startDate,
           lte: endDate,
         },
       },
-      orderBy: { date: 'asc' },
+      orderBy: { snapshotDate: 'asc' },
     });
   },
 
-  async findLatestByHoldingId(holdingId: string): Promise<HoldingValueSnapshot | null> {
-    return prisma.holdingValueSnapshot.findFirst({
+  async findLatestByHoldingId(holdingId: string): Promise<HoldingSnapshot | null> {
+    return prisma.holdingSnapshot.findFirst({
       where: { holdingId },
-      orderBy: { date: 'desc' },
+      orderBy: { snapshotDate: 'desc' },
     });
   },
 
-  async create(data: Prisma.HoldingValueSnapshotCreateInput): Promise<HoldingValueSnapshot> {
-    return prisma.holdingValueSnapshot.create({ data });
+  async create(data: Prisma.HoldingSnapshotCreateInput): Promise<HoldingSnapshot> {
+    return prisma.holdingSnapshot.create({ data });
   },
 
   async upsert(
     holdingId: string,
-    date: Date,
+    snapshotDate: Date,
     data: {
       quantity: number;
-      priceOriginal: number;
-      exchangeRate?: number | null;
-      priceKRW: number;
       avgCostKRW: number;
-      totalValueKRW: number;
-      source?: string;
+      currentPriceKRW: number;
+      exchangeRate?: number | null;
+      priceOriginal?: number | null;
+      avgCostOriginal?: number | null;
     }
-  ): Promise<HoldingValueSnapshot> {
-    return prisma.holdingValueSnapshot.upsert({
+  ): Promise<HoldingSnapshot> {
+    return prisma.holdingSnapshot.upsert({
       where: {
-        holdingId_date: { holdingId, date },
+        holdingId_snapshotDate: { holdingId, snapshotDate },
       },
       update: data,
       create: {
         holding: { connect: { id: holdingId } },
-        date,
+        snapshotDate,
         ...data,
       },
     });
   },
 
-  async delete(id: string): Promise<HoldingValueSnapshot> {
-    return prisma.holdingValueSnapshot.delete({
+  async delete(id: string): Promise<HoldingSnapshot> {
+    return prisma.holdingSnapshot.delete({
       where: { id },
     });
   },

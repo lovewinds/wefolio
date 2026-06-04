@@ -1,50 +1,50 @@
 import { prisma } from '@/lib/prisma';
-import type { Account, AssetInstitution, FamilyMember, Prisma } from '@prisma/client';
+import type { Account, Institution, Member, Prisma } from '@prisma/client';
 
 // ============================================
-// AssetInstitution Repository
+// Institution Repository
 // ============================================
 
 export const institutionRepository = {
-  async findAll(): Promise<AssetInstitution[]> {
-    return prisma.assetInstitution.findMany({
+  async findAll(): Promise<Institution[]> {
+    return prisma.institution.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
     });
   },
 
-  async findById(id: string): Promise<AssetInstitution | null> {
-    return prisma.assetInstitution.findUnique({
+  async findById(id: string): Promise<Institution | null> {
+    return prisma.institution.findUnique({
       where: { id },
     });
   },
 
-  async findByName(name: string): Promise<AssetInstitution | null> {
-    return prisma.assetInstitution.findUnique({
+  async findByName(name: string): Promise<Institution | null> {
+    return prisma.institution.findUnique({
       where: { name },
     });
   },
 
-  async findByType(type: string): Promise<AssetInstitution[]> {
-    return prisma.assetInstitution.findMany({
+  async findByType(type: string): Promise<Institution[]> {
+    return prisma.institution.findMany({
       where: { type, isActive: true },
       orderBy: { name: 'asc' },
     });
   },
 
-  async create(data: Prisma.AssetInstitutionCreateInput): Promise<AssetInstitution> {
-    return prisma.assetInstitution.create({ data });
+  async create(data: Prisma.InstitutionCreateInput): Promise<Institution> {
+    return prisma.institution.create({ data });
   },
 
-  async update(id: string, data: Prisma.AssetInstitutionUpdateInput): Promise<AssetInstitution> {
-    return prisma.assetInstitution.update({
+  async update(id: string, data: Prisma.InstitutionUpdateInput): Promise<Institution> {
+    return prisma.institution.update({
       where: { id },
       data,
     });
   },
 
-  async delete(id: string): Promise<AssetInstitution> {
-    return prisma.assetInstitution.update({
+  async delete(id: string): Promise<Institution> {
+    return prisma.institution.update({
       where: { id },
       data: { isActive: false },
     });
@@ -52,42 +52,42 @@ export const institutionRepository = {
 };
 
 // ============================================
-// FamilyMember Repository
+// Member Repository
 // ============================================
 
 export const familyMemberRepository = {
-  async findAll(): Promise<FamilyMember[]> {
-    return prisma.familyMember.findMany({
+  async findAll(): Promise<Member[]> {
+    return prisma.member.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
     });
   },
 
-  async findById(id: string): Promise<FamilyMember | null> {
-    return prisma.familyMember.findUnique({
+  async findById(id: string): Promise<Member | null> {
+    return prisma.member.findUnique({
       where: { id },
     });
   },
 
-  async findByName(name: string): Promise<FamilyMember | null> {
-    return prisma.familyMember.findUnique({
+  async findByName(name: string): Promise<Member | null> {
+    return prisma.member.findUnique({
       where: { name },
     });
   },
 
-  async create(data: Prisma.FamilyMemberCreateInput): Promise<FamilyMember> {
-    return prisma.familyMember.create({ data });
+  async create(data: Prisma.MemberCreateInput): Promise<Member> {
+    return prisma.member.create({ data });
   },
 
-  async update(id: string, data: Prisma.FamilyMemberUpdateInput): Promise<FamilyMember> {
-    return prisma.familyMember.update({
+  async update(id: string, data: Prisma.MemberUpdateInput): Promise<Member> {
+    return prisma.member.update({
       where: { id },
       data,
     });
   },
 
-  async delete(id: string): Promise<FamilyMember> {
-    return prisma.familyMember.update({
+  async delete(id: string): Promise<Member> {
+    return prisma.member.update({
       where: { id },
       data: { isActive: false },
     });
@@ -99,8 +99,8 @@ export const familyMemberRepository = {
 // ============================================
 
 type AccountWithRelations = Account & {
-  member: FamilyMember;
-  institution: AssetInstitution;
+  member: Member;
+  institution: Institution;
 };
 
 export const accountRepository = {
@@ -169,33 +169,10 @@ export const accountRepository = {
     });
   },
 
-  async updateCashBalance(id: string, cashBalance: number): Promise<Account> {
-    return prisma.account.update({
-      where: { id },
-      data: { cashBalance },
-    });
-  },
-
   async delete(id: string): Promise<Account> {
     return prisma.account.update({
       where: { id },
       data: { isActive: false },
     });
-  },
-
-  async getTotalCashBalance(): Promise<number> {
-    const result = await prisma.account.aggregate({
-      where: { isActive: true },
-      _sum: { cashBalance: true },
-    });
-    return result._sum.cashBalance ?? 0;
-  },
-
-  async getTotalCashBalanceByMember(memberId: string): Promise<number> {
-    const result = await prisma.account.aggregate({
-      where: { memberId, isActive: true },
-      _sum: { cashBalance: true },
-    });
-    return result._sum.cashBalance ?? 0;
   },
 };

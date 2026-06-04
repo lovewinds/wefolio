@@ -21,8 +21,8 @@
 | Repository                  | 역할                                                                              |
 | --------------------------- | --------------------------------------------------------------------------------- |
 | `institutionRepository`     | 금융기관(은행/증권사) CRUD, 타입별 조회, 소프트 삭제                              |
-| `familyMemberRepository`    | 가족 구성원 CRUD, 이름 조회, 소프트 삭제                                          |
-| `accountRepository`         | 계좌 CRUD, 구성원/기관/타입별 조회, 현금잔고 집계 (member, institution 관계 포함) |
+| `familyMemberRepository`    | 가족 구성원(`Member`) CRUD, 이름 조회, 소프트 삭제                                |
+| `accountRepository`         | 계좌 CRUD, 구성원/기관/타입별 조회 (member, institution 관계 포함)                |
 
 ### holding-repository.ts
 
@@ -30,23 +30,23 @@
 
 | Repository                       | 역할                                                                                           |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `assetMasterRepository`          | 자산 마스터(종목 정의) CRUD, 심볼/분류/통화별 조회, 소프트 삭제                                |
-| `holdingRepository`              | 보유종목 CRUD, 계좌/종목별 조회, 보유량/평균단가 갱신 (assetMaster 관계 포함)                 |
+| `assetMasterRepository`          | 자산 마스터(종목 정의) CRUD, 이름+통화/분류/통화별 조회, 소프트 삭제                          |
+| `holdingRepository`              | 보유종목 CRUD, 계좌/종목별 조회 (현재상태 캐시 없음 — 연결만, assetMaster 관계 포함)          |
 | `holdingTransactionRepository`   | 매수/매도 거래 CRUD(비권위 보조), 날짜 범위/거래유형별 조회                                    |
-| `holdingValueSnapshotRepository` | 보유종목 스냅샷 관리(SSOT, `avgCostKRW` 포함), 날짜 범위 조회, 최신 스냅샷, upsert 지원        |
+| `holdingValueSnapshotRepository` | 보유종목 스냅샷(`HoldingSnapshot`) 관리(SSOT, `snapshotDate`·`avgCostKRW`·`currentPriceKRW`·원통화 보존), 날짜 범위 조회, 최신 스냅샷, upsert 지원 |
 
 ## 설계 원칙
 
 1. **소프트 삭제**: 대부분의 엔티티는 `isActive` 플래그로 소프트 삭제
 2. **관계 포함**: 조회 시 필요한 관계를 include로 함께 조회
-3. **Upsert 지원**: 스냅샷, 가격 등은 날짜 기준 upsert 지원
-4. **복합 유니크**: 계좌+종목, 종목+날짜 등 복합키 지원
+3. **Upsert 지원**: 스냅샷은 `snapshotDate` 기준 upsert 지원
+4. **복합 유니크**: 계좌+종목, 종목+일자, 계좌+일자 등 복합키 지원
 
 ## 관련 Prisma 모델
 
 ```
-AssetInstitution, FamilyMember, Account
-AssetMaster, Holding, HoldingTransaction, HoldingValueSnapshot
+Institution, Member, Account
+AssetMaster, Holding, HoldingTransaction, HoldingSnapshot, CashSnapshot
 ```
 
 ## References
