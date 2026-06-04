@@ -468,11 +468,13 @@ export interface AssetMonthlyInputRow {
   prevPriceOriginal: number | null;
   prevExchangeRate: number | null;
   prevPriceKRW: number | null;
+  prevAvgCostKRW: number | null;
   prevTotalValueKRW: number | null;
   quantity: number;
   priceOriginal: number;
   exchangeRate: number | null;
   priceKRW: number;
+  avgCostKRW: number;
   totalValueKRW: number;
   status: AssetMonthlyInputStatus;
   isCurrentMissing: boolean;
@@ -499,6 +501,7 @@ export interface AssetMonthlyInputSaveRow {
   priceOriginal: number;
   exchangeRate?: number | null;
   priceKRW: number;
+  avgCostKRW?: number;
   totalValueKRW: number;
 }
 

@@ -215,7 +215,8 @@ model HoldingValueSnapshot {
   quantity      Float
   priceOriginal Float
   exchangeRate  Float?
-  priceKRW      Float
+  priceKRW      Float // 현재가(원화) → 평가액 = quantity × priceKRW
+  avgCostKRW    Float    @default(0) // 평균단가(원화, cost basis) → 원금 = quantity × avgCostKRW
   totalValueKRW Float
   source        String   @default("manual") // "manual" | "import" | "api"
 

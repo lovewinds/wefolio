@@ -146,3 +146,4 @@ ADR이 `HoldingTransaction`을 폐기한 본래 이유는 "스냅샷과 거래 �
 | 2026-06-04 | 열린 결정 4건 확정(스냅샷 전용+일자키 / 가계부 별도 그룹 / 환율 수동 / 거래 화면 유지), 결정 1↔4 격리 정책 추가 | — |
 | 2026-06-04 | 디자인 문서 개정: `data-model.md`(yearMonth→snapshotDate, 폐기/유지 모델 재정리), `asset-management.md`(ADR 개정·워크플로 일반화), `prd.md`·`README.md` 정합화 | grep로 잔여 모순 확인 |
 | 2026-06-04 | M006 increment 1 구현: 거래 비권위 격리 + 스냅샷→Holding.quantity 동기화 (TDD) | tsc/lint/test(46) Pass |
+| 2026-06-04 | M006 incr 2 불필요 확인(라이브 이미 스냅샷 기반), incr 3a 구현: 스냅샷 avgCostKRW 추가·평균단가 동기화 (TDD) | tsc/lint/test(47)/db push Pass |

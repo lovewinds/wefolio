@@ -31,8 +31,11 @@
 ### 스냅샷 SSOT + 거래 비권위 격리 (진행 중)
 
 - [x] increment 1: 거래(`record`/`delete`)가 `Holding.quantity/averageCostKRW`를 자동 갱신하지 않도록 격리. `saveMonthlyInput`이 최신 스냅샷 수량을 `Holding.quantity`에 동기화.
-- [ ] increment 2: `holdingService.getWithCurrentValue`가 현재가를 `AssetPrice` 대신 최신 스냅샷(`priceKRW`)에서 읽도록 전환(포트폴리오 현재값을 스냅샷 기반으로 통일).
-- [ ] increment 3: 평균단가(cost basis) 입력 경로. 현재 `HoldingValueSnapshot`은 평가액만 담고 평균단가가 없어, 스냅샷이 `Holding.averageCostKRW`를 갱신하지 못한다. 디자인의 `HoldingSnapshot.avgCostKRW`처럼 스냅샷·입력 폼에 평균단가를 추가해야 원금/수익이 스냅샷만으로 정합해진다.
+- [x] increment 2: **불필요로 판명**. 라이브 자산 화면(`/asset/portfolio`·`/asset/monthly`·`/asset/trend`)은 이미 `getMonthlyAssetData` 계열로 스냅샷 기반이다. `AssetPrice` 기반 현재값 함수(`getWithCurrentValue`·`getSummaryByAssetClass`·`portfolioService.getSummary`·`getTotalValueByAccountId`·`getSummary` 계열)와 `AssetPrice`/`AccountSnapshot` 모델은 모두 프로덕션 호출처가 없는 죽은 코드다. → incr 3 스키마 작업에서 함께 정리.
+- [ ] increment 3: 평균단가(cost basis) 입력 경로.
+  - [x] 3a 데이터/서비스: `HoldingValueSnapshot.avgCostKRW` 컬럼 추가, `saveMonthlyInput`이 평균단가를 스냅샷에 저장하고 최신 스냅샷의 `avgCostKRW`로 `Holding.averageCostKRW` 동기화(미입력 시 현재가로 시작). 타입/검증/리포지토리/시드 반영, dev.db `db push`(비파괴, default 0). TDD.
+  - [ ] 3b UI 폼: 월별 입력 패널(수량형)에 평균단가 입력 필드 노출 — `docs-new` 디자인 확인 후 진행. 현재 신규 행 `avgCostKRW`는 0으로 두고 저장 시 현재가로 대체됨.
+  - [ ] 3c 정리: 죽은 `AssetPrice`/`AccountSnapshot` 모델과 AssetPrice 기반 함수 제거(스키마 변경, 별도 진행).
 - 참고: `recordBuy`/`recordSell`/`updateHoldingAfterTransaction`는 호출처 없는 레거시(거래→Holding 재계산 커플링)다. 거래 화면 재도입 방향 확정 시 정리한다.
 
 ### 남은 범위

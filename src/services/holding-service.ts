@@ -641,11 +641,13 @@ function buildMonthlyInputRow(
     prevPriceOriginal: prevSnapshot?.priceOriginal ?? null,
     prevExchangeRate: prevSnapshot?.exchangeRate ?? null,
     prevPriceKRW: prevSnapshot?.priceKRW ?? null,
+    prevAvgCostKRW: prevSnapshot?.avgCostKRW ?? null,
     prevTotalValueKRW,
     quantity: values?.quantity ?? 0,
     priceOriginal: values?.priceOriginal ?? 0,
     exchangeRate: values?.exchangeRate ?? null,
     priceKRW: values?.priceKRW ?? 0,
+    avgCostKRW: values?.avgCostKRW ?? 0,
     totalValueKRW,
     status: getMonthlyInputStatus(prevTotalValueKRW, totalValueKRW),
     isCurrentMissing: hasCurrentSnapshots && Boolean(prevSnapshot) && !currentSnapshot,
@@ -716,6 +718,8 @@ export const holdingValueSnapshotService = {
 
     for (const row of rows) {
       const date = assertDateInMonth(row.date, year, month);
+      // 평균단가(cost basis)를 입력하지 않은 경우 현재가로 시작(수익 0). 디자인 시드 규칙과 동일.
+      const avgCostKRW = row.avgCostKRW ?? row.priceKRW;
       let holdingId = row.holdingId ?? undefined;
 
       if (!holdingId) {
@@ -732,7 +736,7 @@ export const holdingValueSnapshotService = {
             assetMaster: { connect: { id: row.assetMasterId } },
             quantity: row.quantity,
             averageCostOriginal: row.priceOriginal,
-            averageCostKRW: row.priceKRW,
+            averageCostKRW: avgCostKRW,
             dataSource: 'snapshot',
           });
           holdingId = createdHolding.id;
@@ -744,6 +748,7 @@ export const holdingValueSnapshotService = {
         priceOriginal: row.priceOriginal,
         exchangeRate: row.exchangeRate ?? null,
         priceKRW: row.priceKRW,
+        avgCostKRW,
         totalValueKRW: row.totalValueKRW,
         source: 'manual',
       });
@@ -751,12 +756,14 @@ export const holdingValueSnapshotService = {
       touchedHoldingIds.add(holdingId);
     }
 
-    // 스냅샷을 SSOT로 고정: 최신 스냅샷 수량을 Holding 현재 상태에 반영한다.
-    // (평균단가는 스냅샷에 없으므로 보존한다.)
+    // 스냅샷을 SSOT로 고정: 최신 스냅샷의 수량·평균단가를 Holding 현재 상태에 반영한다.
     for (const holdingId of touchedHoldingIds) {
       const latest = await holdingValueSnapshotRepository.findLatestByHoldingId(holdingId);
       if (latest) {
-        await holdingRepository.update(holdingId, { quantity: latest.quantity });
+        await holdingRepository.update(holdingId, {
+          quantity: latest.quantity,
+          averageCostKRW: latest.avgCostKRW,
+        });
       }
     }
 
@@ -1025,6 +1032,7 @@ export const holdingValueSnapshotService = {
       priceOriginal,
       exchangeRate,
       priceKRW,
+      avgCostKRW: holding.averageCostKRW,
       totalValueKRW,
       source: 'api',
     });
@@ -1038,6 +1046,7 @@ export const holdingValueSnapshotService = {
       priceOriginal: number;
       exchangeRate?: number | null;
       priceKRW: number;
+      avgCostKRW: number;
       totalValueKRW: number;
       source?: string;
     }

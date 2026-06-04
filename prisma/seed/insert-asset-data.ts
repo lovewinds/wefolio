@@ -230,6 +230,10 @@ export async function insertAssetSeedData(
           priceKRW: snapshot.exchangeRate
             ? snapshot.priceOriginal * snapshot.exchangeRate
             : snapshot.priceOriginal,
+          // 평균단가는 엑셀에 없으므로 현재가와 동일하게 적재(수익 0에서 출발).
+          avgCostKRW: snapshot.exchangeRate
+            ? snapshot.priceOriginal * snapshot.exchangeRate
+            : snapshot.priceOriginal,
           totalValueKRW: snapshot.totalValueKRW,
           source: 'import',
         },
@@ -244,6 +248,10 @@ export async function insertAssetSeedData(
           priceOriginal: snapshot.priceOriginal,
           exchangeRate: snapshot.exchangeRate,
           priceKRW: snapshot.exchangeRate
+            ? snapshot.priceOriginal * snapshot.exchangeRate
+            : snapshot.priceOriginal,
+          // 평균단가는 엑셀에 없으므로 현재가와 동일하게 적재(수익 0에서 출발).
+          avgCostKRW: snapshot.exchangeRate
             ? snapshot.priceOriginal * snapshot.exchangeRate
             : snapshot.priceOriginal,
           totalValueKRW: snapshot.totalValueKRW,

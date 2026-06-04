@@ -10,6 +10,7 @@ export const monthlyInputRowSchema = z.object({
   priceOriginal: z.coerce.number().nonnegative(),
   exchangeRate: z.coerce.number().positive().nullable().optional(),
   priceKRW: z.coerce.number().nonnegative(),
+  avgCostKRW: z.coerce.number().nonnegative().optional(),
   totalValueKRW: z.coerce.number().nonnegative(),
 });
 

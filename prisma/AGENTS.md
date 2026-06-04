@@ -2,6 +2,12 @@
 
 WeFolio 데이터 모델의 설계 원칙과 사용 지침을 정리한 문서입니다.
 
+> **2026-06-04 모델 방향 변경**: 자산 도메인은 **스냅샷을 단일 진실원천(SSOT)** 으로 삼는다.
+> `HoldingValueSnapshot`이 보유 종목의 현재 상태를 결정하며(키는 일자 기준 `date` — 월말 기본, 주 단위 등 임의 시점 허용), 평균단가는 `avgCostKRW` 컬럼에 담는다.
+> `HoldingTransaction`/거래 화면은 **비권위 보조**로만 유지하고 `Holding`을 자동으로 갱신하지 않는다.
+> `AssetPrice`/`AccountSnapshot`은 현재 프로덕션 미사용(죽은 코드)이다.
+> 설계 기준(SSOT)은 `docs-new/data-model.md`·`docs-new/asset-management.md`이며, 배경은 `docs/work-items/asset-recurring-input-analysis.md` 참조.
+
 ---
 
 ## 도메인 분리 원칙
@@ -73,17 +79,16 @@ const avgCost = holdings.reduce((sum, h) => sum + h.quantity * h.averageCostKRW,
 
 ## 데이터 입력 방식
 
-### 매수/매도 기록
+### 월별(또는 임의 시점) 스냅샷 입력 — 주 입력 경로
 
-계좌별로 수량과 가격을 각각 입력합니다:
+종목별로 "현재 상태"(수량·평균단가·현재가)를 스냅샷으로 입력합니다. 저장 시
+`HoldingValueSnapshot`이 upsert되고, **최신 스냅샷의 수량·평균단가가 `Holding`에 동기화**됩니다.
+(`saveMonthlyInput` → `holdingValueSnapshotRepository.findLatestByHoldingId` → `Holding.update`)
 
-```
-입력 예시:
-- 삼성증권 → 삼성전자 5주 @ 100,000원
-- 메리츠증권 → 삼성전자 5주 @ 100,100원
-```
+### 매수/매도 기록 — 비권위 보조
 
-`HoldingTransaction` 생성 후 해당 `Holding`의 `quantity`와 `averageCostKRW`가 자동 재계산됩니다.
+거래(`HoldingTransaction`)는 참고용 보조 기록입니다. **거래를 생성/삭제해도 `Holding`을
+자동 재계산하지 않습니다.** 스냅샷이 SSOT이므로 보유량·평균단가는 스냅샷 입력으로만 갱신됩니다.
 
 ### 계좌 잔액 (월말 기준)
 
@@ -120,8 +125,8 @@ const avgCost = holdings.reduce((sum, h) => sum + h.quantity * h.averageCostKRW,
 | 모델 | 역할 | 갱신 시점 |
 |------|------|----------|
 | `Account.cashBalance` | 현재 현금 잔액 | 월말 직접 입력 |
-| `AccountSnapshot` | 월별 계좌 스냅샷 | 월말 생성 |
-| `Holding` | 현재 보유량/평균단가 | 거래 시 자동 계산 |
-| `HoldingTransaction` | 매수/매도 기록 | 거래 시 생성 |
-| `HoldingValueSnapshot` | 월별 보유 종목 스냅샷 | 월말 생성 |
-| `AssetPrice` | 종목 가격 이력 | API 또는 수동 입력 |
+| `Holding` | 현재 보유량/평균단가 (캐시) | 스냅샷 저장 시 최신 스냅샷으로 동기화 |
+| `HoldingValueSnapshot` | 시점별 보유 종목 스냅샷 (SSOT). `quantity·priceKRW·avgCostKRW·totalValueKRW` | 스냅샷 입력 시 |
+| `HoldingTransaction` | 매수/매도 기록 (비권위 보조) | 거래 입력 시 생성, `Holding` 미갱신 |
+| `AccountSnapshot` | (미사용/죽은 코드) | — |
+| `AssetPrice` | (미사용/죽은 코드) | — |

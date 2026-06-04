@@ -315,7 +315,7 @@ describe('holdingTransactionService 비권위 격리', () => {
 });
 
 describe('holdingValueSnapshotService.saveMonthlyInput', () => {
-  it('스냅샷 저장 후 최신 스냅샷 수량으로 Holding.quantity를 동기화한다', async () => {
+  it('스냅샷 저장 후 최신 스냅샷의 수량·평균단가로 Holding을 동기화한다', async () => {
     const draftSpy = vi
       .spyOn(holdingValueSnapshotService, 'getMonthlyInputDraft')
       .mockResolvedValue({} as never);
@@ -328,6 +328,7 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
       priceOriginal: 100,
       exchangeRate: null,
       priceKRW: 100,
+      avgCostKRW: 90,
       totalValueKRW: 1200,
       source: 'manual',
       createdAt: new Date('2026-05-31T00:00:00.000Z'),
@@ -343,11 +344,44 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
         priceOriginal: 100,
         exchangeRate: null,
         priceKRW: 100,
+        avgCostKRW: 90,
         totalValueKRW: 1200,
       },
     ] as unknown as Parameters<typeof holdingValueSnapshotService.saveMonthlyInput>[2]);
 
-    expect(holdingRepository.update).toHaveBeenCalledWith('holding-1', { quantity: 12 });
+    expect(holdingRepository.update).toHaveBeenCalledWith('holding-1', {
+      quantity: 12,
+      averageCostKRW: 90,
+    });
+    draftSpy.mockRestore();
+  });
+
+  it('avgCostKRW 미입력 시 현재가(priceKRW)를 평균단가로 사용해 스냅샷에 저장한다', async () => {
+    const draftSpy = vi
+      .spyOn(holdingValueSnapshotService, 'getMonthlyInputDraft')
+      .mockResolvedValue({} as never);
+    vi.mocked(holdingValueSnapshotRepository.upsert).mockResolvedValue({} as never);
+    vi.mocked(holdingValueSnapshotRepository.findLatestByHoldingId).mockResolvedValue(null);
+
+    await holdingValueSnapshotService.saveMonthlyInput(2026, 5, [
+      {
+        holdingId: 'holding-1',
+        accountId: 'account-1',
+        assetMasterId: 'asset-1',
+        date: '2026-05-31',
+        quantity: 12,
+        priceOriginal: 100,
+        exchangeRate: null,
+        priceKRW: 100,
+        totalValueKRW: 1200,
+      },
+    ] as unknown as Parameters<typeof holdingValueSnapshotService.saveMonthlyInput>[2]);
+
+    expect(holdingValueSnapshotRepository.upsert).toHaveBeenCalledWith(
+      'holding-1',
+      expect.any(Date),
+      expect.objectContaining({ avgCostKRW: 100 })
+    );
     draftSpy.mockRestore();
   });
 });

@@ -411,6 +411,7 @@ export const holdingValueSnapshotRepository = {
       priceOriginal: number;
       exchangeRate?: number | null;
       priceKRW: number;
+      avgCostKRW: number;
       totalValueKRW: number;
       source?: string;
     }

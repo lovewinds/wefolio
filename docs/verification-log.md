@@ -6,6 +6,7 @@
 
 | 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
 | ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-06-04       | M006 평균단가 SSOT 데이터계층 (incr 3a) | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `prisma db push` | Pass | TDD. HoldingValueSnapshot.avgCostKRW 추가, saveMonthlyInput 평균단가 저장·Holding.averageCostKRW 동기화, 타입/검증/리포지토리/시드 반영, dev.db 비파괴 push. Vitest 7 files / 47 tests |
 | 2026-06-04       | M006 거래 비권위 격리 (increment 1) | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test`            | Pass | TDD. record()/delete()에서 Holding 재계산 제거, saveMonthlyInput이 최신 스냅샷 수량을 Holding.quantity로 동기화. Vitest 7 files / 46 tests |
 | 2026-06-04       | docs-new 디자인 SSOT 개정          | 정적 확인 + grep                                                | Pass | yearMonth→snapshotDate(일자 키, 주 단위 확장), ADR 개정(거래 비권위 유지), prd/README 정합화. 4개 결정 반영 |
 | 2026-06-03       | project-status.md 현황판 압축      | 정적 확인                                                       | Pass | baby-assistant 기준으로 재구성: 다음 우선순위 추가, 현재 구현 상태 28행→9행 요약(다음 확인 문서 열), 마일스톤 현황 1행/표 압축, 중복 섹션(알려진 제약·검증 이력·운영 규칙) 제거, 상태 표기 끝으로 이동. M004/M005/M007 상세 문서 신규 생성(Goal 이전). AGENTS "착수 시 생성" 관례 문구 갱신 |
