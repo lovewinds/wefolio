@@ -34,7 +34,7 @@
 - [x] increment 2: **불필요로 판명**. 라이브 자산 화면(`/asset/portfolio`·`/asset/monthly`·`/asset/trend`)은 이미 `getMonthlyAssetData` 계열로 스냅샷 기반이다. `AssetPrice` 기반 현재값 함수(`getWithCurrentValue`·`getSummaryByAssetClass`·`portfolioService.getSummary`·`getTotalValueByAccountId`·`getSummary` 계열)와 `AssetPrice`/`AccountSnapshot` 모델은 모두 프로덕션 호출처가 없는 죽은 코드다. → incr 3 스키마 작업에서 함께 정리.
 - [ ] increment 3: 평균단가(cost basis) 입력 경로.
   - [x] 3a 데이터/서비스: `HoldingValueSnapshot.avgCostKRW` 컬럼 추가, `saveMonthlyInput`이 평균단가를 스냅샷에 저장하고 최신 스냅샷의 `avgCostKRW`로 `Holding.averageCostKRW` 동기화(미입력 시 현재가로 시작). 타입/검증/리포지토리/시드 반영, dev.db `db push`(비파괴, default 0). TDD.
-  - [ ] 3b UI 폼: 월별 입력 패널(수량형)에 평균단가 입력 필드 노출 — `docs-new` 디자인 확인 후 진행. 현재 신규 행 `avgCostKRW`는 0으로 두고 저장 시 현재가로 대체됨.
+  - [x] 3b UI 폼: 월별 입력 패널 수량형 확장 입력에 `평균단가(원화)` 필드 추가(미입력 시 현재가로 시작). 편집 시 기존 스냅샷 평균단가를 시드해 round-trip 유지. `docs-new` 디자인(보유 종목: 수량·평균단가·현재가)과 일치.
   - [ ] 3c 정리: 죽은 `AssetPrice`/`AccountSnapshot` 모델과 AssetPrice 기반 함수 제거(스키마 변경, 별도 진행).
 - 참고: `recordBuy`/`recordSell`/`updateHoldingAfterTransaction`는 호출처 없는 레거시(거래→Holding 재계산 커플링)다. 거래 화면 재도입 방향 확정 시 정리한다.
 

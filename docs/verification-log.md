@@ -6,6 +6,7 @@
 
 | 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
 | ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-06-04       | M006 평균단가 입력 UI (incr 3b)    | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | 월별 입력 패널 수량형에 평균단가(원화) 필드 추가, 편집 round-trip 시드. 빌드 전 라우트 컴파일(/asset/monthly 포함). Vitest 47 tests |
 | 2026-06-04       | M006 평균단가 SSOT 데이터계층 (incr 3a) | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `prisma db push` | Pass | TDD. HoldingValueSnapshot.avgCostKRW 추가, saveMonthlyInput 평균단가 저장·Holding.averageCostKRW 동기화, 타입/검증/리포지토리/시드 반영, dev.db 비파괴 push. Vitest 7 files / 47 tests |
 | 2026-06-04       | M006 거래 비권위 격리 (increment 1) | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test`            | Pass | TDD. record()/delete()에서 Holding 재계산 제거, saveMonthlyInput이 최신 스냅샷 수량을 Holding.quantity로 동기화. Vitest 7 files / 46 tests |
 | 2026-06-04       | docs-new 디자인 SSOT 개정          | 정적 확인 + grep                                                | Pass | yearMonth→snapshotDate(일자 키, 주 단위 확장), ADR 개정(거래 비권위 유지), prd/README 정합화. 4개 결정 반영 |

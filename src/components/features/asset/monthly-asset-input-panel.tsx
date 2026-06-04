@@ -46,6 +46,7 @@ interface EditableMonthlyRow extends Omit<
   | 'priceOriginal'
   | 'exchangeRate'
   | 'priceKRW'
+  | 'avgCostKRW'
   | 'totalValueKRW'
   | 'status'
 > {
@@ -55,6 +56,7 @@ interface EditableMonthlyRow extends Omit<
   priceOriginalInput: string;
   exchangeRateInput: string;
   priceKRWInput: string;
+  avgCostInput: string;
   totalValueInput: string;
   isExpanded: boolean;
   isNew: boolean;
@@ -108,6 +110,7 @@ function toEditableRow(row: AssetMonthlyInputRow): EditableMonthlyRow {
     priceOriginalInput: missing ? '' : String(row.priceOriginal),
     exchangeRateInput: missing || row.exchangeRate === null ? '' : String(row.exchangeRate),
     priceKRWInput: missing ? '' : String(row.priceKRW),
+    avgCostInput: missing ? '' : String(row.avgCostKRW),
     totalValueInput: missing ? '' : String(row.totalValueKRW),
     isExpanded: row.inputType === 'quantity',
     isNew: false,
@@ -188,6 +191,7 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
       priceOriginal: totalValueKRW,
       exchangeRate: null,
       priceKRW: totalValueKRW,
+      avgCostKRW: totalValueKRW,
       totalValueKRW,
     };
   }
@@ -201,6 +205,10 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
   const exchangeRate = parseNumberInput(row.exchangeRateInput);
   if (exchangeRate !== null && exchangeRate <= 0) return null;
 
+  // 평균단가(원금 기준) — 미입력 시 현재가로 시작(수익 0).
+  const avgCostKRW = parseNumberInput(row.avgCostInput);
+  if (avgCostKRW !== null && avgCostKRW < 0) return null;
+
   return {
     holdingId: row.holdingId,
     accountId: row.accountId,
@@ -210,6 +218,7 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
     priceOriginal,
     exchangeRate,
     priceKRW,
+    avgCostKRW: avgCostKRW ?? priceKRW,
     totalValueKRW,
   };
 }
@@ -496,11 +505,11 @@ export function MonthlyAssetInputPanel({
       prevPriceKRW: null,
       prevAvgCostKRW: null,
       prevTotalValueKRW: null,
-      avgCostKRW: 0,
       quantityInput: inputType === 'value' ? '1' : '',
       priceOriginalInput: '',
       exchangeRateInput: '',
       priceKRWInput: '',
+      avgCostInput: '',
       totalValueInput: '',
       isCurrentMissing: false,
       isExpanded: inputType === 'quantity',
@@ -1078,6 +1087,20 @@ function MonthlyInputTableRows({
                   onKeyDown={handleMonthlyInputKeyDown}
                   className={numberInputClass}
                   data-monthly-input="true"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs font-medium text-ink-subtle">평균단가(원화)</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={row.avgCostInput}
+                  onChange={event => onUpdate(row.rowKey, 'avgCostInput', event.target.value)}
+                  onKeyDown={handleMonthlyInputKeyDown}
+                  className={numberInputClass}
+                  data-monthly-input="true"
+                  placeholder="미입력 시 현재가"
                 />
               </label>
             </div>
