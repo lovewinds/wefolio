@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -69,12 +69,24 @@ interface NewHoldingSelection {
   assetMasterId: string;
 }
 
+interface AccountGroup {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  institutionName: string;
+  rows: EditableMonthlyRow[];
+  totalValue: number;
+  filledCount: number;
+  missingCount: number;
+}
+
 interface InputStep {
   key: string;
   memberName: string;
   label: string;
   institutionType: string;
   rows: EditableMonthlyRow[];
+  accountGroups: AccountGroup[];
   totalValue: number;
   missingCount: number;
   filledCount: number;
@@ -313,6 +325,46 @@ function compareRowsWithinStep(a: EditableMonthlyRow, b: EditableMonthlyRow): nu
   );
 }
 
+// 스텝 안에서 다시 계좌(accountName) 단위로 묶는다 — 표 안 접기/펼치기 그룹.
+function buildAccountGroups(rows: EditableMonthlyRow[]): AccountGroup[] {
+  const order: string[] = [];
+  const byAccount = new Map<string, EditableMonthlyRow[]>();
+  for (const row of rows) {
+    const groupRows = byAccount.get(row.accountId);
+    if (groupRows) {
+      groupRows.push(row);
+    } else {
+      byAccount.set(row.accountId, [row]);
+      order.push(row.accountId);
+    }
+  }
+
+  return order
+    .map(accountId => {
+      const groupRows = [...byAccount.get(accountId)!].sort(compareRowsWithinStep);
+      const first = groupRows[0];
+      const filledCount = groupRows.filter(row => row.totalValueInput.trim() !== '').length;
+      return {
+        accountId,
+        accountName: first.accountName,
+        accountType: first.accountType,
+        institutionName: first.institutionName,
+        rows: groupRows,
+        totalValue: groupRows.reduce(
+          (sum, row) => sum + (parseNumberInput(row.totalValueInput) ?? 0),
+          0
+        ),
+        filledCount,
+        missingCount: groupRows.filter(
+          row => (row.prevTotalValueKRW ?? 0) > 0 && row.totalValueInput.trim() === ''
+        ).length,
+      };
+    })
+    .sort(
+      (a, b) => b.totalValue - a.totalValue || a.accountName.localeCompare(b.accountName, 'ko-KR')
+    );
+}
+
 function buildInputStep(memberName: string, label: string, rows: EditableMonthlyRow[]): InputStep {
   const sortedRows = [...rows].sort(compareRowsWithinStep);
   const filledCount = sortedRows.filter(row => row.totalValueInput.trim() !== '').length;
@@ -322,6 +374,7 @@ function buildInputStep(memberName: string, label: string, rows: EditableMonthly
     label,
     institutionType: sortedRows[0]?.institutionType ?? 'brokerage',
     rows: sortedRows,
+    accountGroups: buildAccountGroups(rows),
     totalValue: sortedRows.reduce(
       (sum, row) => sum + (parseNumberInput(row.totalValueInput) ?? 0),
       0
@@ -392,6 +445,7 @@ export function MonthlyAssetInputPanel({
   });
   const [showNewHoldingRow, setShowNewHoldingRow] = useState(false);
   const [activeStepKey, setActiveStepKey] = useState<string>('');
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -449,6 +503,18 @@ export function MonthlyAssetInputPanel({
 
   const activeStepIndex = allSteps.findIndex(step => step.key === activeStepKey);
   const nextStep = activeStepIndex >= 0 ? allSteps[activeStepIndex + 1] : undefined;
+
+  const toggleAccount = (accountId: string) => {
+    setExpandedAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) {
+        next.delete(accountId);
+      } else {
+        next.add(accountId);
+      }
+      return next;
+    });
+  };
 
   const prevTotalValue = draft?.prevTotalValue ?? 0;
   const currentTotalValue = useMemo(
@@ -800,6 +866,8 @@ export function MonthlyAssetInputPanel({
                           key={step.key}
                           step={step}
                           nextStep={nextStep}
+                          expandedAccounts={expandedAccounts}
+                          onToggleAccount={toggleAccount}
                           onUpdateRow={updateRow}
                           onRemoveRow={rowKey =>
                             setRows(prev => prev.filter(item => item.rowKey !== rowKey))
@@ -955,17 +1023,36 @@ function StepChip({
 function StepTable({
   step,
   nextStep,
+  expandedAccounts,
+  onToggleAccount,
   onUpdateRow,
   onRemoveRow,
   onNext,
 }: {
   step: InputStep;
   nextStep: InputStep | undefined;
+  expandedAccounts: Set<string>;
+  onToggleAccount: (accountId: string) => void;
   onUpdateRow: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
   onRemoveRow: (rowKey: string) => void;
   onNext: () => void;
 }) {
   const StepIcon = step.institutionType === 'bank' ? Wallet : Building2;
+  const isSingleAccount = step.accountGroups.length <= 1;
+
+  const renderRow = (row: EditableMonthlyRow, showContext: boolean) => (
+    <MonthlyInputTableRows
+      key={row.rowKey}
+      row={row}
+      showContext={showContext}
+      onUpdate={onUpdateRow}
+      onRemove={() => {
+        if (!row.isNew) return;
+        onRemoveRow(row.rowKey);
+      }}
+    />
+  );
+
   return (
     <div className="overflow-hidden rounded-lg border border-accent/40 bg-surface">
       <div className="flex items-center justify-between gap-3 border-b border-hairline bg-canvas px-3 py-2">
@@ -989,17 +1076,50 @@ function StepTable({
             </tr>
           </thead>
           <tbody>
-            {step.rows.map(row => (
-              <MonthlyInputTableRows
-                key={row.rowKey}
-                row={row}
-                onUpdate={onUpdateRow}
-                onRemove={() => {
-                  if (!row.isNew) return;
-                  onRemoveRow(row.rowKey);
-                }}
-              />
-            ))}
+            {isSingleAccount
+              ? step.rows.map(row => renderRow(row, true))
+              : step.accountGroups.map(group => {
+                  const isOpen = expandedAccounts.has(group.accountId);
+                  return (
+                    <Fragment key={group.accountId}>
+                      <tr className="bg-canvas">
+                        <td colSpan={5} className="border-b border-hairline px-2 py-2">
+                          <button
+                            type="button"
+                            onClick={() => onToggleAccount(group.accountId)}
+                            className="flex w-full items-center justify-between gap-3 text-left"
+                          >
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              {isOpen ? (
+                                <ChevronDown size={15} className="shrink-0 text-ink-faint" />
+                              ) : (
+                                <ChevronRight size={15} className="shrink-0 text-ink-faint" />
+                              )}
+                              <span className="truncate text-sm font-semibold text-ink">
+                                {group.accountName}
+                              </span>
+                              <span className="truncate text-xs text-ink-subtle">
+                                {group.institutionName}
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-ink-subtle">
+                              {group.missingCount > 0 && (
+                                <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
+                                  {group.missingCount}
+                                </span>
+                              )}
+                              <span>
+                                {group.filledCount}/{group.rows.length} ·{' '}
+                                {formatAmount(group.totalValue)}
+                              </span>
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isOpen && group.rows.map(row => renderRow(row, false))}
+                    </Fragment>
+                  );
+                })}
           </tbody>
         </table>
       </div>
@@ -1021,10 +1141,12 @@ function StepTable({
 
 function MonthlyInputTableRows({
   row,
+  showContext,
   onUpdate,
   onRemove,
 }: {
   row: EditableMonthlyRow;
+  showContext: boolean;
   onUpdate: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
   onRemove: () => void;
 }) {
@@ -1059,7 +1181,9 @@ function MonthlyInputTableRows({
             <div className="min-w-0">
               <p className="truncate font-medium text-ink">{row.assetName}</p>
               <p className="truncate text-xs text-ink-subtle">
-                {row.institutionName} · {row.accountName}
+                {showContext
+                  ? `${row.institutionName} · ${row.accountName}`
+                  : `${row.assetClass} · ${row.currency}`}
               </p>
             </div>
           </div>
