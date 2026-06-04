@@ -31,11 +31,9 @@
 | Service                       | 역할                                                          |
 | ----------------------------- | ------------------------------------------------------------- |
 | `assetMasterService`          | 자산 마스터(종목 정의) CRUD, 분류/통화별 조회                 |
-| `assetPriceService`           | 자산 가격 이력 관리, 최신가/기간별 조회, upsert 지원          |
-| `holdingService`              | 보유종목 CRUD, 현재가 기준 평가액/손익 계산, 자산분류별 집계  |
-| `holdingTransactionService`   | 매수/매도 거래 기록, 거래 후 보유량/평균단가 자동 재계산      |
-| `holdingValueSnapshotService` | 보유종목 스냅샷 관리 (기존 데이터 import, 주기적 추적용)      |
-| `portfolioService`            | 전체 포트폴리오 통합 조회 (구성원별, 자산분류별, 기관별 요약) |
+| `holdingService`              | 보유종목 CRUD, 드롭다운용 목록(`getAllWithAccountInfo`)       |
+| `holdingTransactionService`   | 매수/매도 거래 기록(비권위 보조 — Holding 미갱신)            |
+| `holdingValueSnapshotService` | 월별/시점별 스냅샷 관리(SSOT), 입력 초안·저장, 월별/추이 집계 |
 
 ## 타입 정의
 

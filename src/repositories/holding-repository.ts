@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import type {
   AssetMaster,
-  AssetPrice,
   Holding,
   HoldingTransaction,
   HoldingValueSnapshot,
@@ -61,82 +60,6 @@ export const assetMasterRepository = {
     return prisma.assetMaster.update({
       where: { id },
       data: { isActive: false },
-    });
-  },
-};
-
-// ============================================
-// AssetPrice Repository
-// ============================================
-
-export const assetPriceRepository = {
-  async findByAssetMasterId(assetMasterId: string): Promise<AssetPrice[]> {
-    return prisma.assetPrice.findMany({
-      where: { assetMasterId },
-      orderBy: { date: 'desc' },
-    });
-  },
-
-  async findLatestByAssetMasterId(assetMasterId: string): Promise<AssetPrice | null> {
-    return prisma.assetPrice.findFirst({
-      where: { assetMasterId },
-      orderBy: { date: 'desc' },
-    });
-  },
-
-  async findByAssetMasterIdAndDate(assetMasterId: string, date: Date): Promise<AssetPrice | null> {
-    return prisma.assetPrice.findUnique({
-      where: { assetMasterId_date: { assetMasterId, date } },
-    });
-  },
-
-  async findByDateRange(
-    assetMasterId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<AssetPrice[]> {
-    return prisma.assetPrice.findMany({
-      where: {
-        assetMasterId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: { date: 'asc' },
-    });
-  },
-
-  async create(data: Prisma.AssetPriceCreateInput): Promise<AssetPrice> {
-    return prisma.assetPrice.create({ data });
-  },
-
-  async upsert(
-    assetMasterId: string,
-    date: Date,
-    data: {
-      priceOriginal: number;
-      exchangeRate?: number | null;
-      priceKRW: number;
-      source?: string | null;
-    }
-  ): Promise<AssetPrice> {
-    return prisma.assetPrice.upsert({
-      where: {
-        assetMasterId_date: { assetMasterId, date },
-      },
-      update: data,
-      create: {
-        assetMaster: { connect: { id: assetMasterId } },
-        date,
-        ...data,
-      },
-    });
-  },
-
-  async delete(id: string): Promise<AssetPrice> {
-    return prisma.assetPrice.delete({
-      where: { id },
     });
   },
 };
@@ -241,31 +164,6 @@ export const holdingRepository = {
     return prisma.holding.delete({
       where: { id },
     });
-  },
-
-  async getTotalValueByAccountId(accountId: string): Promise<number> {
-    const holdings = await prisma.holding.findMany({
-      where: { accountId },
-      include: {
-        assetMaster: {
-          include: {
-            priceHistory: {
-              orderBy: { date: 'desc' },
-              take: 1,
-            },
-          },
-        },
-      },
-    });
-
-    return holdings.reduce((total, holding) => {
-      const latestPrice = holding.assetMaster.priceHistory[0];
-      if (latestPrice) {
-        return total + holding.quantity * latestPrice.priceKRW;
-      }
-      // 가격이 없으면 평균단가 사용
-      return total + holding.quantity * holding.averageCostKRW;
-    }, 0);
   },
 };
 

@@ -1,11 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type {
-  Account,
-  AccountSnapshot,
-  AssetInstitution,
-  FamilyMember,
-  Prisma,
-} from '@prisma/client';
+import type { Account, AssetInstitution, FamilyMember, Prisma } from '@prisma/client';
 
 // ============================================
 // AssetInstitution Repository
@@ -203,81 +197,5 @@ export const accountRepository = {
       _sum: { cashBalance: true },
     });
     return result._sum.cashBalance ?? 0;
-  },
-};
-
-// ============================================
-// AccountSnapshot Repository
-// ============================================
-
-export const accountSnapshotRepository = {
-  async findByAccountId(accountId: string): Promise<AccountSnapshot[]> {
-    return prisma.accountSnapshot.findMany({
-      where: { accountId },
-      orderBy: { date: 'desc' },
-    });
-  },
-
-  async findByAccountIdAndDateRange(
-    accountId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<AccountSnapshot[]> {
-    return prisma.accountSnapshot.findMany({
-      where: {
-        accountId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: { date: 'asc' },
-    });
-  },
-
-  async findByDate(date: Date): Promise<AccountSnapshot[]> {
-    return prisma.accountSnapshot.findMany({
-      where: { date },
-      orderBy: { accountId: 'asc' },
-    });
-  },
-
-  async findLatestByAccountId(accountId: string): Promise<AccountSnapshot | null> {
-    return prisma.accountSnapshot.findFirst({
-      where: { accountId },
-      orderBy: { date: 'desc' },
-    });
-  },
-
-  async create(data: Prisma.AccountSnapshotCreateInput): Promise<AccountSnapshot> {
-    return prisma.accountSnapshot.create({ data });
-  },
-
-  async upsert(
-    accountId: string,
-    date: Date,
-    data: {
-      cashBalance: number;
-      holdingsValue: number;
-      totalValue: number;
-    }
-  ): Promise<AccountSnapshot> {
-    return prisma.accountSnapshot.upsert({
-      where: {
-        accountId_date: { accountId, date },
-      },
-      update: data,
-      create: {
-        account: { connect: { id: accountId } },
-        date,
-        ...data,
-      },
-    });
-  },
-
-  async delete(id: string): Promise<AccountSnapshot> {
-    return prisma.accountSnapshot.delete({
-      where: { id },
-    });
   },
 };

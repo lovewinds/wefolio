@@ -98,27 +98,8 @@ model AssetMaster {
   updatedAt  DateTime  @updatedAt
 
   holdings     Holding[]
-  priceHistory AssetPrice[]
 
   @@unique([symbol, currency])
-}
-
-// 자산 가격 이력 (API 연동용)
-model AssetPrice {
-  id            String      @id @default(cuid())
-  assetMasterId String
-  assetMaster   AssetMaster @relation(fields: [assetMasterId], references: [id])
-
-  date          DateTime    // 가격 기준일
-  priceOriginal Float       // 원통화 가격
-  exchangeRate  Float?      // 환율 (원화면 null)
-  priceKRW      Float       // 원화 환산 가격
-  source        String?     // "api" | "manual"
-
-  createdAt     DateTime    @default(now())
-
-  @@unique([assetMasterId, date])
-  @@index([date])
 }
 
 // 계좌
@@ -139,25 +120,9 @@ model Account {
   updatedAt     DateTime     @updatedAt
 
   holdings         Holding[]
-  snapshots        AccountSnapshot[]
 
   @@index([memberId])
   @@index([institutionId])
-}
-
-// 계좌 스냅샷 (월별 추이용)
-model AccountSnapshot {
-  id            String   @id @default(cuid())
-  accountId     String
-  account       Account  @relation(fields: [accountId], references: [id])
-  date          DateTime
-  cashBalance   Float
-  holdingsValue Float
-  totalValue    Float
-  createdAt     DateTime @default(now())
-
-  @@unique([accountId, date])
-  @@index([date])
 }
 
 // 보유 종목

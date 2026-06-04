@@ -1,27 +1,22 @@
 import {
   assetMasterRepository,
-  assetPriceRepository,
   holdingRepository,
   holdingTransactionRepository,
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
 import { prisma } from '@/lib/prisma';
 import { RISK_LEVEL_LABELS } from '@/lib/constants';
-import type { AssetMaster, AssetPrice, Holding, HoldingTransaction, Prisma } from '@prisma/client';
+import type { AssetMaster, Holding, HoldingTransaction, Prisma } from '@prisma/client';
 import type {
   AssetClass,
   Currency,
   HoldingTransactionType,
-  AssetClassSummary,
-  HoldingWithAsset,
-  PortfolioSummary,
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
   AssetMonthlyInputSaveRow,
   AssetMonthlyInputStatus,
   AssetMonthlyInputType,
 } from '@/types/asset';
-import { familyMemberService, institutionService, accountService } from './account-service';
 
 // ============================================
 // AssetMaster Service
@@ -62,49 +57,6 @@ export const assetMasterService = {
 };
 
 // ============================================
-// AssetPrice Service
-// ============================================
-
-export const assetPriceService = {
-  async getByAssetMasterId(assetMasterId: string): Promise<AssetPrice[]> {
-    return assetPriceRepository.findByAssetMasterId(assetMasterId);
-  },
-
-  async getLatest(assetMasterId: string): Promise<AssetPrice | null> {
-    return assetPriceRepository.findLatestByAssetMasterId(assetMasterId);
-  },
-
-  async getByDate(assetMasterId: string, date: Date): Promise<AssetPrice | null> {
-    return assetPriceRepository.findByAssetMasterIdAndDate(assetMasterId, date);
-  },
-
-  async getByDateRange(
-    assetMasterId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<AssetPrice[]> {
-    return assetPriceRepository.findByDateRange(assetMasterId, startDate, endDate);
-  },
-
-  async upsert(
-    assetMasterId: string,
-    date: Date,
-    data: {
-      priceOriginal: number;
-      exchangeRate?: number | null;
-      priceKRW: number;
-      source?: string | null;
-    }
-  ): Promise<AssetPrice> {
-    return assetPriceRepository.upsert(assetMasterId, date, data);
-  },
-
-  async delete(id: string): Promise<AssetPrice> {
-    return assetPriceRepository.delete(id);
-  },
-};
-
-// ============================================
 // Holding Service
 // ============================================
 
@@ -125,34 +77,6 @@ export const holdingService = {
     return holdingRepository.findByAssetMasterId(assetMasterId);
   },
 
-  async getWithCurrentValue(accountId: string): Promise<HoldingWithAsset[]> {
-    const holdings = await holdingRepository.findByAccountId(accountId);
-    const result: HoldingWithAsset[] = [];
-
-    for (const holding of holdings) {
-      const latestPrice = await assetPriceRepository.findLatestByAssetMasterId(
-        holding.assetMasterId
-      );
-
-      const currentPrice = latestPrice?.priceKRW ?? holding.averageCostKRW;
-      const currentValue = holding.quantity * currentPrice;
-      const totalCost = holding.quantity * holding.averageCostKRW;
-      const profitLoss = currentValue - totalCost;
-      const profitLossRate = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
-
-      result.push({
-        ...holding,
-        assetMaster: holding.assetMaster,
-        currentPrice: latestPrice ?? undefined,
-        currentValue,
-        profitLoss,
-        profitLossRate,
-      });
-    }
-
-    return result;
-  },
-
   async create(data: Prisma.HoldingCreateInput): Promise<Holding> {
     return holdingRepository.create(data);
   },
@@ -165,10 +89,6 @@ export const holdingService = {
     return holdingRepository.delete(id);
   },
 
-  async getTotalValueByAccountId(accountId: string): Promise<number> {
-    return holdingRepository.getTotalValueByAccountId(accountId);
-  },
-
   async getAllWithAccountInfo() {
     const holdings = await holdingRepository.findAllWithAccountAndAsset();
     return holdings.map(h => ({
@@ -178,45 +98,6 @@ export const holdingService = {
       label: `${h.assetMaster.name} (${h.account.name} - ${h.account.member.name})`,
       currency: h.assetMaster.currency,
     }));
-  },
-
-  async getSummaryByAssetClass(): Promise<AssetClassSummary[]> {
-    const holdings = await holdingRepository.findAll();
-    const summaryMap = new Map<AssetClass, AssetClassSummary>();
-
-    let totalValue = 0;
-
-    for (const holding of holdings) {
-      const latestPrice = await assetPriceRepository.findLatestByAssetMasterId(
-        holding.assetMasterId
-      );
-      const currentPrice = latestPrice?.priceKRW ?? holding.averageCostKRW;
-      const value = holding.quantity * currentPrice;
-      totalValue += value;
-
-      const assetClass = holding.assetMaster.assetClass as AssetClass;
-      const existing = summaryMap.get(assetClass);
-
-      if (existing) {
-        existing.totalValue += value;
-        existing.holdingCount += 1;
-      } else {
-        summaryMap.set(assetClass, {
-          assetClass,
-          totalValue: value,
-          percentage: 0,
-          holdingCount: 1,
-        });
-      }
-    }
-
-    // 비율 계산
-    const result = Array.from(summaryMap.values());
-    for (const summary of result) {
-      summary.percentage = totalValue > 0 ? (summary.totalValue / totalValue) * 100 : 0;
-    }
-
-    return result;
   },
 };
 
@@ -1014,30 +895,6 @@ export const holdingValueSnapshotService = {
     return holdingValueSnapshotRepository.findLatestByHoldingId(holdingId);
   },
 
-  async createSnapshot(holdingId: string, date: Date): Promise<void> {
-    const holding = await holdingRepository.findById(holdingId);
-    if (!holding) {
-      throw new Error(`Holding not found: ${holdingId}`);
-    }
-
-    const latestPrice = await assetPriceRepository.findLatestByAssetMasterId(holding.assetMasterId);
-
-    const priceKRW = latestPrice?.priceKRW ?? holding.averageCostKRW;
-    const priceOriginal = latestPrice?.priceOriginal ?? holding.averageCostKRW;
-    const exchangeRate = latestPrice?.exchangeRate ?? null;
-    const totalValueKRW = holding.quantity * priceKRW;
-
-    await holdingValueSnapshotRepository.upsert(holdingId, date, {
-      quantity: holding.quantity,
-      priceOriginal,
-      exchangeRate,
-      priceKRW,
-      avgCostKRW: holding.averageCostKRW,
-      totalValueKRW,
-      source: 'api',
-    });
-  },
-
   async upsert(
     holdingId: string,
     date: Date,
@@ -1056,35 +913,5 @@ export const holdingValueSnapshotService = {
 
   async delete(id: string) {
     return holdingValueSnapshotRepository.delete(id);
-  },
-};
-
-// ============================================
-// Portfolio Service (전체 자산 통합 조회)
-// ============================================
-
-export const portfolioService = {
-  async getSummary(): Promise<PortfolioSummary> {
-    const [byMember, byAssetClass, byInstitution] = await Promise.all([
-      familyMemberService.getSummary(),
-      holdingService.getSummaryByAssetClass(),
-      institutionService.getSummary(),
-    ]);
-
-    const totalCash = byMember.reduce((sum, m) => sum + m.totalCash, 0);
-    const totalHoldings = byMember.reduce((sum, m) => sum + m.totalHoldings, 0);
-
-    return {
-      totalAssets: totalCash + totalHoldings,
-      totalCash,
-      totalHoldings,
-      byMember,
-      byAssetClass,
-      byInstitution,
-    };
-  },
-
-  async getAccountSummaries() {
-    return accountService.getSummary();
   },
 };

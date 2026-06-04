@@ -2,17 +2,9 @@ import {
   institutionRepository,
   familyMemberRepository,
   accountRepository,
-  accountSnapshotRepository,
 } from '@/repositories/account-repository';
-import { holdingRepository } from '@/repositories/holding-repository';
 import type { AssetInstitution, FamilyMember, Account, Prisma } from '@prisma/client';
-import type {
-  AssetInstitutionType,
-  AccountType,
-  MemberAssetSummary,
-  AssetInstitutionSummary,
-  AccountSummary,
-} from '@/types/asset';
+import type { AssetInstitutionType, AccountType } from '@/types/asset';
 
 // ============================================
 // Institution Service
@@ -41,34 +33,6 @@ export const institutionService = {
 
   async delete(id: string): Promise<AssetInstitution> {
     return institutionRepository.delete(id);
-  },
-
-  async getSummary(): Promise<AssetInstitutionSummary[]> {
-    const institutions = await institutionRepository.findAll();
-    const accounts = await accountRepository.findAll();
-
-    const summaryMap = new Map<string, AssetInstitutionSummary>();
-
-    for (const inst of institutions) {
-      summaryMap.set(inst.id, {
-        institutionId: inst.id,
-        institutionName: inst.name,
-        institutionType: inst.type as AssetInstitutionType,
-        totalValue: 0,
-        accountCount: 0,
-      });
-    }
-
-    for (const account of accounts) {
-      const summary = summaryMap.get(account.institutionId);
-      if (summary) {
-        const holdingsValue = await holdingRepository.getTotalValueByAccountId(account.id);
-        summary.totalValue += account.cashBalance + holdingsValue;
-        summary.accountCount += 1;
-      }
-    }
-
-    return Array.from(summaryMap.values()).filter(s => s.accountCount > 0);
   },
 };
 
@@ -99,35 +63,6 @@ export const familyMemberService = {
 
   async delete(id: string): Promise<FamilyMember> {
     return familyMemberRepository.delete(id);
-  },
-
-  async getSummary(): Promise<MemberAssetSummary[]> {
-    const members = await familyMemberRepository.findAll();
-    const summaries: MemberAssetSummary[] = [];
-
-    for (const member of members) {
-      const accounts = await accountRepository.findByMemberId(member.id);
-
-      let totalCash = 0;
-      let totalHoldings = 0;
-
-      for (const account of accounts) {
-        totalCash += account.cashBalance;
-        totalHoldings += await holdingRepository.getTotalValueByAccountId(account.id);
-      }
-
-      summaries.push({
-        memberId: member.id,
-        memberName: member.name,
-        memberColor: member.color,
-        totalCash,
-        totalHoldings,
-        totalAssets: totalCash + totalHoldings,
-        accountCount: accounts.length,
-      });
-    }
-
-    return summaries;
   },
 };
 
@@ -174,59 +109,5 @@ export const accountService = {
 
   async getTotalCashBalance(): Promise<number> {
     return accountRepository.getTotalCashBalance();
-  },
-
-  async getSummary(): Promise<AccountSummary[]> {
-    const accounts = await accountRepository.findAll();
-    const summaries: AccountSummary[] = [];
-
-    for (const account of accounts) {
-      const holdingsValue = await holdingRepository.getTotalValueByAccountId(account.id);
-
-      summaries.push({
-        accountId: account.id,
-        accountName: account.name,
-        accountType: account.accountType as AccountType,
-        memberName: account.member.name,
-        institutionName: account.institution.name,
-        cashBalance: account.cashBalance,
-        holdingsValue,
-        totalValue: account.cashBalance + holdingsValue,
-      });
-    }
-
-    return summaries;
-  },
-
-  async createSnapshot(accountId: string, date: Date): Promise<void> {
-    const account = await accountRepository.findById(accountId);
-    if (!account) {
-      throw new Error(`Account not found: ${accountId}`);
-    }
-
-    const holdingsValue = await holdingRepository.getTotalValueByAccountId(accountId);
-    const totalValue = account.cashBalance + holdingsValue;
-
-    await accountSnapshotRepository.upsert(accountId, date, {
-      cashBalance: account.cashBalance,
-      holdingsValue,
-      totalValue,
-    });
-  },
-
-  async createSnapshotsForAllAccounts(date: Date): Promise<void> {
-    const accounts = await accountRepository.findAll();
-
-    for (const account of accounts) {
-      await this.createSnapshot(account.id, date);
-    }
-  },
-
-  async getSnapshots(accountId: string) {
-    return accountSnapshotRepository.findByAccountId(accountId);
-  },
-
-  async getSnapshotsByDateRange(accountId: string, startDate: Date, endDate: Date) {
-    return accountSnapshotRepository.findByAccountIdAndDateRange(accountId, startDate, endDate);
   },
 };

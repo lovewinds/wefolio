@@ -23,7 +23,6 @@
 | `institutionRepository`     | 금융기관(은행/증권사) CRUD, 타입별 조회, 소프트 삭제                              |
 | `familyMemberRepository`    | 가족 구성원 CRUD, 이름 조회, 소프트 삭제                                          |
 | `accountRepository`         | 계좌 CRUD, 구성원/기관/타입별 조회, 현금잔고 집계 (member, institution 관계 포함) |
-| `accountSnapshotRepository` | 월별 계좌 스냅샷 관리, 날짜 범위 조회, upsert 지원                                |
 
 ### holding-repository.ts
 
@@ -32,10 +31,9 @@
 | Repository                       | 역할                                                                                           |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `assetMasterRepository`          | 자산 마스터(종목 정의) CRUD, 심볼/분류/통화별 조회, 소프트 삭제                                |
-| `assetPriceRepository`           | 자산 가격 이력 CRUD, 최신가/날짜별 조회, upsert 지원                                           |
-| `holdingRepository`              | 보유종목 CRUD, 계좌/종목별 조회, 보유량 갱신, 최신 가격 기준 총액 계산 (assetMaster 관계 포함) |
-| `holdingTransactionRepository`   | 매수/매도 거래 CRUD, 날짜 범위/거래유형별 조회                                                 |
-| `holdingValueSnapshotRepository` | 보유종목 스냅샷 관리, 날짜 범위 조회, upsert 지원                                              |
+| `holdingRepository`              | 보유종목 CRUD, 계좌/종목별 조회, 보유량/평균단가 갱신 (assetMaster 관계 포함)                 |
+| `holdingTransactionRepository`   | 매수/매도 거래 CRUD(비권위 보조), 날짜 범위/거래유형별 조회                                    |
+| `holdingValueSnapshotRepository` | 보유종목 스냅샷 관리(SSOT, `avgCostKRW` 포함), 날짜 범위 조회, 최신 스냅샷, upsert 지원        |
 
 ## 설계 원칙
 
@@ -47,8 +45,8 @@
 ## 관련 Prisma 모델
 
 ```
-AssetInstitution, FamilyMember, Account, AccountSnapshot
-AssetMaster, AssetPrice, Holding, HoldingTransaction, HoldingValueSnapshot
+AssetInstitution, FamilyMember, Account
+AssetMaster, Holding, HoldingTransaction, HoldingValueSnapshot
 ```
 
 ## References

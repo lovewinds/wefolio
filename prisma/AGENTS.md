@@ -5,7 +5,7 @@ WeFolio 데이터 모델의 설계 원칙과 사용 지침을 정리한 문서�
 > **2026-06-04 모델 방향 변경**: 자산 도메인은 **스냅샷을 단일 진실원천(SSOT)** 으로 삼는다.
 > `HoldingValueSnapshot`이 보유 종목의 현재 상태를 결정하며(키는 일자 기준 `date` — 월말 기본, 주 단위 등 임의 시점 허용), 평균단가는 `avgCostKRW` 컬럼에 담는다.
 > `HoldingTransaction`/거래 화면은 **비권위 보조**로만 유지하고 `Holding`을 자동으로 갱신하지 않는다.
-> `AssetPrice`/`AccountSnapshot`은 현재 프로덕션 미사용(죽은 코드)이다.
+> `AssetPrice`/`AccountSnapshot` 모델은 **제거됨**(2026-06-04, M006 incr 3c).
 > 설계 기준(SSOT)은 `docs-new/data-model.md`·`docs-new/asset-management.md`이며, 배경은 `docs/work-items/asset-recurring-input-analysis.md` 참조.
 
 ---
@@ -128,5 +128,3 @@ const avgCost = holdings.reduce((sum, h) => sum + h.quantity * h.averageCostKRW,
 | `Holding` | 현재 보유량/평균단가 (캐시) | 스냅샷 저장 시 최신 스냅샷으로 동기화 |
 | `HoldingValueSnapshot` | 시점별 보유 종목 스냅샷 (SSOT). `quantity·priceKRW·avgCostKRW·totalValueKRW` | 스냅샷 입력 시 |
 | `HoldingTransaction` | 매수/매도 기록 (비권위 보조) | 거래 입력 시 생성, `Holding` 미갱신 |
-| `AccountSnapshot` | (미사용/죽은 코드) | — |
-| `AssetPrice` | (미사용/죽은 코드) | — |

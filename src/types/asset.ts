@@ -91,17 +91,6 @@ export interface AssetMasterBase {
   isActive: boolean;
 }
 
-// 자산 가격
-export interface AssetPriceBase {
-  id: string;
-  assetMasterId: string;
-  date: Date;
-  priceOriginal: number;
-  exchangeRate?: number | null;
-  priceKRW: number;
-  source?: PriceSource | null;
-}
-
 // 계좌
 export interface AccountBase {
   id: string;
@@ -112,16 +101,6 @@ export interface AccountBase {
   currency: Currency;
   cashBalance: number;
   isActive: boolean;
-}
-
-// 계좌 스냅샷
-export interface AccountSnapshotBase {
-  id: string;
-  accountId: string;
-  date: Date;
-  cashBalance: number;
-  holdingsValue: number;
-  totalValue: number;
 }
 
 // 보유 종목
@@ -161,57 +140,6 @@ export interface HoldingValueSnapshotBase {
   priceKRW: number;
   totalValueKRW: number;
   source: SnapshotSource;
-}
-
-// ============================================
-// 관계 포함 인터페이스
-// ============================================
-
-// 계좌 (관계 포함)
-export interface AccountWithRelations extends AccountBase {
-  member?: FamilyMemberBase;
-  institution?: AssetInstitutionBase;
-  holdings?: HoldingWithAsset[];
-}
-
-// 보유 종목 (자산 정보 포함)
-// Note: assetMaster와 currentPrice는 Prisma 모델 타입과 호환되도록 유연하게 정의
-export interface HoldingWithAsset {
-  id: string;
-  accountId: string;
-  assetMasterId: string;
-  quantity: number;
-  averageCostOriginal?: number | null;
-  averageCostKRW: number;
-  dataSource: string;
-  assetMaster?: {
-    id: string;
-    symbol?: string | null;
-    name: string;
-    assetClass: string;
-    subClass?: string | null;
-    riskLevel: string;
-    currency: string;
-    metadata?: string | null;
-    isActive: boolean;
-  };
-  currentPrice?: {
-    id: string;
-    assetMasterId: string;
-    date: Date;
-    priceOriginal: number;
-    exchangeRate?: number | null;
-    priceKRW: number;
-    source?: string | null;
-  };
-  currentValue?: number;
-  profitLoss?: number;
-  profitLossRate?: number;
-}
-
-// 자산 마스터 (최신 가격 포함)
-export interface AssetMasterWithPrice extends AssetMasterBase {
-  latestPrice?: AssetPriceBase;
 }
 
 // ============================================
@@ -277,70 +205,6 @@ export interface HoldingTransactionFormData {
   totalKRW: number;
   fees?: number;
   notes?: string;
-}
-
-// 가격 입력
-export interface AssetPriceFormData {
-  assetMasterId: string;
-  date: string;
-  priceOriginal: number;
-  exchangeRate?: number;
-  priceKRW: number;
-  source?: PriceSource;
-}
-
-// ============================================
-// 집계/요약 인터페이스
-// ============================================
-
-// 가족 구성원별 자산 요약
-export interface MemberAssetSummary {
-  memberId: string;
-  memberName: string;
-  memberColor?: string | null;
-  totalCash: number;
-  totalHoldings: number;
-  totalAssets: number;
-  accountCount: number;
-}
-
-// 자산 분류별 요약
-export interface AssetClassSummary {
-  assetClass: AssetClass;
-  totalValue: number;
-  percentage: number;
-  holdingCount: number;
-}
-
-// 기관별 요약
-export interface AssetInstitutionSummary {
-  institutionId: string;
-  institutionName: string;
-  institutionType: AssetInstitutionType;
-  totalValue: number;
-  accountCount: number;
-}
-
-// 계좌 요약
-export interface AccountSummary {
-  accountId: string;
-  accountName: string;
-  accountType: AccountType;
-  memberName: string;
-  institutionName: string;
-  cashBalance: number;
-  holdingsValue: number;
-  totalValue: number;
-}
-
-// 포트폴리오 전체 요약
-export interface PortfolioSummary {
-  totalAssets: number;
-  totalCash: number;
-  totalHoldings: number;
-  byMember: MemberAssetSummary[];
-  byAssetClass: AssetClassSummary[];
-  byInstitution: AssetInstitutionSummary[];
 }
 
 // ============================================

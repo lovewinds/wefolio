@@ -1,15 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  assetPriceRepository,
   holdingRepository,
   holdingTransactionRepository,
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
-import {
-  holdingService,
-  holdingTransactionService,
-  holdingValueSnapshotService,
-} from '@/services/holding-service';
+import { holdingTransactionService, holdingValueSnapshotService } from '@/services/holding-service';
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -22,9 +17,6 @@ vi.mock('@/lib/prisma', () => ({
 
 vi.mock('@/repositories/holding-repository', () => ({
   assetMasterRepository: {},
-  assetPriceRepository: {
-    findLatestByAssetMasterId: vi.fn(),
-  },
   holdingRepository: {
     findByAccountId: vi.fn(),
     findByAccountAndAsset: vi.fn(),
@@ -43,103 +35,8 @@ vi.mock('@/repositories/holding-repository', () => ({
   },
 }));
 
-vi.mock('@/services/account-service', () => ({
-  familyMemberService: {},
-  institutionService: {},
-  accountService: {},
-}));
-
 beforeEach(() => {
   vi.resetAllMocks();
-});
-
-describe('holdingService', () => {
-  it('calculates current value, profit and fallback price per holding', async () => {
-    const now = new Date('2026-05-01T00:00:00.000Z');
-    const holdings = [
-      {
-        id: 'holding-1',
-        accountId: 'account-1',
-        assetMasterId: 'asset-1',
-        quantity: 10,
-        averageCostOriginal: 1000,
-        averageCostKRW: 1000,
-        dataSource: 'transaction',
-        createdAt: now,
-        updatedAt: now,
-        assetMaster: {
-          id: 'asset-1',
-          symbol: 'AAA',
-          name: 'Asset A',
-          assetClass: 'stock',
-          subClass: null,
-          riskLevel: 'moderate',
-          currency: 'KRW',
-          metadata: null,
-          isActive: true,
-          createdAt: now,
-          updatedAt: now,
-        },
-      },
-      {
-        id: 'holding-2',
-        accountId: 'account-1',
-        assetMasterId: 'asset-2',
-        quantity: 5,
-        averageCostOriginal: 2000,
-        averageCostKRW: 2000,
-        dataSource: 'transaction',
-        createdAt: now,
-        updatedAt: now,
-        assetMaster: {
-          id: 'asset-2',
-          symbol: 'BBB',
-          name: 'Asset B',
-          assetClass: 'bond',
-          subClass: null,
-          riskLevel: 'conservative',
-          currency: 'KRW',
-          metadata: null,
-          isActive: true,
-          createdAt: now,
-          updatedAt: now,
-        },
-      },
-    ] as unknown as Awaited<ReturnType<typeof holdingRepository.findByAccountId>>;
-
-    const latestPrice = {
-      id: 'price-1',
-      assetMasterId: 'asset-1',
-      date: now,
-      priceOriginal: 1200,
-      exchangeRate: null,
-      priceKRW: 1200,
-      source: 'manual',
-      createdAt: now,
-    };
-
-    vi.mocked(holdingRepository.findByAccountId).mockResolvedValue(holdings);
-    vi.mocked(assetPriceRepository.findLatestByAssetMasterId)
-      .mockResolvedValueOnce(latestPrice)
-      .mockResolvedValueOnce(null);
-
-    const result = await holdingService.getWithCurrentValue('account-1');
-
-    expect(result[0]).toMatchObject({
-      id: 'holding-1',
-      currentPrice: latestPrice,
-      currentValue: 12000,
-      profitLoss: 2000,
-      profitLossRate: 20,
-    });
-    expect(result[1]).toMatchObject({
-      id: 'holding-2',
-      currentPrice: undefined,
-      currentValue: 10000,
-      profitLoss: 0,
-      profitLossRate: 0,
-    });
-  });
 });
 
 describe('holdingTransactionService', () => {

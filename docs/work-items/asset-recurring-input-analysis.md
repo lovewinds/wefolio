@@ -148,3 +148,4 @@ ADR이 `HoldingTransaction`을 폐기한 본래 이유는 "스냅샷과 거래 �
 | 2026-06-04 | M006 increment 1 구현: 거래 비권위 격리 + 스냅샷→Holding.quantity 동기화 (TDD) | tsc/lint/test(46) Pass |
 | 2026-06-04 | M006 incr 2 불필요 확인(라이브 이미 스냅샷 기반), incr 3a 구현: 스냅샷 avgCostKRW 추가·평균단가 동기화 (TDD) | tsc/lint/test(47)/db push Pass |
 | 2026-06-04 | M006 incr 3b 구현: 월별 입력 패널에 평균단가(원화) 필드 추가, 편집 round-trip | tsc/lint/test(47)/build Pass |
+| 2026-06-04 | M006 incr 3c 정리: 죽은 AssetPrice/AccountSnapshot 모델·함수·타입 제거, 테이블 drop | tsc/lint/test(46)/build Pass |
