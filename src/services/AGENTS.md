@@ -21,8 +21,8 @@
 | Service               | 역할                                                          |
 | --------------------- | ------------------------------------------------------------- |
 | `institutionService`  | 금융기관(은행/증권사) CRUD 및 기관별 자산 요약 집계           |
-| `familyMemberService` | 가족 구성원 CRUD 및 구성원별 자산 요약 (현금, 보유종목, 총액) |
-| `accountService`      | 계좌 CRUD, 현금잔고 관리, 월별 스냅샷 생성/조회, 계좌별 요약  |
+| `familyMemberService` | 가족 구성원(`Member`) CRUD                                    |
+| `accountService`      | 계좌 CRUD, 구성원/기관/타입별 조회                            |
 
 ### holding-service.ts
 
@@ -33,14 +33,14 @@
 | `assetMasterService`          | 자산 마스터(종목 정의) CRUD, 분류/통화별 조회                 |
 | `holdingService`              | 보유종목 CRUD, 드롭다운용 목록(`getAllWithAccountInfo`)       |
 | `holdingTransactionService`   | 매수/매도 거래 기록(비권위 보조 — Holding 미갱신)            |
-| `holdingValueSnapshotService` | 월별/시점별 스냅샷 관리(SSOT), 입력 초안·저장, 월별/추이 집계 |
+| `holdingValueSnapshotService` | 월별/시점별 스냅샷(`HoldingSnapshot`) 관리(SSOT), 입력 초안·저장, 월별/추이 집계. 평가액·원금은 입력값에서 파생 |
 
 ## 타입 정의
 
-주요 타입은 `@/types/asset.ts`에 정의되어 있다.
+enum성 상수는 `@/constants/asset.ts`(SSOT)에서 파생하며 `@/types/asset.ts`가 재노출한다.
 
-- `AssetInstitutionType`: `'bank' | 'brokerage'`
-- `AccountType`: `'savings' | 'time_deposit' | 'cma' | 'regular' | 'pension_savings' | 'irp' | 'isa'`
-- `AssetClass`: `'stock' | 'bond' | 'deposit' | 'gold' | 'fund' | 'etf'`
+- `AccountType`: `'예금' | '적금' | '청약' | '종합' | 'CMA' | 'IRP' | 'ISA' | '연금저축' | '코인' | '금현물'`
+- `AssetClass`: `'주식' | '채권' | '예금' | '금' | '코인'`
+- `RiskLevel`: `'위험자산' | '안전자산'`
 - `Currency`: `'KRW' | 'USD'`
-- `HoldingTransactionType`: `'buy' | 'sell' | 'dividend' | 'transfer_in' | 'transfer_out'`
+- `HoldingTransactionType`: `'buy' | 'sell' | 'dividend' | 'transfer_in' | 'transfer_out'` (비권위 보조)

@@ -25,13 +25,6 @@ export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
   { href: '/asset/transactions', label: '자산 거래 상세' },
 ];
 
-// Risk Level
-export const RISK_LEVEL_LABELS: Record<string, string> = {
-  conservative: '안전자산',
-  moderate: '중립자산',
-  aggressive: '위험자산',
-};
-
 // Warm-tuned palette (matches design tokens: gain/accent/loss)
 export const RISK_LEVEL_COLORS: Record<string, string> = {
   안전자산: '#3e9c6b', // gain

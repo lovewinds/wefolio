@@ -5,7 +5,6 @@ import {
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
 import { prisma } from '@/lib/prisma';
-import { RISK_LEVEL_LABELS } from '@/lib/constants';
 import type { AssetMaster, Holding, HoldingTransaction, Prisma } from '@prisma/client';
 import type {
   AssetClass,
@@ -29,10 +28,6 @@ export const assetMasterService = {
 
   async getById(id: string): Promise<AssetMaster | null> {
     return assetMasterRepository.findById(id);
-  },
-
-  async getBySymbol(symbol: string, currency: Currency = 'KRW'): Promise<AssetMaster | null> {
-    return assetMasterRepository.findBySymbol(symbol, currency);
   },
 
   async getByAssetClass(assetClass: AssetClass): Promise<AssetMaster[]> {
@@ -123,16 +118,14 @@ export const holdingTransactionService = {
     exchangeRate?: number | null,
     notes?: string | null
   ): Promise<HoldingTransaction> {
-    // Find or create holding
+    // Find or create holding (연결만 — 현재 상태 캐시 컬럼 없음)
     let holding = await holdingRepository.findByAccountAndAsset(accountId, assetMasterId);
     if (!holding) {
-      holding = (await holdingRepository.create({
+      const created = await holdingRepository.create({
         account: { connect: { id: accountId } },
         assetMaster: { connect: { id: assetMasterId } },
-        quantity: 0,
-        averageCostKRW: 0,
-        dataSource: 'transaction',
-      })) as Holding & { assetMaster: AssetMaster };
+      });
+      holding = { ...created, assetMaster: {} as AssetMaster };
     }
 
     // sell / transfer_out use negative quantity
@@ -179,110 +172,6 @@ export const holdingTransactionService = {
 
   async create(data: Prisma.HoldingTransactionCreateInput): Promise<HoldingTransaction> {
     return holdingTransactionRepository.create(data);
-  },
-
-  async recordBuy(
-    holdingId: string,
-    date: Date,
-    quantity: number,
-    priceOriginal: number,
-    priceKRW: number,
-    exchangeRate?: number | null,
-    notes?: string | null
-  ): Promise<HoldingTransaction> {
-    const totalKRW = quantity * priceKRW;
-
-    const transaction = await holdingTransactionRepository.create({
-      holding: { connect: { id: holdingId } },
-      transactionType: 'buy',
-      date,
-      quantity,
-      priceOriginal,
-      exchangeRate,
-      priceKRW,
-      totalKRW,
-      notes,
-    });
-
-    // 보유량 및 평균단가 업데이트
-    await this.updateHoldingAfterTransaction(holdingId);
-
-    return transaction;
-  },
-
-  async recordSell(
-    holdingId: string,
-    date: Date,
-    quantity: number,
-    priceOriginal: number,
-    priceKRW: number,
-    exchangeRate?: number | null,
-    notes?: string | null
-  ): Promise<HoldingTransaction> {
-    const totalKRW = quantity * priceKRW;
-
-    const transaction = await holdingTransactionRepository.create({
-      holding: { connect: { id: holdingId } },
-      transactionType: 'sell',
-      date,
-      quantity: -quantity, // 매도는 음수
-      priceOriginal,
-      exchangeRate,
-      priceKRW,
-      totalKRW,
-      notes,
-    });
-
-    // 보유량 업데이트 (평균단가는 유지)
-    await this.updateHoldingAfterTransaction(holdingId);
-
-    return transaction;
-  },
-
-  async updateHoldingAfterTransaction(holdingId: string): Promise<void> {
-    const transactions = await holdingTransactionRepository.findByHoldingId(holdingId);
-
-    let totalQuantity = 0;
-    let totalCostKRW = 0;
-    let totalCostOriginal = 0;
-
-    const orderedTransactions = [...transactions].sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
-    );
-
-    // 매수/입고는 취득 원가를 더하고, 매도/출고는 기존 평균단가 기준으로 원가를 차감한다.
-    for (const tx of orderedTransactions) {
-      if (tx.transactionType === 'buy' || tx.transactionType === 'transfer_in') {
-        const quantity = Math.abs(tx.quantity);
-        totalQuantity += quantity;
-        totalCostKRW += quantity * tx.priceKRW;
-        totalCostOriginal += quantity * tx.priceOriginal;
-      } else if (tx.transactionType === 'sell' || tx.transactionType === 'transfer_out') {
-        const quantity = Math.abs(tx.quantity);
-        const averageCostKRW = totalQuantity > 0 ? totalCostKRW / totalQuantity : 0;
-        const averageCostOriginal = totalQuantity > 0 ? totalCostOriginal / totalQuantity : 0;
-
-        totalQuantity -= quantity;
-        totalCostKRW -= quantity * averageCostKRW;
-        totalCostOriginal -= quantity * averageCostOriginal;
-
-        if (totalQuantity <= 0) {
-          totalQuantity = 0;
-          totalCostKRW = 0;
-          totalCostOriginal = 0;
-        }
-      }
-    }
-
-    const averageCostKRW = totalQuantity > 0 ? totalCostKRW / totalQuantity : 0;
-    const averageCostOriginal = totalQuantity > 0 ? totalCostOriginal / totalQuantity : null;
-
-    await holdingRepository.updateQuantity(
-      holdingId,
-      totalQuantity,
-      averageCostKRW,
-      averageCostOriginal
-    );
   },
 
   async delete(id: string): Promise<HoldingTransaction> {
@@ -428,7 +317,7 @@ function getMonthlyInputType(assetClass: string, accountType: string): AssetMont
     : 'quantity';
 }
 
-type SnapshotWithHolding = Prisma.HoldingValueSnapshotGetPayload<{
+type SnapshotWithHolding = Prisma.HoldingSnapshotGetPayload<{
   include: {
     holding: {
       include: {
@@ -444,13 +333,26 @@ type SnapshotWithHolding = Prisma.HoldingValueSnapshotGetPayload<{
   };
 }>;
 
+// 평가액(원금/총액)은 저장하지 않고 입력값에서 파생한다: 평가액 = 수량 × 현재가(원화).
+function snapshotTotalValueKRW(s: { quantity: number; currentPriceKRW: number }): number {
+  return s.quantity * s.currentPriceKRW;
+}
+
+// 표시용 "개당 가격": 외화 종목은 원통화 현재가(priceOriginal), 원화 종목은 원화 현재가.
+function snapshotDisplayPriceOriginal(s: {
+  priceOriginal: number | null;
+  currentPriceKRW: number;
+}): number {
+  return s.priceOriginal ?? s.currentPriceKRW;
+}
+
 async function getSnapshotsByMonth(year: number, month: number): Promise<SnapshotWithHolding[]> {
   const startOfMonth = getMonthStart(year, month);
   const startOfNextMonth = new Date(Date.UTC(year, month, 1));
 
-  return prisma.holdingValueSnapshot.findMany({
+  return prisma.holdingSnapshot.findMany({
     where: {
-      date: {
+      snapshotDate: {
         gte: startOfMonth,
         lt: startOfNextMonth,
       },
@@ -468,7 +370,7 @@ async function getSnapshotsByMonth(year: number, month: number): Promise<Snapsho
         },
       },
     },
-    orderBy: [{ holdingId: 'asc' }, { date: 'desc' }],
+    orderBy: [{ holdingId: 'asc' }, { snapshotDate: 'desc' }],
   });
 }
 
@@ -499,19 +401,19 @@ function buildMonthlyInputRow(
   const { holding } = sourceSnapshot;
   const { assetMaster, account } = holding;
   const values = currentSnapshot ?? prevSnapshot;
-  const totalValueKRW = values?.totalValueKRW ?? 0;
-  const prevTotalValueKRW = prevSnapshot?.totalValueKRW ?? null;
+  const totalValueKRW = values ? snapshotTotalValueKRW(values) : 0;
+  const prevTotalValueKRW = prevSnapshot ? snapshotTotalValueKRW(prevSnapshot) : null;
 
   return {
     holdingId,
     accountId: holding.accountId,
     assetMasterId: holding.assetMasterId,
     currentSnapshotId: currentSnapshot?.id ?? null,
-    date: currentSnapshot ? toDateInput(currentSnapshot.date) : toDateInput(targetDate),
+    date: currentSnapshot ? toDateInput(currentSnapshot.snapshotDate) : toDateInput(targetDate),
     assetName: assetMaster.name,
     assetClass: assetMaster.assetClass,
     subClass: assetMaster.subClass,
-    riskLevel: RISK_LEVEL_LABELS[assetMaster.riskLevel] ?? assetMaster.riskLevel,
+    riskLevel: assetMaster.riskLevel,
     currency: assetMaster.currency,
     memberName: account.member.name,
     accountName: account.name,
@@ -519,15 +421,15 @@ function buildMonthlyInputRow(
     institutionName: account.institution.name,
     inputType: getMonthlyInputType(assetMaster.assetClass, account.accountType),
     prevQuantity: prevSnapshot?.quantity ?? null,
-    prevPriceOriginal: prevSnapshot?.priceOriginal ?? null,
+    prevPriceOriginal: prevSnapshot ? snapshotDisplayPriceOriginal(prevSnapshot) : null,
     prevExchangeRate: prevSnapshot?.exchangeRate ?? null,
-    prevPriceKRW: prevSnapshot?.priceKRW ?? null,
+    prevPriceKRW: prevSnapshot?.currentPriceKRW ?? null,
     prevAvgCostKRW: prevSnapshot?.avgCostKRW ?? null,
     prevTotalValueKRW,
     quantity: values?.quantity ?? 0,
-    priceOriginal: values?.priceOriginal ?? 0,
+    priceOriginal: values ? snapshotDisplayPriceOriginal(values) : 0,
     exchangeRate: values?.exchangeRate ?? null,
-    priceKRW: values?.priceKRW ?? 0,
+    priceKRW: values?.currentPriceKRW ?? 0,
     avgCostKRW: values?.avgCostKRW ?? 0,
     totalValueKRW,
     status: getMonthlyInputStatus(prevTotalValueKRW, totalValueKRW),
@@ -570,11 +472,14 @@ export const holdingValueSnapshotService = {
       });
 
     const prevTotalValue = Array.from(prevMap.values()).reduce(
-      (sum, snapshot) => sum + snapshot.totalValueKRW,
+      (sum, snapshot) => sum + snapshotTotalValueKRW(snapshot),
       0
     );
     const currentTotalValue = hasCurrentSnapshots
-      ? Array.from(currentMap.values()).reduce((sum, snapshot) => sum + snapshot.totalValueKRW, 0)
+      ? Array.from(currentMap.values()).reduce(
+          (sum, snapshot) => sum + snapshotTotalValueKRW(snapshot),
+          0
+        )
       : rows.reduce((sum, row) => sum + row.totalValueKRW, 0);
 
     return {
@@ -595,8 +500,6 @@ export const holdingValueSnapshotService = {
     month: number,
     rows: AssetMonthlyInputSaveRow[]
   ): Promise<AssetMonthlyInputDraft> {
-    const touchedHoldingIds = new Set<string>();
-
     for (const row of rows) {
       const date = assertDateInMonth(row.date, year, month);
       // 평균단가(cost basis)를 입력하지 않은 경우 현재가로 시작(수익 0). 디자인 시드 규칙과 동일.
@@ -615,39 +518,24 @@ export const holdingValueSnapshotService = {
           const createdHolding = await holdingRepository.create({
             account: { connect: { id: row.accountId } },
             assetMaster: { connect: { id: row.assetMasterId } },
-            quantity: row.quantity,
-            averageCostOriginal: row.priceOriginal,
-            averageCostKRW: avgCostKRW,
-            dataSource: 'snapshot',
           });
           holdingId = createdHolding.id;
         }
       }
 
+      // 외화 종목은 원통화 입력값을 보존한다(원화 종목은 null). 환율로 원통화 평균단가를 역산해 함께 저장.
+      const isForeign = row.exchangeRate != null && row.exchangeRate > 0;
       await holdingValueSnapshotRepository.upsert(holdingId, date, {
         quantity: row.quantity,
-        priceOriginal: row.priceOriginal,
-        exchangeRate: row.exchangeRate ?? null,
-        priceKRW: row.priceKRW,
         avgCostKRW,
-        totalValueKRW: row.totalValueKRW,
-        source: 'manual',
+        currentPriceKRW: row.priceKRW,
+        exchangeRate: row.exchangeRate ?? null,
+        priceOriginal: isForeign ? row.priceOriginal : null,
+        avgCostOriginal: isForeign ? avgCostKRW / (row.exchangeRate as number) : null,
       });
-
-      touchedHoldingIds.add(holdingId);
     }
 
-    // 스냅샷을 SSOT로 고정: 최신 스냅샷의 수량·평균단가를 Holding 현재 상태에 반영한다.
-    for (const holdingId of touchedHoldingIds) {
-      const latest = await holdingValueSnapshotRepository.findLatestByHoldingId(holdingId);
-      if (latest) {
-        await holdingRepository.update(holdingId, {
-          quantity: latest.quantity,
-          averageCostKRW: latest.avgCostKRW,
-        });
-      }
-    }
-
+    // 스냅샷이 SSOT다. Holding 현재 상태는 최신 스냅샷에서 파생하므로 별도 동기화가 없다.
     return this.getMonthlyInputDraft(year, month);
   },
 
@@ -655,9 +543,9 @@ export const holdingValueSnapshotService = {
     const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
     const startOfNextMonth = new Date(Date.UTC(year, month, 1));
 
-    const snapshots = await prisma.holdingValueSnapshot.findMany({
+    const snapshots = await prisma.holdingSnapshot.findMany({
       where: {
-        date: {
+        snapshotDate: {
           gte: startOfMonth,
           lt: startOfNextMonth,
         },
@@ -678,13 +566,13 @@ export const holdingValueSnapshotService = {
     });
 
     const [minSnapshot, maxSnapshot] = await Promise.all([
-      prisma.holdingValueSnapshot.findFirst({
-        orderBy: { date: 'asc' },
-        select: { date: true },
+      prisma.holdingSnapshot.findFirst({
+        orderBy: { snapshotDate: 'asc' },
+        select: { snapshotDate: true },
       }),
-      prisma.holdingValueSnapshot.findFirst({
-        orderBy: { date: 'desc' },
-        select: { date: true },
+      prisma.holdingSnapshot.findFirst({
+        orderBy: { snapshotDate: 'desc' },
+        select: { snapshotDate: true },
       }),
     ]);
 
@@ -692,12 +580,12 @@ export const holdingValueSnapshotService = {
       minSnapshot && maxSnapshot
         ? {
             min: {
-              year: minSnapshot.date.getUTCFullYear(),
-              month: minSnapshot.date.getUTCMonth() + 1,
+              year: minSnapshot.snapshotDate.getUTCFullYear(),
+              month: minSnapshot.snapshotDate.getUTCMonth() + 1,
             },
             max: {
-              year: maxSnapshot.date.getUTCFullYear(),
-              month: maxSnapshot.date.getUTCMonth() + 1,
+              year: maxSnapshot.snapshotDate.getUTCFullYear(),
+              month: maxSnapshot.snapshotDate.getUTCMonth() + 1,
             },
           }
         : null;
@@ -706,24 +594,25 @@ export const holdingValueSnapshotService = {
       return { totalValue: 0, byRiskLevel: [], holdings: [], availableRange };
     }
 
-    const totalValue = snapshots.reduce((sum, s) => sum + s.totalValueKRW, 0);
+    const totalValue = snapshots.reduce((sum, s) => sum + snapshotTotalValueKRW(s), 0);
 
     const holdings: MonthlyHolding[] = snapshots.map(s => {
       const { holding } = s;
       const { assetMaster, account } = holding;
+      const totalValueKRW = snapshotTotalValueKRW(s);
       return {
         id: s.id,
         assetName: assetMaster.name,
         assetClass: assetMaster.assetClass,
         subClass: assetMaster.subClass,
-        riskLevel: RISK_LEVEL_LABELS[assetMaster.riskLevel] ?? assetMaster.riskLevel,
+        riskLevel: assetMaster.riskLevel,
         currency: assetMaster.currency,
         quantity: s.quantity,
-        priceOriginal: s.priceOriginal,
+        priceOriginal: snapshotDisplayPriceOriginal(s),
         exchangeRate: s.exchangeRate,
-        priceKRW: s.priceKRW,
-        totalValueKRW: s.totalValueKRW,
-        percentage: totalValue > 0 ? Math.round((s.totalValueKRW / totalValue) * 10000) / 100 : 0,
+        priceKRW: s.currentPriceKRW,
+        totalValueKRW,
+        percentage: totalValue > 0 ? Math.round((totalValueKRW / totalValue) * 10000) / 100 : 0,
         memberName: account.member.name,
         accountName: account.name,
         accountType: account.accountType,
@@ -897,18 +786,17 @@ export const holdingValueSnapshotService = {
 
   async upsert(
     holdingId: string,
-    date: Date,
+    snapshotDate: Date,
     data: {
       quantity: number;
-      priceOriginal: number;
-      exchangeRate?: number | null;
-      priceKRW: number;
       avgCostKRW: number;
-      totalValueKRW: number;
-      source?: string;
+      currentPriceKRW: number;
+      exchangeRate?: number | null;
+      priceOriginal?: number | null;
+      avgCostOriginal?: number | null;
     }
   ) {
-    return holdingValueSnapshotRepository.upsert(holdingId, date, data);
+    return holdingValueSnapshotRepository.upsert(holdingId, snapshotDate, data);
   },
 
   async delete(id: string) {

@@ -3,7 +3,7 @@ import {
   familyMemberRepository,
   accountRepository,
 } from '@/repositories/account-repository';
-import type { AssetInstitution, FamilyMember, Account, Prisma } from '@prisma/client';
+import type { Institution, Member, Account, Prisma } from '@prisma/client';
 import type { AssetInstitutionType, AccountType } from '@/types/asset';
 
 // ============================================
@@ -11,57 +11,57 @@ import type { AssetInstitutionType, AccountType } from '@/types/asset';
 // ============================================
 
 export const institutionService = {
-  async getAll(): Promise<AssetInstitution[]> {
+  async getAll(): Promise<Institution[]> {
     return institutionRepository.findAll();
   },
 
-  async getById(id: string): Promise<AssetInstitution | null> {
+  async getById(id: string): Promise<Institution | null> {
     return institutionRepository.findById(id);
   },
 
-  async getByType(type: AssetInstitutionType): Promise<AssetInstitution[]> {
+  async getByType(type: AssetInstitutionType): Promise<Institution[]> {
     return institutionRepository.findByType(type);
   },
 
-  async create(data: Prisma.AssetInstitutionCreateInput): Promise<AssetInstitution> {
+  async create(data: Prisma.InstitutionCreateInput): Promise<Institution> {
     return institutionRepository.create(data);
   },
 
-  async update(id: string, data: Prisma.AssetInstitutionUpdateInput): Promise<AssetInstitution> {
+  async update(id: string, data: Prisma.InstitutionUpdateInput): Promise<Institution> {
     return institutionRepository.update(id, data);
   },
 
-  async delete(id: string): Promise<AssetInstitution> {
+  async delete(id: string): Promise<Institution> {
     return institutionRepository.delete(id);
   },
 };
 
 // ============================================
-// FamilyMember Service
+// Member Service
 // ============================================
 
 export const familyMemberService = {
-  async getAll(): Promise<FamilyMember[]> {
+  async getAll(): Promise<Member[]> {
     return familyMemberRepository.findAll();
   },
 
-  async getById(id: string): Promise<FamilyMember | null> {
+  async getById(id: string): Promise<Member | null> {
     return familyMemberRepository.findById(id);
   },
 
-  async getByName(name: string): Promise<FamilyMember | null> {
+  async getByName(name: string): Promise<Member | null> {
     return familyMemberRepository.findByName(name);
   },
 
-  async create(data: Prisma.FamilyMemberCreateInput): Promise<FamilyMember> {
+  async create(data: Prisma.MemberCreateInput): Promise<Member> {
     return familyMemberRepository.create(data);
   },
 
-  async update(id: string, data: Prisma.FamilyMemberUpdateInput): Promise<FamilyMember> {
+  async update(id: string, data: Prisma.MemberUpdateInput): Promise<Member> {
     return familyMemberRepository.update(id, data);
   },
 
-  async delete(id: string): Promise<FamilyMember> {
+  async delete(id: string): Promise<Member> {
     return familyMemberRepository.delete(id);
   },
 };
@@ -99,15 +99,7 @@ export const accountService = {
     return accountRepository.update(id, data);
   },
 
-  async updateCashBalance(id: string, cashBalance: number): Promise<Account> {
-    return accountRepository.updateCashBalance(id, cashBalance);
-  },
-
   async delete(id: string): Promise<Account> {
     return accountRepository.delete(id);
-  },
-
-  async getTotalCashBalance(): Promise<number> {
-    return accountRepository.getTotalCashBalance();
   },
 };
