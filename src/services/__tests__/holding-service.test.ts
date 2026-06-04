@@ -8,7 +8,7 @@ import { holdingTransactionService, holdingValueSnapshotService } from '@/servic
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    holdingValueSnapshot: {
+    holdingSnapshot: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
     },
@@ -22,7 +22,6 @@ vi.mock('@/repositories/holding-repository', () => ({
     findByAccountAndAsset: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
-    updateQuantity: vi.fn(),
   },
   holdingTransactionRepository: {
     findByHoldingId: vi.fn(),
@@ -39,74 +38,6 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-describe('holdingTransactionService', () => {
-  it('updates quantity and weighted average cost after buy, sell and transfer transactions', async () => {
-    vi.mocked(holdingTransactionRepository.findByHoldingId).mockResolvedValue([
-      {
-        id: 'tx-4',
-        holdingId: 'holding-1',
-        transactionType: 'transfer_out',
-        date: new Date('2026-04-04T00:00:00.000Z'),
-        quantity: -2,
-        priceOriginal: 3000,
-        exchangeRate: null,
-        priceKRW: 3000,
-        totalKRW: 6000,
-        notes: null,
-        createdAt: new Date('2026-04-04T00:00:00.000Z'),
-      },
-      {
-        id: 'tx-3',
-        holdingId: 'holding-1',
-        transactionType: 'sell',
-        date: new Date('2026-04-03T00:00:00.000Z'),
-        quantity: -3,
-        priceOriginal: 5000,
-        exchangeRate: null,
-        priceKRW: 5000,
-        totalKRW: 15000,
-        notes: null,
-        createdAt: new Date('2026-04-03T00:00:00.000Z'),
-      },
-      {
-        id: 'tx-2',
-        holdingId: 'holding-1',
-        transactionType: 'transfer_in',
-        date: new Date('2026-04-02T00:00:00.000Z'),
-        quantity: 4,
-        priceOriginal: 1500,
-        exchangeRate: null,
-        priceKRW: 1500,
-        totalKRW: 6000,
-        notes: null,
-        createdAt: new Date('2026-04-02T00:00:00.000Z'),
-      },
-      {
-        id: 'tx-1',
-        holdingId: 'holding-1',
-        transactionType: 'buy',
-        date: new Date('2026-04-01T00:00:00.000Z'),
-        quantity: 10,
-        priceOriginal: 1000,
-        exchangeRate: null,
-        priceKRW: 1000,
-        totalKRW: 10000,
-        notes: null,
-        createdAt: new Date('2026-04-01T00:00:00.000Z'),
-      },
-    ]);
-
-    await holdingTransactionService.updateHoldingAfterTransaction('holding-1');
-
-    expect(holdingRepository.updateQuantity).toHaveBeenCalledWith(
-      'holding-1',
-      9,
-      16000 / 14,
-      16000 / 14
-    );
-  });
-});
-
 describe('holdingValueSnapshotService', () => {
   it('builds monthly trend deltas, top movers and member/risk summaries', async () => {
     const monthlySpy = vi
@@ -116,7 +47,7 @@ describe('holdingValueSnapshotService', () => {
           return {
             totalValue: 1000,
             byRiskLevel: [
-              { riskLevel: 'Moderate', totalValue: 1000, percentage: 100, children: [] },
+              { riskLevel: '안전자산', totalValue: 1000, percentage: 100, children: [] },
             ],
             holdings: [
               monthlyHolding('Asset A', 'Mom', 600),
@@ -129,8 +60,8 @@ describe('holdingValueSnapshotService', () => {
         return {
           totalValue: 1300,
           byRiskLevel: [
-            { riskLevel: 'Moderate', totalValue: 1050, percentage: 80.77, children: [] },
-            { riskLevel: 'Aggressive', totalValue: 250, percentage: 19.23, children: [] },
+            { riskLevel: '안전자산', totalValue: 1050, percentage: 80.77, children: [] },
+            { riskLevel: '위험자산', totalValue: 250, percentage: 19.23, children: [] },
           ],
           holdings: [
             monthlyHolding('Asset A', 'Mom', 700),
@@ -160,8 +91,8 @@ describe('holdingValueSnapshotService', () => {
       deltaAmount: 300,
       deltaPercent: 30,
       byRiskLevel: [
-        { riskLevel: 'Moderate', totalValue: 1050, percentage: 80.77 },
-        { riskLevel: 'Aggressive', totalValue: 250, percentage: 19.23 },
+        { riskLevel: '안전자산', totalValue: 1050, percentage: 80.77 },
+        { riskLevel: '위험자산', totalValue: 250, percentage: 19.23 },
       ],
       byMember: [
         { name: 'Mom', value: 950 },
@@ -182,10 +113,6 @@ describe('holdingTransactionService 비권위 격리', () => {
       id: 'holding-1',
       accountId: 'account-1',
       assetMasterId: 'asset-1',
-      quantity: 5,
-      averageCostOriginal: 1000,
-      averageCostKRW: 1000,
-      dataSource: 'transaction',
       createdAt: now,
       updatedAt: now,
     } as unknown as Awaited<ReturnType<typeof holdingRepository.findByAccountAndAsset>>);
@@ -194,7 +121,7 @@ describe('holdingTransactionService 비권위 격리', () => {
 
     await holdingTransactionService.record('account-1', 'asset-1', 'buy', now, 3, 1000, 1000);
 
-    expect(holdingRepository.updateQuantity).not.toHaveBeenCalled();
+    expect(holdingTransactionRepository.create).toHaveBeenCalled();
     expect(holdingRepository.update).not.toHaveBeenCalled();
   });
 
@@ -207,29 +134,17 @@ describe('holdingTransactionService 비권위 격리', () => {
 
     await holdingTransactionService.delete('tx-1');
 
-    expect(holdingRepository.updateQuantity).not.toHaveBeenCalled();
+    expect(holdingTransactionRepository.delete).toHaveBeenCalledWith('tx-1');
+    expect(holdingRepository.update).not.toHaveBeenCalled();
   });
 });
 
 describe('holdingValueSnapshotService.saveMonthlyInput', () => {
-  it('스냅샷 저장 후 최신 스냅샷의 수량·평균단가로 Holding을 동기화한다', async () => {
+  it('스냅샷을 SSOT로 저장하고 Holding 현재 상태를 별도 동기화하지 않는다', async () => {
     const draftSpy = vi
       .spyOn(holdingValueSnapshotService, 'getMonthlyInputDraft')
       .mockResolvedValue({} as never);
     vi.mocked(holdingValueSnapshotRepository.upsert).mockResolvedValue({} as never);
-    vi.mocked(holdingValueSnapshotRepository.findLatestByHoldingId).mockResolvedValue({
-      id: 'snap-1',
-      holdingId: 'holding-1',
-      date: new Date('2026-05-31T00:00:00.000Z'),
-      quantity: 12,
-      priceOriginal: 100,
-      exchangeRate: null,
-      priceKRW: 100,
-      avgCostKRW: 90,
-      totalValueKRW: 1200,
-      source: 'manual',
-      createdAt: new Date('2026-05-31T00:00:00.000Z'),
-    } as never);
 
     await holdingValueSnapshotService.saveMonthlyInput(2026, 5, [
       {
@@ -246,10 +161,13 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
       },
     ] as unknown as Parameters<typeof holdingValueSnapshotService.saveMonthlyInput>[2]);
 
-    expect(holdingRepository.update).toHaveBeenCalledWith('holding-1', {
-      quantity: 12,
-      averageCostKRW: 90,
-    });
+    expect(holdingValueSnapshotRepository.upsert).toHaveBeenCalledWith(
+      'holding-1',
+      expect.any(Date),
+      expect.objectContaining({ quantity: 12, avgCostKRW: 90, currentPriceKRW: 100 })
+    );
+    // 스냅샷이 SSOT이므로 Holding 현재 상태 동기화(update) 호출이 없다.
+    expect(holdingRepository.update).not.toHaveBeenCalled();
     draftSpy.mockRestore();
   });
 
@@ -258,7 +176,6 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
       .spyOn(holdingValueSnapshotService, 'getMonthlyInputDraft')
       .mockResolvedValue({} as never);
     vi.mocked(holdingValueSnapshotRepository.upsert).mockResolvedValue({} as never);
-    vi.mocked(holdingValueSnapshotRepository.findLatestByHoldingId).mockResolvedValue(null);
 
     await holdingValueSnapshotService.saveMonthlyInput(2026, 5, [
       {
@@ -287,9 +204,9 @@ function monthlyHolding(assetName: string, memberName: string, totalValueKRW: nu
   return {
     id: `${assetName}-${memberName}`,
     assetName,
-    assetClass: 'stock',
+    assetClass: '주식',
     subClass: null,
-    riskLevel: 'Moderate',
+    riskLevel: '위험자산',
     currency: 'KRW',
     quantity: 1,
     priceOriginal: totalValueKRW,
@@ -299,7 +216,7 @@ function monthlyHolding(assetName: string, memberName: string, totalValueKRW: nu
     percentage: 0,
     memberName,
     accountName: `${memberName} Account`,
-    accountType: 'brokerage',
+    accountType: '종합',
     institutionName: 'Broker',
   };
 }
