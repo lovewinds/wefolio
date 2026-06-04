@@ -130,6 +130,8 @@ model HoldingSnapshot {
   avgCostKRW      Float                   // 평균단가(원화) → 원금 = quantity × avgCostKRW
   currentPriceKRW Float                   // 현재가(원화) → 평가액 = quantity × currentPriceKRW
   exchangeRate    Float?                  // 외화 종목의 적용 환율 (원화 종목은 null)
+  priceOriginal   Float?                  // 원통화 현재가 (외화 종목 입력값 보존, 원화 종목은 null)
+  avgCostOriginal Float?                  // 원통화 평균단가 (외화 종목 입력값 보존, 원화 종목은 null)
 
   holding         Holding  @relation(fields: [holdingId], references: [id])
 
@@ -208,7 +210,7 @@ model BudgetRecurringTemplate {
 | N | 환율 | `HoldingSnapshot.exchangeRate` (환율>1 → `currency=USD`, 그 외 KRW·null) |
 | J | 기준일자 | → `HoldingSnapshot.snapshotDate` (해당 월 기준일 DateTime으로 변환) |
 | K | 보유개수 | `HoldingSnapshot.quantity` |
-| L | 개당가격 | `HoldingSnapshot.avgCostKRW` **및** `currentPriceKRW` 초기값 |
+| L | 개당가격 | 원통화 입력값 → `priceOriginal`·`avgCostOriginal`(외화), 원화 환산값 → `currentPriceKRW`·`avgCostKRW` 초기값 |
 | O | 원화금액 | 검증용(= quantity × currentPriceKRW). 현금형은 평가액으로 사용 |
 
 > **현금형 종목**(K·L 누락): `quantity=1`, `avgCostKRW = currentPriceKRW = O(원화금액)` 으로 적재.

@@ -73,15 +73,19 @@
 | 수익 | `평가액 − 원금` | ✗ 파생 |
 | 수익률 | `수익 / 원금` (원금 0이면 표시 안 함) | ✗ 파생 |
 
-저장하는 것은 오직 **입력값**(quantity, avgCostKRW, currentPriceKRW, cashBalanceKRW, exchangeRate)뿐이다.
+저장하는 것은 오직 **입력값**(quantity, avgCostKRW, currentPriceKRW, cashBalanceKRW, exchangeRate,
+그리고 외화 종목의 원통화 입력값 priceOriginal·avgCostOriginal)뿐이다.
 모든 지표는 조회 시 계산한다 → 저장값 간 불일치가 원천적으로 불가능.
 
 ## 5. 외화 처리
 
-외화 종목은 입력 시 **통화·환율**을 받아 **원화 환산값을 저장**한다.
+외화 종목은 입력 시 **통화·환율**을 받아 **원화 환산값을 함께 저장**한다.
 
-- `avgCostKRW`, `currentPriceKRW`는 항상 원화 기준으로 저장.
-- `exchangeRate`는 해당 월 적용 환율을 참고용으로 함께 저장(원화 종목은 null).
+- `avgCostKRW`, `currentPriceKRW`는 항상 원화 기준으로 저장(모든 집계·표시는 원화로 한다).
+- `exchangeRate`는 해당 시점 적용 환율을 함께 저장(원화 종목은 null).
+- 사용자가 외화로 입력한 **원통화 가격은 손실 없이 보존**한다: `priceOriginal`(원통화 현재가),
+  `avgCostOriginal`(원통화 평균단가). 환율은 시점마다 다르고 현금형은 환율이 null이라
+  원화값에서 역산하면 손실되므로, 원통화 입력값을 1급 데이터로 함께 저장한다. (원화 종목은 null)
 - 외부 환율 API는 쓰지 않는다 — 사용자가 입력한다.
 
 ---
