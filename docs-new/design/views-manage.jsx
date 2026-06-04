@@ -218,6 +218,10 @@ function DecompositionView({ mi, variant, setVariant }) {
 }
 
 /* ============================ 월별 스냅샷 입력 / SNAPSHOT INPUT (FR-B) ============================ */
+// NOTE(2026-06): 입력 화면의 단일 기준 구조는 asset-management.md "입력 화면 구조: 소유자 ▸ 기관 스텝"이다.
+// 실제 구현(monthly-asset-input-panel.tsx)은 소유자 ▸ 기관 묶음 스텝(은행류='예금' 한 묶음,
+// 증권류=기관별 묶음에 예수금+종목)을 한 번에 한 묶음씩 펼치는 방식이다.
+// 아래 2분할(현금/종목) 테이블 프로토타입은 그 구조 확정 이전 시안으로, 데이터 모델 참고용으로만 남겨 둔다.
 function SnapshotInputView({ mi, onToast }) {
   const cur = useMemoM(() => WFm.compute(mi), [mi]);
   const prev = useMemoM(() => (mi > 0 ? WFm.compute(mi - 1) : null), [mi]);

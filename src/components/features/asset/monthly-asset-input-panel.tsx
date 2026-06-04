@@ -1,19 +1,21 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowRight,
+  Building2,
   Check,
   ChevronDown,
   ChevronRight,
   Download,
-  Layers,
   Loader2,
   Plus,
   Save,
   Trash2,
   Upload,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -67,15 +69,23 @@ interface NewHoldingSelection {
   assetMasterId: string;
 }
 
-type GroupMode = 'member' | 'assetClass';
-
-interface MonthlyInputGroup {
+interface InputStep {
   key: string;
+  memberName: string;
   label: string;
+  institutionType: string;
   rows: EditableMonthlyRow[];
   totalValue: number;
   missingCount: number;
   filledCount: number;
+  isComplete: boolean;
+}
+
+interface MemberSection {
+  memberName: string;
+  steps: InputStep[];
+  completedSteps: number;
+  totalSteps: number;
 }
 
 interface LocalMonthlyInputDraft {
@@ -282,37 +292,86 @@ function formatSavedAt(value: string | null): string | null {
   });
 }
 
-function getGroupKey(row: EditableMonthlyRow, groupMode: GroupMode): string {
-  return groupMode === 'member' ? row.memberName : row.assetClass;
+const DEPOSIT_STEP_LABEL = '예금';
+
+// 스텝(묶음) 단위: 은행류 기관은 소유자별 "예금" 한 스텝으로 묶고,
+// 증권류 기관은 기관마다 한 스텝(예수금 + 종목)으로 나눈다.
+function getStepLabel(row: EditableMonthlyRow): string {
+  return row.institutionType === 'bank' ? DEPOSIT_STEP_LABEL : row.institutionName;
 }
 
-function buildGroups(rows: EditableMonthlyRow[], groupMode: GroupMode): MonthlyInputGroup[] {
-  const groups = new Map<string, EditableMonthlyRow[]>();
+function getStepKey(memberName: string, stepLabel: string): string {
+  return `${memberName} · ${stepLabel}`;
+}
+
+// 스텝 내 행 정렬: value형(현금성·예수금)을 먼저, quantity형(종목)을 뒤로.
+function compareRowsWithinStep(a: EditableMonthlyRow, b: EditableMonthlyRow): number {
+  if (a.inputType !== b.inputType) return a.inputType === 'value' ? -1 : 1;
+  return `${a.institutionName}:${a.accountName}:${a.assetName}`.localeCompare(
+    `${b.institutionName}:${b.accountName}:${b.assetName}`,
+    'ko-KR'
+  );
+}
+
+function buildInputStep(memberName: string, label: string, rows: EditableMonthlyRow[]): InputStep {
+  const sortedRows = [...rows].sort(compareRowsWithinStep);
+  const filledCount = sortedRows.filter(row => row.totalValueInput.trim() !== '').length;
+  return {
+    key: getStepKey(memberName, label),
+    memberName,
+    label,
+    institutionType: sortedRows[0]?.institutionType ?? 'brokerage',
+    rows: sortedRows,
+    totalValue: sortedRows.reduce(
+      (sum, row) => sum + (parseNumberInput(row.totalValueInput) ?? 0),
+      0
+    ),
+    missingCount: sortedRows.filter(
+      row => (row.prevTotalValueKRW ?? 0) > 0 && row.totalValueInput.trim() === ''
+    ).length,
+    filledCount,
+    isComplete: sortedRows.length > 0 && filledCount === sortedRows.length,
+  };
+}
+
+// 소유자 ▸ 기관 스텝의 2단 위계로 행을 묶는다.
+function buildMemberSections(rows: EditableMonthlyRow[]): MemberSection[] {
+  const memberOrder: string[] = [];
+  const byMember = new Map<string, Map<string, EditableMonthlyRow[]>>();
+
   for (const row of rows) {
-    const key = getGroupKey(row, groupMode);
-    const group = groups.get(key);
-    if (group) {
-      group.push(row);
+    let stepMap = byMember.get(row.memberName);
+    if (!stepMap) {
+      stepMap = new Map();
+      byMember.set(row.memberName, stepMap);
+      memberOrder.push(row.memberName);
+    }
+    const stepLabel = getStepLabel(row);
+    const stepRows = stepMap.get(stepLabel);
+    if (stepRows) {
+      stepRows.push(row);
     } else {
-      groups.set(key, [row]);
+      stepMap.set(stepLabel, [row]);
     }
   }
 
-  return Array.from(groups.entries())
-    .map(([key, groupRows]) => ({
-      key,
-      label: key,
-      rows: groupRows,
-      totalValue: groupRows.reduce((sum, row) => {
-        const value = parseNumberInput(row.totalValueInput);
-        return sum + (value ?? 0);
-      }, 0),
-      missingCount: groupRows.filter(
-        row => (row.prevTotalValueKRW ?? 0) > 0 && row.totalValueInput.trim() === ''
-      ).length,
-      filledCount: groupRows.filter(row => row.totalValueInput.trim() !== '').length,
-    }))
-    .sort((a, b) => b.totalValue - a.totalValue || a.label.localeCompare(b.label, 'ko-KR'));
+  return memberOrder.map(memberName => {
+    const stepMap = byMember.get(memberName)!;
+    const steps = Array.from(stepMap.entries())
+      .map(([label, stepRows]) => buildInputStep(memberName, label, stepRows))
+      // 예금 스텝을 먼저, 나머지 기관은 평가액 큰 순.
+      .sort((a, b) => {
+        if (a.label === DEPOSIT_STEP_LABEL) return -1;
+        if (b.label === DEPOSIT_STEP_LABEL) return 1;
+        return b.totalValue - a.totalValue || a.label.localeCompare(b.label, 'ko-KR');
+      });
+    return {
+      memberName,
+      steps,
+      completedSteps: steps.filter(step => step.isComplete).length,
+      totalSteps: steps.length,
+    };
+  });
 }
 
 export function MonthlyAssetInputPanel({
@@ -332,8 +391,7 @@ export function MonthlyAssetInputPanel({
     assetMasterId: '',
   });
   const [showNewHoldingRow, setShowNewHoldingRow] = useState(false);
-  const [groupMode, setGroupMode] = useState<GroupMode>('member');
-  const [activeGroupKey, setActiveGroupKey] = useState<string>('all');
+  const [activeStepKey, setActiveStepKey] = useState<string>('');
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -378,19 +436,19 @@ export function MonthlyAssetInputPanel({
     loadDraft();
   }, [open, year, month]);
 
-  const rowGroups = useMemo(() => buildGroups(rows, groupMode), [rows, groupMode]);
+  const sections = useMemo(() => buildMemberSections(rows), [rows]);
+  const allSteps = useMemo(() => sections.flatMap(section => section.steps), [sections]);
 
+  // 기본은 모든 묶음 접힘(activeStepKey=''). 활성 스텝이 사라지면 다시 접는다.
   useEffect(() => {
-    if (activeGroupKey === 'all') return;
-    if (!rowGroups.some(group => group.key === activeGroupKey)) {
-      setActiveGroupKey('all');
+    if (activeStepKey === '') return;
+    if (!allSteps.some(step => step.key === activeStepKey)) {
+      setActiveStepKey('');
     }
-  }, [activeGroupKey, rowGroups]);
+  }, [activeStepKey, allSteps]);
 
-  const visibleGroups = useMemo(() => {
-    if (activeGroupKey === 'all') return rowGroups;
-    return rowGroups.filter(group => group.key === activeGroupKey);
-  }, [activeGroupKey, rowGroups]);
+  const activeStepIndex = allSteps.findIndex(step => step.key === activeStepKey);
+  const nextStep = activeStepIndex >= 0 ? allSteps[activeStepIndex + 1] : undefined;
 
   const prevTotalValue = draft?.prevTotalValue ?? 0;
   const currentTotalValue = useMemo(
@@ -478,8 +536,9 @@ export function MonthlyAssetInputPanel({
       return;
     }
 
-    const institutionName =
-      institutions.find(item => item.id === account.institutionId)?.name ?? '기타';
+    const institution = institutions.find(item => item.id === account.institutionId);
+    const institutionName = institution?.name ?? '기타';
+    const institutionType = institution?.type ?? 'brokerage';
     const inputType = getInputType(assetMaster.assetClass, account.accountType);
     const rowKey = `new-${newHolding.accountId}-${newHolding.assetMasterId}-${Date.now()}`;
     const newRow: EditableMonthlyRow = {
@@ -498,6 +557,7 @@ export function MonthlyAssetInputPanel({
       accountName: account.name,
       accountType: account.accountType,
       institutionName,
+      institutionType,
       inputType,
       prevQuantity: null,
       prevPriceOriginal: null,
@@ -517,7 +577,7 @@ export function MonthlyAssetInputPanel({
     };
 
     setRows(prev => [...prev, newRow]);
-    setActiveGroupKey(getGroupKey(newRow, groupMode));
+    setActiveStepKey(getStepKey(newRow.memberName, getStepLabel(newRow)));
     setNewHolding({ accountId: '', assetMasterId: '' });
     setShowNewHoldingRow(false);
   };
@@ -698,112 +758,57 @@ export function MonthlyAssetInputPanel({
             </div>
           ) : (
             <>
-              <div className="mb-3 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex rounded-lg border border-hairline bg-surface-soft p-1 text-sm font-medium">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGroupMode('member');
-                        setActiveGroupKey('all');
-                      }}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
-                        groupMode === 'member'
-                          ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                          : 'text-ink-subtle hover:text-ink'
-                      }`}
-                    >
-                      <Users size={15} />
-                      소유자별
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGroupMode('assetClass');
-                        setActiveGroupKey('all');
-                      }}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${
-                        groupMode === 'assetClass'
-                          ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                          : 'text-ink-subtle hover:text-ink'
-                      }`}
-                    >
-                      <Layers size={15} />
-                      자산유형별
-                    </button>
-                  </div>
-                  <div className="text-sm text-ink-subtle">
-                    {rows.length}개 중 {filledRowCount}개 입력
-                  </div>
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  <GroupButton
-                    label="전체"
-                    count={rows.length}
-                    filledCount={filledRowCount}
-                    totalValue={currentTotalValue}
-                    missingCount={missingRows.length}
-                    active={activeGroupKey === 'all'}
-                    onClick={() => setActiveGroupKey('all')}
-                  />
-                  {rowGroups.map(group => (
-                    <GroupButton
-                      key={group.key}
-                      label={group.label}
-                      count={group.rows.length}
-                      filledCount={group.filledCount}
-                      totalValue={group.totalValue}
-                      missingCount={group.missingCount}
-                      active={activeGroupKey === group.key}
-                      onClick={() => setActiveGroupKey(group.key)}
-                    />
-                  ))}
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-ink-subtle">
+                  소유자 → 기관 순으로 한 묶음씩 점검하세요.
+                </p>
+                <div className="text-sm text-ink-subtle">
+                  {rows.length}개 중 {filledRowCount}개 입력
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
-                    <thead className="bg-surface-soft text-left text-xs font-semibold text-ink-subtle">
-                      <tr>
-                        <th className="border-b border-hairline px-3 py-2">자산명</th>
-                        <th className="border-b border-hairline px-3 py-2 text-right">전월</th>
-                        <th className="border-b border-hairline px-3 py-2 text-right">이번 달</th>
-                        <th className="border-b border-hairline px-3 py-2 text-right">증감</th>
-                        <th className="border-b border-hairline px-3 py-2">메모/상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleGroups.map(group => (
-                        <Fragment key={group.key}>
-                          <tr className="bg-canvas text-xs font-semibold text-ink-subtle">
-                            <td colSpan={5} className="border-b border-hairline px-3 py-2">
-                              <div className="flex items-center justify-between gap-3">
-                                <span>{group.label}</span>
-                                <span>
-                                  {group.filledCount}/{group.rows.length} ·{' '}
-                                  {formatAmount(group.totalValue)}
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
-                          {group.rows.map(row => (
-                            <MonthlyInputTableRows
-                              key={row.rowKey}
-                              row={row}
-                              onUpdate={updateRow}
-                              onRemove={() => {
-                                if (!row.isNew) return;
-                                setRows(prev => prev.filter(item => item.rowKey !== row.rowKey));
-                              }}
-                            />
-                          ))}
-                        </Fragment>
+              <div className="space-y-6">
+                {sections.map(section => (
+                  <section key={section.memberName} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Users size={15} className="text-ink-subtle" />
+                        <span className="text-sm font-semibold text-ink">{section.memberName}</span>
+                      </div>
+                      <span className="text-xs font-medium text-ink-subtle">
+                        {section.completedSteps}/{section.totalSteps} 묶음 완료
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {section.steps.map(step => (
+                        <StepChip
+                          key={step.key}
+                          step={step}
+                          active={step.key === activeStepKey}
+                          onClick={() =>
+                            setActiveStepKey(curr => (curr === step.key ? '' : step.key))
+                          }
+                        />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+
+                    {section.steps
+                      .filter(step => step.key === activeStepKey)
+                      .map(step => (
+                        <StepTable
+                          key={step.key}
+                          step={step}
+                          nextStep={nextStep}
+                          onUpdateRow={updateRow}
+                          onRemoveRow={rowKey =>
+                            setRows(prev => prev.filter(item => item.rowKey !== rowKey))
+                          }
+                          onNext={() => nextStep && setActiveStepKey(nextStep.key)}
+                        />
+                      ))}
+                  </section>
+                ))}
               </div>
             </>
           )}
@@ -902,48 +907,115 @@ function SummaryValue({
   );
 }
 
-function GroupButton({
-  label,
-  count,
-  filledCount,
-  totalValue,
-  missingCount,
+function StepChip({
+  step,
   active,
   onClick,
 }: {
-  label: string;
-  count: number;
-  filledCount: number;
-  totalValue: number;
-  missingCount: number;
+  step: InputStep;
   active: boolean;
   onClick: () => void;
 }) {
+  const StepIcon = step.institutionType === 'bank' ? Wallet : Building2;
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`min-w-[156px] rounded-lg border px-3 py-2 text-left transition ${
+      className={`min-w-[148px] rounded-lg border px-3 py-2 text-left transition ${
         active
           ? 'border-accent accent-soft text-accent'
           : 'border-hairline bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-semibold">{label}</span>
-        {missingCount > 0 && (
-          <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
-            {missingCount}
-          </span>
+        <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
+          <StepIcon size={14} className="shrink-0" />
+          <span className="truncate">{step.label}</span>
+        </span>
+        {step.isComplete ? (
+          <Check size={14} className="shrink-0 text-gain" />
+        ) : (
+          step.missingCount > 0 && (
+            <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
+              {step.missingCount}
+            </span>
+          )
         )}
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-xs text-ink-subtle">
         <span>
-          {filledCount}/{count}
+          {step.filledCount}/{step.rows.length}
         </span>
-        <span className="font-medium">{formatAmount(totalValue)}</span>
+        <span className="font-medium">{formatAmount(step.totalValue)}</span>
       </div>
     </button>
+  );
+}
+
+function StepTable({
+  step,
+  nextStep,
+  onUpdateRow,
+  onRemoveRow,
+  onNext,
+}: {
+  step: InputStep;
+  nextStep: InputStep | undefined;
+  onUpdateRow: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
+  onRemoveRow: (rowKey: string) => void;
+  onNext: () => void;
+}) {
+  const StepIcon = step.institutionType === 'bank' ? Wallet : Building2;
+  return (
+    <div className="overflow-hidden rounded-lg border border-accent/40 bg-surface">
+      <div className="flex items-center justify-between gap-3 border-b border-hairline bg-canvas px-3 py-2">
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <StepIcon size={15} className="text-ink-subtle" />
+          {step.label}
+        </span>
+        <span className="text-xs font-medium text-ink-subtle">
+          {step.filledCount}/{step.rows.length} · {formatAmount(step.totalValue)}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
+          <thead className="bg-surface-soft text-left text-xs font-semibold text-ink-subtle">
+            <tr>
+              <th className="border-b border-hairline px-3 py-2">자산명</th>
+              <th className="border-b border-hairline px-3 py-2 text-right">전월</th>
+              <th className="border-b border-hairline px-3 py-2 text-right">이번 달</th>
+              <th className="border-b border-hairline px-3 py-2 text-right">증감</th>
+              <th className="border-b border-hairline px-3 py-2">메모/상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {step.rows.map(row => (
+              <MonthlyInputTableRows
+                key={row.rowKey}
+                row={row}
+                onUpdate={onUpdateRow}
+                onRemove={() => {
+                  if (!row.isNew) return;
+                  onRemoveRow(row.rowKey);
+                }}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {nextStep && (
+        <div className="flex justify-end border-t border-hairline px-3 py-2">
+          <button
+            type="button"
+            onClick={onNext}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
+          >
+            다음 묶음: {nextStep.label}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -977,12 +1049,17 @@ function MonthlyInputTableRows({
                 {row.isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
               </button>
             ) : (
-              <span className="h-6 w-6" />
+              <span
+                className="inline-flex h-6 w-6 items-center justify-center text-ink-faint"
+                title="현금성"
+              >
+                <Wallet size={15} />
+              </span>
             )}
             <div className="min-w-0">
               <p className="truncate font-medium text-ink">{row.assetName}</p>
               <p className="truncate text-xs text-ink-subtle">
-                {row.assetClass} · {row.currency}
+                {row.institutionName} · {row.accountName}
               </p>
             </div>
           </div>

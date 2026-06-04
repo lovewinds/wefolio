@@ -419,6 +419,7 @@ function buildMonthlyInputRow(
     accountName: account.name,
     accountType: account.accountType,
     institutionName: account.institution.name,
+    institutionType: account.institution.type,
     inputType: getMonthlyInputType(assetMaster.assetClass, account.accountType),
     prevQuantity: prevSnapshot?.quantity ?? null,
     prevPriceOriginal: prevSnapshot ? snapshotDisplayPriceOriginal(prevSnapshot) : null,

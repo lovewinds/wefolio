@@ -274,6 +274,7 @@ export interface AssetMonthlyInputRow {
   accountName: string;
   accountType: string;
   institutionName: string;
+  institutionType: string;
   inputType: AssetMonthlyInputType;
   prevQuantity: number | null;
   prevPriceOriginal: number | null;

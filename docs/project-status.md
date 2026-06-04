@@ -54,7 +54,7 @@
 | 월간 가계부 | `Partial` | `/budget/monthly` 월별 요약(잔액 우선 KPI·수입/지출 비교·카테고리 breakdown·빈 상태), 상세 거래 탭(필터/삭제/인라인), 추천 입력 패널, detail/input 호환 redirect | [m003](./milestones/m003-budget-monthly-flow-integration.md) |
 | 카테고리/반복 템플릿 | `Partial` | 계층형 카테고리·반복 템플릿 조회 API(flat/grouped) 구현. CRUD API와 관리 UI 없음 | [m004](./milestones/m004-category-template-management.md) |
 | 통계/차트 | `Partial` | 수입/지출·카테고리·자산 Nivo 차트 존재. 연간 통계 전용 화면·집계와 export 없음 | [m005](./milestones/m005-statistics-expansion.md) |
-| 자산 관리 | `Partial` | `/asset` monthly(스냅샷 총자산·전월 대비·보유·리스크 + 월말 입력 패널)·portfolio·trend·transactions 구현. 외부 시세/환율 API 없음, 거래 수정 UI 없음, 정합성 정책 미정 | [m006](./milestones/m006-asset-data-stabilization.md) |
+| 자산 관리 | `Partial` | `/asset` monthly(스냅샷 총자산·전월 대비·보유·리스크 + 월말 입력 패널)·portfolio·trend·transactions 구현. 월말 입력 패널은 소유자▸기관 묶음 스텝(은행류='예금' 묶음, 증권류=기관별 묶음, 한 묶음 포커스+진행률, 기관·계좌 맥락 노출)으로 재편. 외부 시세/환율 API 없음, 거래 수정 UI 없음, 정합성 정책 미정 | [m006](./milestones/m006-asset-data-stabilization.md) |
 | 테스트/검증 | `Done` | Vitest + jsdom + RTL 기반 service/API/hook 테스트, lint/tsc/build 검증 이력. SQLite 통합 테스트·E2E는 후속 | `docs/verification-log.md`, `docs/manual-checklist.md` |
 
 ## 마일스톤 현황
