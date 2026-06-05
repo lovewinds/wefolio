@@ -1,11 +1,12 @@
 # Verification Log
 
-최종 갱신: 2026-06-04
+최종 갱신: 2026-06-06
 
 검증 이력은 최신순으로 기록합니다. 마일스톤 문서에는 해당 마일스톤의 대표 검증만 요약하고, 누적 로그는 이 문서를 기준으로 확인합니다. 검증 이력의 일시는 `YYYY-MM-DD HH:mm` 형식으로 분 단위까지 남깁니다.
 
 | 일시             | 범위                               | 명령/방법                                                       | 결과 | 비고                                                                                |
 | ---------------- | ---------------------------------- | --------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| 2026-06-06       | 자산 추가 흐름 인라인 생성        | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `build` | Pass | 계좌 컨텍스트 종목추가(A)+새 계좌/기관 드릴다운(B·C), 기준데이터 즉시 생성·refetch, AssetMasterPicker/AddHoldingInline/AddAccountFlow 분리, buildNewHoldingRow 단위테스트. Vitest 8 files / 51 tests |
 | 2026-06-04       | 자산 입력 화면 소유자▸기관 스텝 재편 | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test`            | Pass | 월별 입력 패널을 소유자▸기관 묶음 스텝(은행류='예금' 한 묶음, 증권류=기관별 묶음에 예수금 CMA value+종목 quantity)으로 재편, 한 번에 한 묶음 포커스+소유자별 진행률. 행에 `기관명·계좌명` 노출(동명 원화예금 구별), 현금성/종목 아이콘 구분. `AssetMonthlyInputRow.institutionType` 추가(서비스 1줄), CashSnapshot 미사용. docs-new asset-management 입력 구조 절 신설. Vitest 7 files / 45 tests |
 | 2026-06-04       | 스키마 V2 정합 (docs-new SSOT)     | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `pnpm db:reset`(+`tsx prisma/seed.ts --yes`) / `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 pnpm build` | Pass | schema를 V2로 정합: `FamilyMember→Member`/`AssetInstitution→Institution`, `HoldingValueSnapshot→HoldingSnapshot`(`snapshotDate`/`currentPriceKRW`), `Account.cashBalance→CashSnapshot`, Holding 캐시 컬럼 제거(현재상태=최신 스냅샷 파생), `@@unique([name,currency])`, `src/constants/asset.ts` SSOT 신설. 다통화 보존(`priceOriginal`/`avgCostOriginal` 추가) — USD 엔비디아 currentPriceKRW=priceOriginal×exchangeRate 검증, KRW는 null. xlsx 재시드 706 스냅샷/95 보유/30 계좌. Vitest 7 files / 45 tests |
 | 2026-06-04       | M006 죽은 모델/함수 정리 (incr 3c) | `pnpm exec tsc --noEmit` / `pnpm lint` / `pnpm test` / `prisma db push` / `build` | Pass | AssetPrice·AccountSnapshot 모델·리포·서비스·타입 제거, 테이블 drop. getWithCurrentValue 테스트 제거. Vitest 7 files / 46 tests, 빌드 23 라우트 |
