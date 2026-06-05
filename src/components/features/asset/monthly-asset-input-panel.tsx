@@ -551,9 +551,12 @@ export function MonthlyAssetInputPanel({
     name: string;
     type: string;
   }): Promise<InstitutionOption> => {
-    const created = await apiClient.asset.createInstitution<InstitutionOption>(data);
-    setInstitutions(await apiClient.asset.getInstitutions<InstitutionOption[]>());
-    return created;
+    const created = await apiClient.asset.createInstitution<{ id: string }>(data);
+    const fresh = await apiClient.asset.getInstitutions<InstitutionOption[]>();
+    setInstitutions(fresh);
+    const institution = fresh.find(item => item.id === created.id);
+    if (!institution) throw new Error('생성한 기관을 불러오지 못했습니다.');
+    return institution;
   };
 
   const handleCreateAccount = async (data: {
