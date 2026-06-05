@@ -258,7 +258,7 @@ export function AddAccountFlow({
           type="button"
           disabled={!canCreateAccount || isBusy}
           onClick={handleCreateAccount}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-action px-3 text-sm font-medium text-on-action transition-colors hover:bg-accent-press disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-action px-3 text-sm font-medium text-on-action transition-colors hover:bg-action-press disabled:cursor-not-allowed disabled:opacity-50"
         >
           만들기
         </button>
