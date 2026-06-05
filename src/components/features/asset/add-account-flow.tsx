@@ -133,6 +133,7 @@ export function AddAccountFlow({
         <p className="text-sm font-semibold text-ink">새 계좌 추가</p>
         <button
           type="button"
+          aria-label="닫기"
           onClick={reset}
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle hover:bg-surface"
         >
@@ -166,10 +167,7 @@ export function AddAccountFlow({
               aria-label="기관명"
               value={newInstitution.name}
               onChange={event =>
-                setNewInstitution(prev => ({
-                  ...(prev as { name: string; type: string }),
-                  name: event.target.value,
-                }))
+                setNewInstitution(prev => (prev ? { ...prev, name: event.target.value } : prev))
               }
             />
             <select
@@ -177,10 +175,7 @@ export function AddAccountFlow({
               aria-label="기관 유형"
               value={newInstitution.type}
               onChange={event =>
-                setNewInstitution(prev => ({
-                  ...(prev as { name: string; type: string }),
-                  type: event.target.value,
-                }))
+                setNewInstitution(prev => (prev ? { ...prev, type: event.target.value } : prev))
               }
             >
               {INSTITUTION_TYPE.map(type => (
