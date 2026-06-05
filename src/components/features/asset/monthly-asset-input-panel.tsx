@@ -33,6 +33,7 @@ import type {
   MemberOption,
 } from '@/components/features/asset-transaction/types';
 import { buildNewHoldingRow, getInputType, type EditableMonthlyRow } from './monthly-input-row';
+import { AddHoldingInline } from './add-holding-inline';
 
 interface MonthlyAssetInputPanelProps {
   open: boolean;
@@ -907,6 +908,9 @@ export function MonthlyAssetInputPanel({
                             setRows(prev => prev.filter(item => item.rowKey !== rowKey))
                           }
                           onNext={() => nextStep && setActiveStepKey(nextStep.key)}
+                          assetMasters={assetMasters}
+                          onCreateAssetMaster={handleCreateAssetMaster}
+                          onAddAsset={addAssetToAccount}
                         />
                       ))}
                   </section>
@@ -1062,6 +1066,9 @@ function StepTable({
   onUpdateRow,
   onRemoveRow,
   onNext,
+  assetMasters,
+  onCreateAssetMaster,
+  onAddAsset,
 }: {
   step: InputStep;
   nextStep: InputStep | undefined;
@@ -1070,6 +1077,14 @@ function StepTable({
   onUpdateRow: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
   onRemoveRow: (rowKey: string) => void;
   onNext: () => void;
+  assetMasters: AssetMasterOption[];
+  onCreateAssetMaster: (data: {
+    name: string;
+    assetClass: string;
+    currency: string;
+    riskLevel: string;
+  }) => Promise<AssetMasterOption>;
+  onAddAsset: (accountId: string, assetMaster: AssetMasterOption) => void;
 }) {
   const StepIcon = step.institutionType === 'bank' ? Wallet : Building2;
   const isSingleAccount = step.accountGroups.length <= 1;
@@ -1110,50 +1125,78 @@ function StepTable({
             </tr>
           </thead>
           <tbody>
-            {isSingleAccount
-              ? step.rows.map(row => renderRow(row, true))
-              : step.accountGroups.map(group => {
-                  const isOpen = expandedAccounts.has(group.accountId);
-                  return (
-                    <Fragment key={group.accountId}>
-                      <tr className="bg-canvas">
-                        <td colSpan={5} className="border-b border-hairline px-2 py-2">
-                          <button
-                            type="button"
-                            onClick={() => onToggleAccount(group.accountId)}
-                            className="flex w-full items-center justify-between gap-3 text-left"
-                          >
-                            <span className="flex min-w-0 items-center gap-1.5">
-                              {isOpen ? (
-                                <ChevronDown size={15} className="shrink-0 text-ink-faint" />
-                              ) : (
-                                <ChevronRight size={15} className="shrink-0 text-ink-faint" />
-                              )}
-                              <span className="truncate text-sm font-semibold text-ink">
-                                {group.accountName}
-                              </span>
-                              <span className="truncate text-xs text-ink-subtle">
-                                {group.institutionName}
-                              </span>
+            {isSingleAccount ? (
+              <>
+                {step.rows.map(row => renderRow(row, true))}
+                {step.accountGroups[0] && (
+                  <tr>
+                    <td colSpan={5} className="border-b border-hairline px-3 py-2">
+                      <AddHoldingInline
+                        assetMasters={assetMasters}
+                        excludeIds={new Set(step.rows.map(row => row.assetMasterId))}
+                        onCreateAssetMaster={onCreateAssetMaster}
+                        onAdd={master => onAddAsset(step.accountGroups[0].accountId, master)}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </>
+            ) : (
+              step.accountGroups.map(group => {
+                const isOpen = expandedAccounts.has(group.accountId);
+                return (
+                  <Fragment key={group.accountId}>
+                    <tr className="bg-canvas">
+                      <td colSpan={5} className="border-b border-hairline px-2 py-2">
+                        <button
+                          type="button"
+                          onClick={() => onToggleAccount(group.accountId)}
+                          className="flex w-full items-center justify-between gap-3 text-left"
+                        >
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            {isOpen ? (
+                              <ChevronDown size={15} className="shrink-0 text-ink-faint" />
+                            ) : (
+                              <ChevronRight size={15} className="shrink-0 text-ink-faint" />
+                            )}
+                            <span className="truncate text-sm font-semibold text-ink">
+                              {group.accountName}
                             </span>
-                            <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-ink-subtle">
-                              {group.missingCount > 0 && (
-                                <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
-                                  {group.missingCount}
-                                </span>
-                              )}
-                              <span>
-                                {group.filledCount}/{group.rows.length} ·{' '}
-                                {formatAmount(group.totalValue)}
-                              </span>
+                            <span className="truncate text-xs text-ink-subtle">
+                              {group.institutionName}
                             </span>
-                          </button>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-ink-subtle">
+                            {group.missingCount > 0 && (
+                              <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
+                                {group.missingCount}
+                              </span>
+                            )}
+                            <span>
+                              {group.filledCount}/{group.rows.length} ·{' '}
+                              {formatAmount(group.totalValue)}
+                            </span>
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isOpen && group.rows.map(row => renderRow(row, false))}
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={5} className="border-b border-hairline px-3 py-2 pl-8">
+                          <AddHoldingInline
+                            assetMasters={assetMasters}
+                            excludeIds={new Set(group.rows.map(row => row.assetMasterId))}
+                            onCreateAssetMaster={onCreateAssetMaster}
+                            onAdd={master => onAddAsset(group.accountId, master)}
+                          />
                         </td>
                       </tr>
-                      {isOpen && group.rows.map(row => renderRow(row, false))}
-                    </Fragment>
-                  );
-                })}
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
