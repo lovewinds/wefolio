@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Download,
   Loader2,
-  Plus,
   Save,
   Trash2,
   Upload,
@@ -32,8 +31,9 @@ import type {
   InstitutionOption,
   MemberOption,
 } from '@/components/features/asset-transaction/types';
-import { buildNewHoldingRow, getInputType, type EditableMonthlyRow } from './monthly-input-row';
+import { buildNewHoldingRow, type EditableMonthlyRow } from './monthly-input-row';
 import { AddHoldingInline } from './add-holding-inline';
+import { AddAccountFlow } from './add-account-flow';
 
 interface MonthlyAssetInputPanelProps {
   open: boolean;
@@ -41,11 +41,6 @@ interface MonthlyAssetInputPanelProps {
   month: number;
   onClose: () => void;
   onSaved: () => void;
-}
-
-interface NewHoldingSelection {
-  accountId: string;
-  assetMasterId: string;
 }
 
 interface AccountGroup {
@@ -89,9 +84,6 @@ interface LocalMonthlyInputDraft {
 
 const numberInputClass =
   'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-right text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
-
-const selectClass =
-  'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const statusStyles: Record<AssetMonthlyInputStatus, string> = {
   유지: 'bg-surface-soft text-ink-muted',
@@ -397,11 +389,6 @@ export function MonthlyAssetInputPanel({
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [assetMasters, setAssetMasters] = useState<AssetMasterOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
-  const [newHolding, setNewHolding] = useState<NewHoldingSelection>({
-    accountId: '',
-    assetMasterId: '',
-  });
-  const [showNewHoldingRow, setShowNewHoldingRow] = useState(false);
   const [activeStepKey, setActiveStepKey] = useState<string>('');
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
@@ -620,67 +607,6 @@ export function MonthlyAssetInputPanel({
     setActiveStepKey(getStepKey(account.memberName, stepLabel));
     setExpandedAccounts(prev => new Set(prev).add(accountId));
     setError(null);
-  };
-
-  const handleAddHolding = () => {
-    if (!draft || !newHolding.accountId || !newHolding.assetMasterId) return;
-    const account = accounts.find(item => item.id === newHolding.accountId);
-    const assetMaster = assetMasters.find(item => item.id === newHolding.assetMasterId);
-    if (!account || !assetMaster) return;
-    if (
-      rows.some(
-        row =>
-          row.accountId === newHolding.accountId && row.assetMasterId === newHolding.assetMasterId
-      )
-    ) {
-      alert('이미 입력 목록에 있는 자산입니다.');
-      return;
-    }
-
-    const institution = institutions.find(item => item.id === account.institutionId);
-    const institutionName = institution?.name ?? '기타';
-    const institutionType = institution?.type ?? 'brokerage';
-    const inputType = getInputType(assetMaster.assetClass, account.accountType);
-    const rowKey = `new-${newHolding.accountId}-${newHolding.assetMasterId}-${Date.now()}`;
-    const newRow: EditableMonthlyRow = {
-      rowKey,
-      holdingId: null,
-      accountId: account.id,
-      assetMasterId: assetMaster.id,
-      currentSnapshotId: null,
-      date: draft.date,
-      assetName: assetMaster.name,
-      assetClass: assetMaster.assetClass,
-      subClass: null,
-      riskLevel: assetMaster.riskLevel ?? '',
-      currency: assetMaster.currency,
-      memberName: account.memberName,
-      accountName: account.name,
-      accountType: account.accountType,
-      institutionName,
-      institutionType,
-      inputType,
-      prevQuantity: null,
-      prevPriceOriginal: null,
-      prevExchangeRate: null,
-      prevPriceKRW: null,
-      prevAvgCostKRW: null,
-      prevTotalValueKRW: null,
-      quantityInput: inputType === 'value' ? '1' : '',
-      priceOriginalInput: '',
-      exchangeRateInput: '',
-      priceKRWInput: '',
-      avgCostInput: '',
-      totalValueInput: '',
-      isCurrentMissing: false,
-      isExpanded: inputType === 'quantity',
-      isNew: true,
-    };
-
-    setRows(prev => [...prev, newRow]);
-    setActiveStepKey(getStepKey(newRow.memberName, getStepLabel(newRow)));
-    setNewHolding({ accountId: '', assetMasterId: '' });
-    setShowNewHoldingRow(false);
   };
 
   const handleSaveLocalDraft = () => {
@@ -920,71 +846,16 @@ export function MonthlyAssetInputPanel({
           )}
 
           {draft && (
-            <div className="mt-4 rounded-lg border border-hairline bg-canvas p-3">
-              {showNewHoldingRow ? (
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                  <select
-                    value={newHolding.accountId}
-                    onChange={event =>
-                      setNewHolding(prev => ({ ...prev, accountId: event.target.value }))
-                    }
-                    onKeyDown={handleMonthlyInputKeyDown}
-                    className={selectClass}
-                    data-monthly-input="true"
-                  >
-                    <option value="">계좌 선택</option>
-                    {accounts.map(account => (
-                      <option key={account.id} value={account.id}>
-                        {account.memberName} · {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={newHolding.assetMasterId}
-                    onChange={event =>
-                      setNewHolding(prev => ({ ...prev, assetMasterId: event.target.value }))
-                    }
-                    onKeyDown={handleMonthlyInputKeyDown}
-                    className={selectClass}
-                    data-monthly-input="true"
-                  >
-                    <option value="">자산 선택</option>
-                    {assetMasters.map(assetMaster => (
-                      <option key={assetMaster.id} value={assetMaster.id}>
-                        {assetMaster.name} ({assetMaster.currency})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleAddHolding}
-                      disabled={!newHolding.accountId || !newHolding.assetMasterId}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-action px-3 text-sm font-medium text-on-action transition-colors hover:bg-accent-press disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Plus size={15} />
-                      추가
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewHoldingRow(false)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-surface-soft"
-                      title="취소"
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowNewHoldingRow(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
-                >
-                  <Plus size={15} />
-                  자산 추가
-                </button>
-              )}
+            <div className="mt-4">
+              <AddAccountFlow
+                members={members}
+                institutions={institutions}
+                assetMasters={assetMasters}
+                onCreateInstitution={handleCreateInstitution}
+                onCreateAccount={handleCreateAccount}
+                onCreateAssetMaster={handleCreateAssetMaster}
+                onAddHolding={addAssetToAccount}
+              />
             </div>
           )}
         </div>
