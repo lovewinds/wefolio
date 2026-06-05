@@ -25,13 +25,14 @@ import type {
   AssetMonthlyInputRow,
   AssetMonthlyInputSaveRow,
   AssetMonthlyInputStatus,
-  AssetMonthlyInputType,
 } from '@/types';
 import type {
   AccountOption,
   AssetMasterOption,
   InstitutionOption,
+  MemberOption,
 } from '@/components/features/asset-transaction/types';
+import { buildNewHoldingRow, getInputType, type EditableMonthlyRow } from './monthly-input-row';
 
 interface MonthlyAssetInputPanelProps {
   open: boolean;
@@ -39,29 +40,6 @@ interface MonthlyAssetInputPanelProps {
   month: number;
   onClose: () => void;
   onSaved: () => void;
-}
-
-interface EditableMonthlyRow extends Omit<
-  AssetMonthlyInputRow,
-  | 'holdingId'
-  | 'quantity'
-  | 'priceOriginal'
-  | 'exchangeRate'
-  | 'priceKRW'
-  | 'avgCostKRW'
-  | 'totalValueKRW'
-  | 'status'
-> {
-  rowKey: string;
-  holdingId: string | null;
-  quantityInput: string;
-  priceOriginalInput: string;
-  exchangeRateInput: string;
-  priceKRWInput: string;
-  avgCostInput: string;
-  totalValueInput: string;
-  isExpanded: boolean;
-  isNew: boolean;
 }
 
 interface NewHoldingSelection {
@@ -159,28 +137,6 @@ function getStatus(prevTotalValue: number | null, currentTotalValue: number | nu
   if (currentTotalValue > prevValue) return '증가' satisfies AssetMonthlyInputStatus;
   if (currentTotalValue < prevValue) return '감소' satisfies AssetMonthlyInputStatus;
   return '유지' satisfies AssetMonthlyInputStatus;
-}
-
-function getInputType(assetClass: string, accountType: string): AssetMonthlyInputType {
-  const lowerAssetClass = assetClass.toLowerCase();
-  const lowerAccountType = accountType.toLowerCase();
-  const valueOnlyTokens = ['deposit', 'savings', 'time_deposit', 'cma', 'cash'];
-
-  if (
-    assetClass.includes('예금') ||
-    assetClass.includes('현금') ||
-    accountType.includes('예금') ||
-    accountType.includes('적금') ||
-    accountType.toUpperCase().includes('CMA')
-  ) {
-    return 'value';
-  }
-
-  return valueOnlyTokens.some(
-    token => lowerAssetClass.includes(token) || lowerAccountType === token
-  )
-    ? 'value'
-    : 'quantity';
 }
 
 function focusNextMonthlyInput(currentTarget: HTMLElement) {
@@ -439,6 +395,7 @@ export function MonthlyAssetInputPanel({
   const [institutions, setInstitutions] = useState<InstitutionOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [assetMasters, setAssetMasters] = useState<AssetMasterOption[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [newHolding, setNewHolding] = useState<NewHoldingSelection>({
     accountId: '',
     assetMasterId: '',
@@ -460,12 +417,14 @@ export function MonthlyAssetInputPanel({
       setError(null);
       setSuccessMessage(null);
       try {
-        const [draftData, institutionData, accountData, assetMasterData] = await Promise.all([
-          apiClient.asset.getMonthlyInput<AssetMonthlyInputDraft>(year, month),
-          apiClient.asset.getInstitutions<InstitutionOption[]>(),
-          apiClient.asset.getAccounts<AccountOption[]>(),
-          apiClient.asset.getAssetMasters<AssetMasterOption[]>(),
-        ]);
+        const [draftData, institutionData, accountData, assetMasterData, memberData] =
+          await Promise.all([
+            apiClient.asset.getMonthlyInput<AssetMonthlyInputDraft>(year, month),
+            apiClient.asset.getInstitutions<InstitutionOption[]>(),
+            apiClient.asset.getAccounts<AccountOption[]>(),
+            apiClient.asset.getAssetMasters<AssetMasterOption[]>(),
+            apiClient.asset.getMembers<MemberOption[]>(),
+          ]);
 
         setDraft(draftData);
         const localDraft = readLocalDraft(year, month);
@@ -480,6 +439,7 @@ export function MonthlyAssetInputPanel({
         setInstitutions(institutionData);
         setAccounts(accountData);
         setAssetMasters(assetMasterData);
+        setMembers(memberData);
       } catch (err) {
         setError(err instanceof Error ? err.message : '입력 초안을 불러오지 못했습니다.');
       } finally {
@@ -585,6 +545,77 @@ export function MonthlyAssetInputPanel({
         return next;
       })
     );
+  };
+
+  const handleCreateInstitution = async (data: {
+    name: string;
+    type: string;
+  }): Promise<InstitutionOption> => {
+    const created = await apiClient.asset.createInstitution<InstitutionOption>(data);
+    setInstitutions(await apiClient.asset.getInstitutions<InstitutionOption[]>());
+    return created;
+  };
+
+  const handleCreateAccount = async (data: {
+    name: string;
+    accountType: string;
+    institutionId: string;
+    memberId: string;
+  }): Promise<AccountOption> => {
+    const created = await apiClient.asset.createAccount<{ id: string }>(data);
+    const fresh = await apiClient.asset.getAccounts<AccountOption[]>();
+    setAccounts(fresh);
+    const account = fresh.find(item => item.id === created.id);
+    if (!account) throw new Error('생성한 계좌를 불러오지 못했습니다.');
+    return account;
+  };
+
+  const handleCreateAssetMaster = async (data: {
+    name: string;
+    assetClass: string;
+    currency: string;
+    riskLevel: string;
+  }): Promise<AssetMasterOption> => {
+    const created = await apiClient.asset.createAssetMaster<{ id: string }>(data);
+    const fresh = await apiClient.asset.getAssetMasters<AssetMasterOption[]>();
+    setAssetMasters(fresh);
+    const master = fresh.find(item => item.id === created.id);
+    if (!master) throw new Error('생성한 종목을 불러오지 못했습니다.');
+    return master;
+  };
+
+  const addAssetToAccount = (accountId: string, master: AssetMasterOption) => {
+    if (!draft) return;
+    const account = accounts.find(item => item.id === accountId);
+    if (!account) return;
+    const institution = institutions.find(item => item.id === account.institutionId);
+    if (!institution) return;
+    if (rows.some(row => row.accountId === accountId && row.assetMasterId === master.id)) {
+      setError('이미 이 계좌에 있는 종목입니다.');
+      return;
+    }
+    const row = buildNewHoldingRow({
+      date: draft.date,
+      account: {
+        id: account.id,
+        name: account.name,
+        memberName: account.memberName,
+        accountType: account.accountType,
+      },
+      institution: { name: institution.name, type: institution.type },
+      assetMaster: {
+        id: master.id,
+        name: master.name,
+        assetClass: master.assetClass,
+        currency: master.currency,
+        riskLevel: master.riskLevel,
+      },
+    });
+    setRows(prev => [...prev, row]);
+    const stepLabel = institution.type === 'bank' ? DEPOSIT_STEP_LABEL : institution.name;
+    setActiveStepKey(getStepKey(account.memberName, stepLabel));
+    setExpandedAccounts(prev => new Set(prev).add(accountId));
+    setError(null);
   };
 
   const handleAddHolding = () => {
