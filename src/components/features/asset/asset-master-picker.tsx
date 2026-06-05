@@ -72,12 +72,14 @@ export function AssetMasterPicker({
       <div className="space-y-2 rounded-md border border-hairline bg-surface-soft p-2">
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <input
+            aria-label="종목명"
             className={inputClass}
             placeholder="종목명"
             value={form.name}
             onChange={event => setForm(prev => ({ ...prev, name: event.target.value }))}
           />
           <select
+            aria-label="자산군"
             className={inputClass}
             value={form.assetClass}
             onChange={event => setForm(prev => ({ ...prev, assetClass: event.target.value }))}
@@ -89,6 +91,7 @@ export function AssetMasterPicker({
             ))}
           </select>
           <select
+            aria-label="통화"
             className={inputClass}
             value={form.currency}
             onChange={event => setForm(prev => ({ ...prev, currency: event.target.value }))}
@@ -100,6 +103,7 @@ export function AssetMasterPicker({
             ))}
           </select>
           <select
+            aria-label="위험구분"
             className={inputClass}
             value={form.riskLevel}
             onChange={event => setForm(prev => ({ ...prev, riskLevel: event.target.value }))}
@@ -124,8 +128,9 @@ export function AssetMasterPicker({
           </button>
           <button
             type="button"
+            disabled={isBusy}
             onClick={() => setMode('select')}
-            className="text-sm text-ink-subtle hover:text-ink"
+            className="text-sm text-ink-subtle hover:text-ink disabled:opacity-50"
           >
             목록으로
           </button>
@@ -145,12 +150,17 @@ export function AssetMasterPicker({
     <div className="space-y-2 rounded-md border border-hairline bg-surface-soft p-2">
       <div className="flex flex-wrap items-center gap-2">
         <input
+          aria-label="종목 검색"
           className={`${inputClass} max-w-[180px]`}
           placeholder="종목 검색"
           value={filter}
-          onChange={event => setFilter(event.target.value)}
+          onChange={event => {
+            setFilter(event.target.value);
+            setSelectedId('');
+          }}
         />
         <select
+          aria-label="종목 선택"
           className={`${inputClass} max-w-[220px]`}
           value={selectedId}
           onChange={event => setSelectedId(event.target.value)}
