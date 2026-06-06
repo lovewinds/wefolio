@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { formatAmount } from '@/lib/format-utils';
+import { formatAmount, formatThousandsInput, stripThousandsInput } from '@/lib/format-utils';
 import type {
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
@@ -114,6 +114,56 @@ function parseNumberInput(value: string): number | null {
   if (value.trim() === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+// 이번 세션 편집 추적용 베이스라인(패널 로드/저장 시점 서버 스냅샷 입력값).
+type BaselineInputs = Pick<
+  EditableMonthlyRow,
+  | 'quantityInput'
+  | 'priceOriginalInput'
+  | 'exchangeRateInput'
+  | 'priceKRWInput'
+  | 'avgCostInput'
+  | 'totalValueInput'
+>;
+
+const BASELINE_FIELDS: (keyof BaselineInputs)[] = [
+  'quantityInput',
+  'priceOriginalInput',
+  'exchangeRateInput',
+  'priceKRWInput',
+  'avgCostInput',
+  'totalValueInput',
+];
+
+function pickBaselineInputs(row: EditableMonthlyRow): BaselineInputs {
+  return {
+    quantityInput: row.quantityInput,
+    priceOriginalInput: row.priceOriginalInput,
+    exchangeRateInput: row.exchangeRateInput,
+    priceKRWInput: row.priceKRWInput,
+    avgCostInput: row.avgCostInput,
+    totalValueInput: row.totalValueInput,
+  };
+}
+
+function buildBaseline(rows: EditableMonthlyRow[]): Map<string, BaselineInputs> {
+  return new Map(rows.map(row => [row.rowKey, pickBaselineInputs(row)]));
+}
+
+// 입력값 동일성: 숫자로 정규화 비교(재포맷 false-positive 방지). 둘 다 빈값이면 같음.
+function inputEquals(a: string, b: string): boolean {
+  const na = parseNumberInput(a);
+  const nb = parseNumberInput(b);
+  if (na === null && nb === null) return true;
+  return na === nb;
+}
+
+function isRowModified(row: EditableMonthlyRow, baseline: Map<string, BaselineInputs>): boolean {
+  if (row.isNew) return true;
+  const base = baseline.get(row.rowKey);
+  if (!base) return true;
+  return BASELINE_FIELDS.some(field => !inputEquals(row[field], base[field]));
 }
 
 function formatDelta(delta: number | null): string {
@@ -376,6 +426,22 @@ function buildMemberSections(rows: EditableMonthlyRow[]): MemberSection[] {
   });
 }
 
+// 한 기관(스텝)에 세부정보 토글 대상(계좌 그룹/수량형 행)이 있는지.
+function stepHasExpandableDetails(step: InputStep): boolean {
+  return step.accountGroups.length > 1 || step.rows.some(row => row.inputType === 'quantity');
+}
+
+// 한 기관(스텝)의 계좌 그룹과 수량형 행 세부가 모두 펼쳐져 있는지.
+function computeAllDetailsExpanded(step: InputStep, expandedAccounts: Set<string>): boolean {
+  const accountsOpen =
+    step.accountGroups.length <= 1 ||
+    step.accountGroups.every(group => expandedAccounts.has(group.accountId));
+  const rowsOpen = step.rows
+    .filter(row => row.inputType === 'quantity')
+    .every(row => row.isExpanded);
+  return accountsOpen && rowsOpen;
+}
+
 export function MonthlyAssetInputPanel({
   open,
   year,
@@ -389,8 +455,10 @@ export function MonthlyAssetInputPanel({
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [assetMasters, setAssetMasters] = useState<AssetMasterOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
+  const [activeMemberName, setActiveMemberName] = useState<string>('');
   const [activeStepKey, setActiveStepKey] = useState<string>('');
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [baseline, setBaseline] = useState<Map<string, BaselineInputs>>(new Map());
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -415,6 +483,8 @@ export function MonthlyAssetInputPanel({
           ]);
 
         setDraft(draftData);
+        // 베이스라인은 항상 서버 스냅샷 기준(임시저장 복원분도 수정으로 표시되도록).
+        setBaseline(buildBaseline(draftData.rows.map(toEditableRow)));
         const localDraft = readLocalDraft(year, month);
         if (localDraft) {
           setRows(localDraft.rows);
@@ -440,6 +510,19 @@ export function MonthlyAssetInputPanel({
 
   const sections = useMemo(() => buildMemberSections(rows), [rows]);
   const allSteps = useMemo(() => sections.flatMap(section => section.steps), [sections]);
+  const modifiedRowKeys = useMemo(
+    () => new Set(rows.filter(row => isRowModified(row, baseline)).map(row => row.rowKey)),
+    [rows, baseline]
+  );
+  const activeSection = sections.find(section => section.memberName === activeMemberName);
+
+  // 소유자 탭 기본/복구: 활성 소유자가 없으면 첫 소유자로.
+  useEffect(() => {
+    if (sections.length === 0) return;
+    if (!sections.some(section => section.memberName === activeMemberName)) {
+      setActiveMemberName(sections[0].memberName);
+    }
+  }, [sections, activeMemberName]);
 
   // 기본은 모든 묶음 접힘(activeStepKey=''). 활성 스텝이 사라지면 다시 접는다.
   useEffect(() => {
@@ -462,6 +545,25 @@ export function MonthlyAssetInputPanel({
       }
       return next;
     });
+  };
+
+  // 활성 기관 한 곳의 세부정보(계좌 그룹 + 수량형 행)를 일괄 펼침/접음.
+  const toggleAllDetails = (step: InputStep) => {
+    const expand = !computeAllDetailsExpanded(step, expandedAccounts);
+    setExpandedAccounts(prev => {
+      const next = new Set(prev);
+      step.accountGroups.forEach(group => {
+        if (expand) next.add(group.accountId);
+        else next.delete(group.accountId);
+      });
+      return next;
+    });
+    const stepRowKeys = new Set(
+      step.rows.filter(row => row.inputType === 'quantity').map(row => row.rowKey)
+    );
+    setRows(prev =>
+      prev.map(row => (stepRowKeys.has(row.rowKey) ? { ...row, isExpanded: expand } : row))
+    );
   };
 
   const prevTotalValue = draft?.prevTotalValue ?? 0;
@@ -663,7 +765,9 @@ export function MonthlyAssetInputPanel({
         rows: payloadRows as AssetMonthlyInputSaveRow[],
       });
       setDraft(savedDraft);
-      setRows(savedDraft.rows.map(toEditableRow));
+      const savedRows = savedDraft.rows.map(toEditableRow);
+      setRows(savedRows);
+      setBaseline(buildBaseline(savedRows));
       removeLocalDraft(year, month);
       setLocalDraftSavedAt(null);
       setSuccessMessage('업로드되었습니다.');
@@ -794,54 +898,64 @@ export function MonthlyAssetInputPanel({
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="mb-4 flex flex-wrap gap-1 border-b border-hairline">
                 {sections.map(section => (
-                  <section key={section.memberName} className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Users size={15} className="text-ink-subtle" />
-                        <span className="text-sm font-semibold text-ink">{section.memberName}</span>
-                      </div>
-                      <span className="text-xs font-medium text-ink-subtle">
-                        {section.completedSteps}/{section.totalSteps} 묶음 완료
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {section.steps.map(step => (
-                        <StepChip
-                          key={step.key}
-                          step={step}
-                          active={step.key === activeStepKey}
-                          onClick={() =>
-                            setActiveStepKey(curr => (curr === step.key ? '' : step.key))
-                          }
-                        />
-                      ))}
-                    </div>
-
-                    {section.steps
-                      .filter(step => step.key === activeStepKey)
-                      .map(step => (
-                        <StepTable
-                          key={step.key}
-                          step={step}
-                          nextStep={nextStep}
-                          expandedAccounts={expandedAccounts}
-                          onToggleAccount={toggleAccount}
-                          onUpdateRow={updateRow}
-                          onRemoveRow={rowKey =>
-                            setRows(prev => prev.filter(item => item.rowKey !== rowKey))
-                          }
-                          onNext={() => nextStep && setActiveStepKey(nextStep.key)}
-                          assetMasters={assetMasters}
-                          onCreateAssetMaster={handleCreateAssetMaster}
-                          onAddAsset={addAssetToAccount}
-                        />
-                      ))}
-                  </section>
+                  <MemberTab
+                    key={section.memberName}
+                    section={section}
+                    active={section.memberName === activeMemberName}
+                    isModified={section.steps.some(step =>
+                      step.rows.some(row => modifiedRowKeys.has(row.rowKey))
+                    )}
+                    onClick={() => setActiveMemberName(section.memberName)}
+                  />
                 ))}
               </div>
+
+              {activeSection && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {activeSection.steps.map(step => (
+                      <StepChip
+                        key={step.key}
+                        step={step}
+                        active={step.key === activeStepKey}
+                        isModified={step.rows.some(row => modifiedRowKeys.has(row.rowKey))}
+                        onClick={() =>
+                          setActiveStepKey(curr => (curr === step.key ? '' : step.key))
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  {activeSection.steps
+                    .filter(step => step.key === activeStepKey)
+                    .map(step => (
+                      <StepTable
+                        key={step.key}
+                        step={step}
+                        nextStep={nextStep}
+                        expandedAccounts={expandedAccounts}
+                        modifiedRowKeys={modifiedRowKeys}
+                        allDetailsExpanded={computeAllDetailsExpanded(step, expandedAccounts)}
+                        onToggleAllDetails={() => toggleAllDetails(step)}
+                        onToggleAccount={toggleAccount}
+                        onUpdateRow={updateRow}
+                        onRemoveRow={rowKey =>
+                          setRows(prev => prev.filter(item => item.rowKey !== rowKey))
+                        }
+                        onNext={() => {
+                          if (!nextStep) return;
+                          setActiveStepKey(nextStep.key);
+                          setActiveMemberName(nextStep.memberName);
+                        }}
+                        assetMasters={assetMasters}
+                        onCreateAssetMaster={handleCreateAssetMaster}
+                        onAddAsset={addAssetToAccount}
+                      />
+                    ))}
+                </div>
+              )}
             </>
           )}
 
@@ -884,13 +998,55 @@ function SummaryValue({
   );
 }
 
+// 이번 세션 수정됨 표시(주황 꽉 찬 동그라미).
+function ModifiedDot({ className = '' }: { className?: string }) {
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent ${className}`}
+      aria-label="수정됨"
+      title="수정됨"
+    />
+  );
+}
+
+function MemberTab({
+  section,
+  active,
+  isModified,
+  onClick,
+}: {
+  section: MemberSection;
+  active: boolean;
+  isModified: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold transition ${
+        active ? 'border-accent text-accent' : 'border-transparent text-ink-muted hover:text-ink'
+      }`}
+    >
+      <Users size={14} className="shrink-0" />
+      <span>{section.memberName}</span>
+      {isModified && <ModifiedDot />}
+      <span className="text-xs font-medium text-ink-subtle">
+        {section.completedSteps}/{section.totalSteps}
+      </span>
+    </button>
+  );
+}
+
 function StepChip({
   step,
   active,
+  isModified,
   onClick,
 }: {
   step: InputStep;
   active: boolean;
+  isModified: boolean;
   onClick: () => void;
 }) {
   const StepIcon = step.institutionType === 'bank' ? Wallet : Building2;
@@ -909,7 +1065,9 @@ function StepChip({
           <StepIcon size={14} className="shrink-0" />
           <span className="truncate">{step.label}</span>
         </span>
-        {step.isComplete ? (
+        {isModified ? (
+          <ModifiedDot />
+        ) : step.isComplete ? (
           <Check size={14} className="shrink-0 text-gain" />
         ) : (
           step.missingCount > 0 && (
@@ -933,6 +1091,9 @@ function StepTable({
   step,
   nextStep,
   expandedAccounts,
+  modifiedRowKeys,
+  allDetailsExpanded,
+  onToggleAllDetails,
   onToggleAccount,
   onUpdateRow,
   onRemoveRow,
@@ -944,6 +1105,9 @@ function StepTable({
   step: InputStep;
   nextStep: InputStep | undefined;
   expandedAccounts: Set<string>;
+  modifiedRowKeys: Set<string>;
+  allDetailsExpanded: boolean;
+  onToggleAllDetails: () => void;
   onToggleAccount: (accountId: string) => void;
   onUpdateRow: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
   onRemoveRow: (rowKey: string) => void;
@@ -965,6 +1129,7 @@ function StepTable({
       key={row.rowKey}
       row={row}
       showContext={showContext}
+      isModified={modifiedRowKeys.has(row.rowKey)}
       onUpdate={onUpdateRow}
       onRemove={() => {
         if (!row.isNew) return;
@@ -976,12 +1141,23 @@ function StepTable({
   return (
     <div className="overflow-hidden rounded-lg border border-accent/40 bg-surface">
       <div className="flex items-center justify-between gap-3 border-b border-hairline bg-canvas px-3 py-2">
-        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <StepIcon size={15} className="text-ink-subtle" />
-          {step.label}
+        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
+          <StepIcon size={15} className="shrink-0 text-ink-subtle" />
+          <span className="truncate">{step.label}</span>
         </span>
-        <span className="text-xs font-medium text-ink-subtle">
-          {step.filledCount}/{step.rows.length} · {formatAmount(step.totalValue)}
+        <span className="flex shrink-0 items-center gap-3 text-xs font-medium text-ink-subtle">
+          {stepHasExpandableDetails(step) && (
+            <button
+              type="button"
+              onClick={onToggleAllDetails}
+              className="rounded-md px-2 py-1 font-medium text-ink-muted transition-colors hover:bg-surface-soft"
+            >
+              {allDetailsExpanded ? '모두 접기' : '모두 펼치기'}
+            </button>
+          )}
+          <span>
+            {step.filledCount}/{step.rows.length} · {formatAmount(step.totalValue)}
+          </span>
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -1015,6 +1191,7 @@ function StepTable({
             ) : (
               step.accountGroups.map(group => {
                 const isOpen = expandedAccounts.has(group.accountId);
+                const groupModified = group.rows.some(row => modifiedRowKeys.has(row.rowKey));
                 return (
                   <Fragment key={group.accountId}>
                     <tr className="bg-canvas">
@@ -1038,6 +1215,7 @@ function StepTable({
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-ink-subtle">
+                            {groupModified && <ModifiedDot />}
                             {group.missingCount > 0 && (
                               <span className="rounded-full bg-goal/10 px-2 py-0.5 text-[11px] font-semibold text-goal">
                                 {group.missingCount}
@@ -1078,7 +1256,7 @@ function StepTable({
             onClick={onNext}
             className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
           >
-            다음 묶음: {nextStep.label}
+            다음: {nextStep.label}
             <ArrowRight size={15} />
           </button>
         </div>
@@ -1090,11 +1268,13 @@ function StepTable({
 function MonthlyInputTableRows({
   row,
   showContext,
+  isModified,
   onUpdate,
   onRemove,
 }: {
   row: EditableMonthlyRow;
   showContext: boolean;
+  isModified: boolean;
   onUpdate: (rowKey: string, field: keyof EditableMonthlyRow, value: string | boolean) => void;
   onRemove: () => void;
 }) {
@@ -1103,10 +1283,47 @@ function MonthlyInputTableRows({
   const delta = currentValue === null ? null : currentValue - (prevValue ?? 0);
   const status = getStatus(prevValue, currentValue);
   const isMissing = (prevValue ?? 0) > 0 && row.totalValueInput.trim() === '';
+  const isForeign = row.currency !== 'KRW';
+
+  const detailFieldClass = 'w-28 space-y-1 sm:w-32';
+  const plainField = (label: string, field: 'quantityInput' | 'exchangeRateInput') => (
+    <label className={detailFieldClass}>
+      <span className="text-xs font-medium text-ink-subtle">{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="any"
+        value={row[field]}
+        onChange={event => onUpdate(row.rowKey, field, event.target.value)}
+        onKeyDown={handleMonthlyInputKeyDown}
+        className={numberInputClass}
+        data-monthly-input="true"
+      />
+    </label>
+  );
+  const moneyField = (
+    label: string,
+    field: 'priceOriginalInput' | 'avgCostInput',
+    placeholder?: string
+  ) => (
+    <label className={detailFieldClass}>
+      <span className="text-xs font-medium text-ink-subtle">{label}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={formatThousandsInput(row[field])}
+        onChange={event => onUpdate(row.rowKey, field, stripThousandsInput(event.target.value))}
+        onKeyDown={handleMonthlyInputKeyDown}
+        className={numberInputClass}
+        data-monthly-input="true"
+        placeholder={placeholder}
+      />
+    </label>
+  );
 
   return (
     <>
-      <tr className="border-b border-hairline hover:bg-canvas">
+      <tr className={`border-b border-hairline ${isModified ? 'accent-soft' : 'hover:bg-canvas'}`}>
         <td className="border-b border-hairline px-3 py-2">
           <div className="flex items-center gap-2">
             {row.inputType === 'quantity' ? (
@@ -1140,16 +1357,27 @@ function MonthlyInputTableRows({
           {prevValue === null ? '-' : formatAmount(prevValue)}
         </td>
         <td className="border-b border-hairline px-3 py-2">
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={row.totalValueInput}
-            onChange={event => onUpdate(row.rowKey, 'totalValueInput', event.target.value)}
-            onKeyDown={handleMonthlyInputKeyDown}
-            className={numberInputClass}
-            data-monthly-input="true"
-          />
+          {row.inputType === 'value' ? (
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formatThousandsInput(row.totalValueInput)}
+              onChange={event =>
+                onUpdate(row.rowKey, 'totalValueInput', stripThousandsInput(event.target.value))
+              }
+              onKeyDown={handleMonthlyInputKeyDown}
+              className={numberInputClass}
+              data-monthly-input="true"
+            />
+          ) : (
+            <p className="text-right text-sm font-medium text-ink" title="수량 × 현재가 자동 계산">
+              {currentValue === null ? (
+                <span className="text-ink-subtle">입력 필요</span>
+              ) : (
+                formatAmount(currentValue)
+              )}
+            </p>
+          )}
         </td>
         <td
           className={`border-b border-hairline px-3 py-2 text-right font-medium ${
@@ -1185,73 +1413,26 @@ function MonthlyInputTableRows({
       {row.inputType === 'quantity' && row.isExpanded && (
         <tr className="bg-surface-soft">
           <td colSpan={5} className="border-b border-hairline px-3 py-3">
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-ink-subtle">수량</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={row.quantityInput}
-                  onChange={event => onUpdate(row.rowKey, 'quantityInput', event.target.value)}
-                  onKeyDown={handleMonthlyInputKeyDown}
-                  className={numberInputClass}
-                  data-monthly-input="true"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-ink-subtle">현재가</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={row.priceOriginalInput}
-                  onChange={event => onUpdate(row.rowKey, 'priceOriginalInput', event.target.value)}
-                  onKeyDown={handleMonthlyInputKeyDown}
-                  className={numberInputClass}
-                  data-monthly-input="true"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-ink-subtle">환율</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={row.exchangeRateInput}
-                  onChange={event => onUpdate(row.rowKey, 'exchangeRateInput', event.target.value)}
-                  onKeyDown={handleMonthlyInputKeyDown}
-                  className={numberInputClass}
-                  data-monthly-input="true"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-ink-subtle">원화 현재가</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={row.priceKRWInput}
-                  onChange={event => onUpdate(row.rowKey, 'priceKRWInput', event.target.value)}
-                  onKeyDown={handleMonthlyInputKeyDown}
-                  className={numberInputClass}
-                  data-monthly-input="true"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-ink-subtle">평균단가(원화)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={row.avgCostInput}
-                  onChange={event => onUpdate(row.rowKey, 'avgCostInput', event.target.value)}
-                  onKeyDown={handleMonthlyInputKeyDown}
-                  className={numberInputClass}
-                  data-monthly-input="true"
-                  placeholder="미입력 시 현재가"
-                />
-              </label>
+            <div className="flex flex-wrap items-end gap-3">
+              {plainField('수량', 'quantityInput')}
+              {moneyField(isForeign ? `현재가(${row.currency})` : '현재가', 'priceOriginalInput')}
+              {isForeign && plainField('환율', 'exchangeRateInput')}
+              {isForeign && (
+                <div className={detailFieldClass}>
+                  <span className="text-xs font-medium text-ink-subtle">원화 현재가</span>
+                  <p
+                    className="flex h-8 items-center justify-end rounded-md border border-hairline bg-surface-soft px-2 text-sm text-ink-muted"
+                    title="현재가 × 환율 자동 계산"
+                  >
+                    {row.priceKRWInput === '' ? '-' : formatThousandsInput(row.priceKRWInput)}
+                  </p>
+                </div>
+              )}
+              {moneyField(
+                isForeign ? '평균단가(원화)' : '평균단가',
+                'avgCostInput',
+                '미입력 시 현재가'
+              )}
             </div>
           </td>
         </tr>
