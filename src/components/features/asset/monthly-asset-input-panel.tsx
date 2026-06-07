@@ -18,7 +18,13 @@ import {
   X,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { formatAmount, formatThousandsInput, stripThousandsInput } from '@/lib/format-utils';
+import type { DeltaTone } from '@/lib/format-utils';
+import {
+  formatAmount,
+  formatSignedPercent,
+  formatThousandsInput,
+  stripThousandsInput,
+} from '@/lib/format-utils';
 import type {
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
@@ -83,7 +89,7 @@ interface LocalMonthlyInputDraft {
 }
 
 const numberInputClass =
-  'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-right text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
+  'h-8 w-full rounded-md border border-hairline bg-surface px-2 text-right text-sm tabular-nums text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
 
 const statusStyles: Record<AssetMonthlyInputStatus, string> = {
   유지: 'bg-surface-soft text-ink-muted',
@@ -95,15 +101,29 @@ const statusStyles: Record<AssetMonthlyInputStatus, string> = {
 
 function toEditableRow(row: AssetMonthlyInputRow): EditableMonthlyRow {
   const missing = row.isCurrentMissing;
+  // 부분 누락 종목(수량형)은 잘 안 바뀌는 수량·평균단가·환율을 전월값으로 미리 채우고
+  // 현재가만 비워 둔다 → 현재가만 입력하면 완성(평가액·완전성 경고는 그대로 유지).
+  const carry = missing && row.inputType === 'quantity';
+  const carryStr = (value: number | null) => (value === null ? '' : String(value));
+
+  let quantityInput = String(row.quantity);
+  let exchangeRateInput = row.exchangeRate === null ? '' : String(row.exchangeRate);
+  let avgCostInput = String(row.avgCostKRW);
+  if (missing) {
+    quantityInput = carry ? carryStr(row.prevQuantity) : '';
+    exchangeRateInput = carry ? carryStr(row.prevExchangeRate) : '';
+    avgCostInput = carry ? carryStr(row.prevAvgCostKRW) : '';
+  }
+
   return {
     ...row,
     rowKey: row.holdingId,
     holdingId: row.holdingId,
-    quantityInput: missing ? '' : String(row.quantity),
+    quantityInput,
     priceOriginalInput: missing ? '' : String(row.priceOriginal),
-    exchangeRateInput: missing || row.exchangeRate === null ? '' : String(row.exchangeRate),
+    exchangeRateInput,
     priceKRWInput: missing ? '' : String(row.priceKRW),
-    avgCostInput: missing ? '' : String(row.avgCostKRW),
+    avgCostInput,
     totalValueInput: missing ? '' : String(row.totalValueKRW),
     isExpanded: row.inputType === 'quantity',
     isNew: false,
@@ -171,6 +191,14 @@ function formatDelta(delta: number | null): string {
   const sign = delta > 0 ? '+' : '';
   return `${sign}${formatAmount(delta)}`;
 }
+
+// 세부칸 증감 캡션 색상 토큰.
+const TONE_CLASS: Record<DeltaTone, string> = {
+  gain: 'text-gain',
+  loss: 'text-loss',
+  flat: 'text-ink-subtle',
+  none: 'text-ink-subtle',
+};
 
 function getStatus(prevTotalValue: number | null, currentTotalValue: number | null) {
   if (currentTotalValue === null) return null;
@@ -1285,8 +1313,62 @@ function MonthlyInputTableRows({
   const isMissing = (prevValue ?? 0) > 0 && row.totalValueInput.trim() === '';
   const isForeign = row.currency !== 'KRW';
 
-  const detailFieldClass = 'w-28 space-y-1 sm:w-32';
-  const plainField = (label: string, field: 'quantityInput' | 'exchangeRateInput') => (
+  // 현재가 비교 기준: 외화는 원통화(prevPriceOriginal), 원화는 원화 현재가(prevPriceKRW).
+  const prevPrice = isForeign ? row.prevPriceOriginal : row.prevPriceKRW;
+  const hasPrev = row.prevQuantity !== null || row.prevPriceKRW !== null;
+
+  // 펼친 행 실시간 요약(입력값에서 파생). 평균단가 미입력 시 현재가로 간주(저장 규칙과 동일).
+  const qtyNow = parseNumberInput(row.quantityInput);
+  const priceNow = parseNumberInput(row.priceOriginalInput);
+  const priceKRWNow = parseNumberInput(row.priceKRWInput);
+  const avgCostNow = parseNumberInput(row.avgCostInput) ?? priceKRWNow;
+  const costBasis = qtyNow !== null && avgCostNow !== null ? Math.round(qtyNow * avgCostNow) : null;
+  const profit = currentValue !== null && costBasis !== null ? currentValue - costBasis : null;
+  const profitRatio =
+    profit !== null && costBasis !== null && costBasis > 0 ? profit / costBasis : null;
+
+  // 편집칸을 전월값으로 일괄 되돌린다. 환율→현재가→수량 순서로 파생값이 올바르게 재계산된다.
+  const resetToPrev = () => {
+    onUpdate(
+      row.rowKey,
+      'exchangeRateInput',
+      row.prevExchangeRate === null ? '' : String(row.prevExchangeRate)
+    );
+    onUpdate(row.rowKey, 'priceOriginalInput', prevPrice === null ? '' : String(prevPrice));
+    onUpdate(
+      row.rowKey,
+      'quantityInput',
+      row.prevQuantity === null ? '' : String(row.prevQuantity)
+    );
+    onUpdate(
+      row.rowKey,
+      'avgCostInput',
+      row.prevAvgCostKRW === null ? '' : String(row.prevAvgCostKRW)
+    );
+  };
+  // 수량 0 → 평가액 0 → 상태 '정리됨'.
+  const clearRow = () => onUpdate(row.rowKey, 'quantityInput', '0');
+
+  const detailFieldClass = 'w-36 space-y-1';
+  const caption = (prev: number | null, delta?: { text: string; tone: DeltaTone }) => (
+    <span className="flex items-center justify-end gap-1 whitespace-nowrap text-[11px] leading-tight text-ink-faint">
+      {prev === null ? (
+        <span>신규</span>
+      ) : (
+        <>
+          <span className="tabular-nums">전월 {formatThousandsInput(String(prev))}</span>
+          {delta && delta.text ? (
+            <span className={`font-medium ${TONE_CLASS[delta.tone]}`}>{delta.text}</span>
+          ) : null}
+        </>
+      )}
+    </span>
+  );
+  const plainField = (
+    label: string,
+    field: 'quantityInput' | 'exchangeRateInput',
+    captionNode: React.ReactNode
+  ) => (
     <label className={detailFieldClass}>
       <span className="text-xs font-medium text-ink-subtle">{label}</span>
       <input
@@ -1299,15 +1381,22 @@ function MonthlyInputTableRows({
         className={numberInputClass}
         data-monthly-input="true"
       />
+      {captionNode}
     </label>
   );
   const moneyField = (
     label: string,
     field: 'priceOriginalInput' | 'avgCostInput',
-    placeholder?: string
+    captionNode: React.ReactNode,
+    options?: { placeholder?: string; primary?: boolean; subCaption?: React.ReactNode }
   ) => (
     <label className={detailFieldClass}>
-      <span className="text-xs font-medium text-ink-subtle">{label}</span>
+      <span className="flex items-center text-xs font-medium text-ink-subtle">
+        {label}
+        {options?.primary ? (
+          <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+        ) : null}
+      </span>
       <input
         type="text"
         inputMode="decimal"
@@ -1316,10 +1405,41 @@ function MonthlyInputTableRows({
         onKeyDown={handleMonthlyInputKeyDown}
         className={numberInputClass}
         data-monthly-input="true"
-        placeholder={placeholder}
+        placeholder={options?.placeholder}
       />
+      {captionNode}
+      {options?.subCaption}
     </label>
   );
+
+  // 칸별 증감 캡션.
+  const qtyDelta = ((): { text: string; tone: DeltaTone } | undefined => {
+    if (row.prevQuantity === null || qtyNow === null) return undefined;
+    const diff = Number((qtyNow - row.prevQuantity).toFixed(4));
+    if (diff === 0) return { text: '· 유지', tone: 'flat' };
+    return { text: `${diff > 0 ? '+' : ''}${diff}`, tone: 'flat' };
+  })();
+  const priceDelta = formatSignedPercent(prevPrice, priceNow);
+  const avgDelta =
+    row.prevAvgCostKRW !== null && parseNumberInput(row.avgCostInput) === row.prevAvgCostKRW
+      ? ({ text: '· 유지', tone: 'flat' } as const)
+      : undefined;
+  const profitToneClass =
+    profit === null
+      ? 'text-ink-subtle'
+      : profit > 0
+        ? 'text-gain'
+        : profit < 0
+          ? 'text-loss'
+          : 'text-ink-subtle';
+  // 외화: 원화현재가(현재가×환율 자동 계산)를 현재가 칸 밑 파생 캡션으로 둔다.
+  const krwSubCaption = isForeign ? (
+    <span className="flex justify-end whitespace-nowrap text-[11px] leading-tight tabular-nums text-ink-faint">
+      {row.priceKRWInput === ''
+        ? '원화 - · 자동'
+        : `원화 ${formatThousandsInput(row.priceKRWInput)} · 자동`}
+    </span>
+  ) : undefined;
 
   return (
     <>
@@ -1411,28 +1531,83 @@ function MonthlyInputTableRows({
         </td>
       </tr>
       {row.inputType === 'quantity' && row.isExpanded && (
-        <tr className="bg-surface-soft">
-          <td colSpan={5} className="border-b border-hairline px-3 py-3">
-            <div className="flex flex-wrap items-end gap-3">
-              {plainField('수량', 'quantityInput')}
-              {moneyField(isForeign ? `현재가(${row.currency})` : '현재가', 'priceOriginalInput')}
-              {isForeign && plainField('환율', 'exchangeRateInput')}
-              {isForeign && (
-                <div className={detailFieldClass}>
-                  <span className="text-xs font-medium text-ink-subtle">원화 현재가</span>
-                  <p
-                    className="flex h-8 items-center justify-end rounded-md border border-hairline bg-surface-soft px-2 text-sm text-ink-muted"
-                    title="현재가 × 환율 자동 계산"
-                  >
-                    {row.priceKRWInput === '' ? '-' : formatThousandsInput(row.priceKRWInput)}
-                  </p>
+        <tr>
+          <td colSpan={5} className="border-b border-hairline bg-surface-soft px-3 pb-3 pt-1">
+            <div className="overflow-hidden rounded-md border border-hairline border-l-2 border-l-accent bg-surface shadow-[var(--shadow-1)]">
+              <div className="flex items-center justify-between gap-2 border-b border-hairline bg-canvas px-3 py-1.5">
+                <span className="truncate text-xs font-semibold text-ink">
+                  {row.assetName}
+                  <span className="ml-1 font-medium text-ink-subtle">· {row.currency}</span>
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  {hasPrev && (
+                    <button
+                      type="button"
+                      onClick={resetToPrev}
+                      className="rounded-md px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-soft"
+                      title="이번 달 입력칸을 전월값으로 되돌립니다"
+                    >
+                      전월값으로
+                    </button>
+                  )}
+                  {!row.isNew && (
+                    <button
+                      type="button"
+                      onClick={clearRow}
+                      className="rounded-md px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-loss/10 hover:text-loss"
+                      title="수량을 0으로 정리(매도) 처리합니다"
+                    >
+                      정리
+                    </button>
+                  )}
                 </div>
-              )}
-              {moneyField(
-                isForeign ? '평균단가(원화)' : '평균단가',
-                'avgCostInput',
-                '미입력 시 현재가'
-              )}
+              </div>
+              <div className="flex flex-wrap items-stretch">
+                <div className="flex flex-1 flex-wrap items-start gap-3 px-3 py-3">
+                  {plainField('수량', 'quantityInput', caption(row.prevQuantity, qtyDelta))}
+                  {moneyField(
+                    isForeign ? `현재가(${row.currency})` : '현재가',
+                    'priceOriginalInput',
+                    caption(prevPrice, priceDelta),
+                    { primary: true, subCaption: krwSubCaption }
+                  )}
+                  {isForeign &&
+                    plainField('환율', 'exchangeRateInput', caption(row.prevExchangeRate))}
+                  {moneyField(
+                    isForeign ? '평균단가(원화)' : '평균단가',
+                    'avgCostInput',
+                    caption(row.prevAvgCostKRW, avgDelta),
+                    { placeholder: '미입력 시 현재가' }
+                  )}
+                </div>
+                <div className="flex min-w-[180px] flex-col justify-center gap-2 border-t border-hairline bg-canvas px-4 py-3 sm:border-l sm:border-t-0">
+                  <div>
+                    <p className="text-[11px] font-medium text-ink-subtle">수익</p>
+                    <p className={`text-sm font-bold tabular-nums ${profitToneClass}`}>
+                      {profit === null ? '-' : `${profit > 0 ? '+' : ''}${formatAmount(profit)}`}
+                    </p>
+                    {profitRatio !== null && (
+                      <p className={`text-[11px] font-medium tabular-nums ${profitToneClass}`}>
+                        {`${profitRatio > 0 ? '+' : ''}${(profitRatio * 100).toFixed(1)}%`}
+                      </p>
+                    )}
+                  </div>
+                  <dl className="space-y-0.5 text-xs">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-ink-subtle">평가액</dt>
+                      <dd className="font-semibold tabular-nums text-ink">
+                        {currentValue === null ? '-' : formatAmount(currentValue)}
+                      </dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-ink-subtle">원금</dt>
+                      <dd className="font-medium tabular-nums text-ink-muted">
+                        {costBasis === null ? '-' : formatAmount(costBasis)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
             </div>
           </td>
         </tr>

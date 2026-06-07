@@ -40,3 +40,18 @@ export function formatThousandsInput(value: string): string {
 export function stripThousandsInput(value: string): string {
   return value.replace(/,/g, '');
 }
+
+export type DeltaTone = 'gain' | 'loss' | 'flat' | 'none';
+
+// 전월 대비 증감률 표기. 전월값이 없거나 0 이하면 비교 불가('', none),
+// 같으면 '· 유지'(flat), 변동 시 '▲ +x%'(gain)·'▼ -x%'(loss).
+export function formatSignedPercent(
+  prev: number | null,
+  current: number | null
+): { text: string; tone: DeltaTone } {
+  if (current === null || prev === null || prev <= 0) return { text: '', tone: 'none' };
+  const ratio = (current - prev) / prev;
+  if (ratio === 0) return { text: '· 유지', tone: 'flat' };
+  const pct = (Math.abs(ratio) * 100).toFixed(1);
+  return ratio > 0 ? { text: `▲ +${pct}%`, tone: 'gain' } : { text: `▼ -${pct}%`, tone: 'loss' };
+}
