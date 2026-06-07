@@ -2,6 +2,7 @@ export { AssetSubNav } from './asset-sub-nav';
 export { AssetRiskPieChart } from './asset-risk-pie-chart';
 export { AssetHoldingTable } from './asset-holding-table';
 export { AssetMonthlySummaryCards } from './asset-monthly-summary-cards';
+export { AssetChangeInsights } from './asset-change-insights';
 export { MonthlyAssetView } from './monthly-asset-view';
 export { MonthlyAssetInputPanel } from './monthly-asset-input-panel';
 export { AssetTrendView } from './asset-trend-view';

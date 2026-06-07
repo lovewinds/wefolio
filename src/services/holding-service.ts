@@ -10,6 +10,8 @@ import type {
   AssetClass,
   Currency,
   HoldingTransactionType,
+  AssetChangeBreakdown,
+  AssetMonthlyMetrics,
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
   AssetMonthlyInputSaveRow,
@@ -218,6 +220,7 @@ interface MonthlyHolding {
 
 interface MonthlyAssetData {
   totalValue: number;
+  metrics: AssetMonthlyMetrics;
   byRiskLevel: RiskGroup[];
   holdings: MonthlyHolding[];
   availableRange: {
@@ -315,6 +318,136 @@ function getMonthlyInputType(assetClass: string, accountType: string): AssetMont
   )
     ? 'value'
     : 'quantity';
+}
+
+function isValueTypeHolding(holding: MonthlyHolding): boolean {
+  return getMonthlyInputType(holding.assetClass, holding.accountType) === 'value';
+}
+
+function zeroMetrics(): AssetMonthlyMetrics {
+  return {
+    cashValue: 0,
+    investmentValue: 0,
+    principalValue: 0,
+    unrealizedGain: 0,
+  };
+}
+
+function buildMovementInsight(
+  delta: AssetMonthlyMetrics & { totalValue: number }
+): AssetChangeBreakdown['movementInsight'] {
+  const cashDelta = delta.cashValue;
+  const investmentDelta = delta.investmentValue;
+  const netDelta = delta.totalValue;
+  const offsetTolerance = Math.max(
+    Math.min(Math.abs(cashDelta), Math.abs(investmentDelta)) * 0.2,
+    1
+  );
+  const isMostlyOffset = Math.abs(netDelta) <= offsetTolerance;
+
+  if (cashDelta < 0 && investmentDelta > 0 && isMostlyOffset) {
+    return {
+      type: 'cash_to_investment',
+      title: '현금에서 투자로 이동한 변화가 감지됩니다',
+      description: '현금은 줄고 투자 평가액은 늘어 총자산 변화가 서로 상쇄된 패턴입니다.',
+      confidence: 'estimated',
+    };
+  }
+
+  if (cashDelta > 0 && investmentDelta < 0 && isMostlyOffset) {
+    return {
+      type: 'investment_to_cash',
+      title: '투자자산 일부 현금화가 감지됩니다',
+      description: '현금은 늘고 투자 평가액은 줄어 총자산 변화가 서로 상쇄된 패턴입니다.',
+      confidence: 'estimated',
+    };
+  }
+
+  if (netDelta > 0) {
+    return {
+      type: 'net_increase',
+      title: '이번 달 총자산이 증가했습니다',
+      description: '현금 잔고 변화와 투자 평가액 변화를 합산한 확정 변화입니다.',
+      confidence: 'confirmed',
+    };
+  }
+
+  if (netDelta < 0) {
+    return {
+      type: 'net_decrease',
+      title: '이번 달 총자산이 감소했습니다',
+      description: '현금 잔고 변화와 투자 평가액 변화를 합산한 확정 변화입니다.',
+      confidence: 'confirmed',
+    };
+  }
+
+  return {
+    type: 'mixed',
+    title: '이번 달 총자산은 유지되었습니다',
+    description: '현금 잔고와 투자 평가액 사이의 변화가 총자산 안에서 상쇄되었습니다.',
+    confidence: 'confirmed',
+  };
+}
+
+function buildHoldingChangeSummary(
+  currentHoldings: MonthlyHolding[],
+  prevHoldings: MonthlyHolding[]
+): AssetChangeBreakdown['holdingChanges'] {
+  const keyFor = (h: MonthlyHolding) => `${h.assetName}::${h.memberName}::${h.accountName}`;
+  const currentMap = new Map<string, MonthlyHolding>();
+  const prevMap = new Map<string, MonthlyHolding>();
+
+  for (const holding of currentHoldings.filter(h => !isValueTypeHolding(h))) {
+    currentMap.set(keyFor(holding), holding);
+  }
+  for (const holding of prevHoldings.filter(h => !isValueTypeHolding(h))) {
+    prevMap.set(keyFor(holding), holding);
+  }
+
+  let newCount = 0;
+  let increasedCount = 0;
+  let decreasedCount = 0;
+  let closedCount = 0;
+
+  for (const [key, current] of currentMap) {
+    const prev = prevMap.get(key);
+    if (!prev || prev.quantity <= 0) {
+      if (current.quantity > 0) newCount++;
+      continue;
+    }
+    if (current.quantity > prev.quantity) increasedCount++;
+    if (current.quantity < prev.quantity) decreasedCount++;
+  }
+
+  for (const [key, prev] of prevMap) {
+    const current = currentMap.get(key);
+    if (prev.quantity > 0 && (!current || current.quantity <= 0)) {
+      closedCount++;
+    }
+  }
+
+  return { newCount, increasedCount, decreasedCount, closedCount };
+}
+
+function buildChangeBreakdown(
+  current: MonthlyAssetData,
+  prev: MonthlyAssetData
+): AssetChangeBreakdown {
+  const delta = {
+    totalValue: current.totalValue - prev.totalValue,
+    cashValue: current.metrics.cashValue - prev.metrics.cashValue,
+    investmentValue: current.metrics.investmentValue - prev.metrics.investmentValue,
+    principalValue: current.metrics.principalValue - prev.metrics.principalValue,
+    unrealizedGain: current.metrics.unrealizedGain - prev.metrics.unrealizedGain,
+  };
+
+  return {
+    prev: { totalValue: prev.totalValue, ...prev.metrics },
+    current: { totalValue: current.totalValue, ...current.metrics },
+    delta,
+    movementInsight: buildMovementInsight(delta),
+    holdingChanges: buildHoldingChangeSummary(current.holdings, prev.holdings),
+  };
 }
 
 type SnapshotWithHolding = Prisma.HoldingSnapshotGetPayload<{
@@ -565,6 +698,15 @@ export const holdingValueSnapshotService = {
         },
       },
     });
+    const cashSnapshots = await prisma.cashSnapshot.findMany({
+      where: {
+        snapshotDate: {
+          gte: startOfMonth,
+          lt: startOfNextMonth,
+        },
+      },
+      select: { cashBalanceKRW: true },
+    });
 
     const [minSnapshot, maxSnapshot] = await Promise.all([
       prisma.holdingSnapshot.findFirst({
@@ -591,11 +733,15 @@ export const holdingValueSnapshotService = {
           }
         : null;
 
-    if (snapshots.length === 0) {
-      return { totalValue: 0, byRiskLevel: [], holdings: [], availableRange };
+    if (snapshots.length === 0 && cashSnapshots.length === 0) {
+      return {
+        totalValue: 0,
+        metrics: zeroMetrics(),
+        byRiskLevel: [],
+        holdings: [],
+        availableRange,
+      };
     }
-
-    const totalValue = snapshots.reduce((sum, s) => sum + snapshotTotalValueKRW(s), 0);
 
     const holdings: MonthlyHolding[] = snapshots.map(s => {
       const { holding } = s;
@@ -613,7 +759,7 @@ export const holdingValueSnapshotService = {
         exchangeRate: s.exchangeRate,
         priceKRW: s.currentPriceKRW,
         totalValueKRW,
-        percentage: totalValue > 0 ? Math.round((totalValueKRW / totalValue) * 10000) / 100 : 0,
+        percentage: 0,
         memberName: account.member.name,
         accountName: account.name,
         accountType: account.accountType,
@@ -621,9 +767,33 @@ export const holdingValueSnapshotService = {
       };
     });
 
+    const cashSnapshotValue = cashSnapshots.reduce((sum, s) => sum + s.cashBalanceKRW, 0);
+    const metrics = holdings.reduce<AssetMonthlyMetrics>(
+      (acc, holding) => {
+        if (isValueTypeHolding(holding)) {
+          acc.cashValue += holding.totalValueKRW;
+          return acc;
+        }
+
+        const snapshot = snapshots.find(s => s.id === holding.id);
+        const principalValue = snapshot ? snapshot.quantity * snapshot.avgCostKRW : 0;
+
+        acc.investmentValue += holding.totalValueKRW;
+        acc.principalValue += principalValue;
+        return acc;
+      },
+      { ...zeroMetrics(), cashValue: cashSnapshotValue }
+    );
+    metrics.unrealizedGain = metrics.investmentValue - metrics.principalValue;
+
+    const totalValue = metrics.cashValue + metrics.investmentValue;
+    const holdingsWithPercentage = holdings.map(h => ({
+      ...h,
+      percentage: totalValue > 0 ? Math.round((h.totalValueKRW / totalValue) * 10000) / 100 : 0,
+    }));
     const byRiskLevel = buildRiskGroups(holdings, totalValue);
 
-    return { totalValue, byRiskLevel, holdings, availableRange };
+    return { totalValue, metrics, byRiskLevel, holdings: holdingsWithPercentage, availableRange };
   },
 
   async getMonthlyAssetDataWithDelta(year: number, month: number) {
@@ -671,6 +841,7 @@ export const holdingValueSnapshotService = {
       deltaAmount,
       deltaPercent,
       prevByRiskLevel,
+      changeBreakdown: hasPrev ? buildChangeBreakdown(current, prevData) : null,
     };
   },
 

@@ -203,8 +203,16 @@ export interface RiskGroup {
   children: RiskChild[];
 }
 
+export interface AssetMonthlyMetrics {
+  cashValue: number;
+  investmentValue: number;
+  principalValue: number;
+  unrealizedGain: number;
+}
+
 export interface AssetMonthlyData {
   totalValue: number;
+  metrics: AssetMonthlyMetrics;
   byRiskLevel: RiskGroup[];
   holdings: HoldingRow[];
   availableRange: {
@@ -241,12 +249,42 @@ export interface AssetTrendData {
   trend: AssetTrendEntry[];
 }
 
+export type AssetMovementInsightType =
+  | 'cash_to_investment'
+  | 'investment_to_cash'
+  | 'net_increase'
+  | 'net_decrease'
+  | 'mixed';
+
+export interface AssetMovementInsight {
+  type: AssetMovementInsightType;
+  title: string;
+  description: string;
+  confidence: 'confirmed' | 'estimated';
+}
+
+export interface AssetHoldingChangeSummary {
+  newCount: number;
+  increasedCount: number;
+  decreasedCount: number;
+  closedCount: number;
+}
+
+export interface AssetChangeBreakdown {
+  prev: AssetMonthlyMetrics & { totalValue: number };
+  current: AssetMonthlyMetrics & { totalValue: number };
+  delta: AssetMonthlyMetrics & { totalValue: number };
+  movementInsight: AssetMovementInsight | null;
+  holdingChanges: AssetHoldingChangeSummary;
+}
+
 export interface AssetMonthlyDataWithDelta extends AssetMonthlyData {
   holdings: HoldingRowWithDelta[];
   prevTotalValue: number | null;
   deltaAmount: number | null;
   deltaPercent: number | null;
   prevByRiskLevel: RiskGroupDelta[];
+  changeBreakdown: AssetChangeBreakdown | null;
 }
 
 // ============================================

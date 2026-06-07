@@ -46,6 +46,12 @@ describe('holdingValueSnapshotService', () => {
         if (year === 2026 && month === 1) {
           return {
             totalValue: 1000,
+            metrics: {
+              cashValue: 0,
+              investmentValue: 1000,
+              principalValue: 1000,
+              unrealizedGain: 0,
+            },
             byRiskLevel: [
               { riskLevel: '안전자산', totalValue: 1000, percentage: 100, children: [] },
             ],
@@ -59,6 +65,12 @@ describe('holdingValueSnapshotService', () => {
 
         return {
           totalValue: 1300,
+          metrics: {
+            cashValue: 0,
+            investmentValue: 1300,
+            principalValue: 1300,
+            unrealizedGain: 0,
+          },
           byRiskLevel: [
             { riskLevel: '안전자산', totalValue: 1050, percentage: 80.77, children: [] },
             { riskLevel: '위험자산', totalValue: 250, percentage: 19.23, children: [] },
@@ -102,6 +114,91 @@ describe('holdingValueSnapshotService', () => {
       topLoser: { name: 'Asset B', amount: -50 },
     });
 
+    monthlySpy.mockRestore();
+  });
+
+  it('detects investment-to-cash movement and holding changes from monthly snapshots', async () => {
+    const monthlySpy = vi
+      .spyOn(holdingValueSnapshotService, 'getMonthlyAssetData')
+      .mockImplementation(async (year, month) => {
+        if (year === 2026 && month === 4) {
+          return {
+            totalValue: 1000,
+            metrics: {
+              cashValue: 100,
+              investmentValue: 900,
+              principalValue: 700,
+              unrealizedGain: 200,
+            },
+            byRiskLevel: [],
+            holdings: [
+              monthlyHolding('Core ETF', 'Mom', 900, {
+                quantity: 10,
+                priceKRW: 90,
+                avgCostKRW: 70,
+              }),
+            ],
+            availableRange: null,
+          };
+        }
+
+        return {
+          totalValue: 1000,
+          metrics: {
+            cashValue: 500,
+            investmentValue: 500,
+            principalValue: 400,
+            unrealizedGain: 100,
+          },
+          byRiskLevel: [],
+          holdings: [
+            monthlyHolding('Core ETF', 'Mom', 500, {
+              quantity: 5,
+              priceKRW: 100,
+              avgCostKRW: 80,
+            }),
+          ],
+          availableRange: null,
+        };
+      });
+
+    const result = await holdingValueSnapshotService.getMonthlyAssetDataWithDelta(2026, 5);
+
+    expect(result.changeBreakdown).toMatchObject({
+      prev: {
+        totalValue: 1000,
+        cashValue: 100,
+        investmentValue: 900,
+        principalValue: 700,
+        unrealizedGain: 200,
+      },
+      current: {
+        totalValue: 1000,
+        cashValue: 500,
+        investmentValue: 500,
+        principalValue: 400,
+        unrealizedGain: 100,
+      },
+      delta: {
+        totalValue: 0,
+        cashValue: 400,
+        investmentValue: -400,
+        principalValue: -300,
+        unrealizedGain: -100,
+      },
+      movementInsight: {
+        type: 'investment_to_cash',
+        confidence: 'estimated',
+      },
+      holdingChanges: {
+        newCount: 0,
+        increasedCount: 0,
+        decreasedCount: 1,
+        closedCount: 0,
+      },
+    });
+
+    expect(result.changeBreakdown?.movementInsight?.title).toContain('현금화');
     monthlySpy.mockRestore();
   });
 });
@@ -200,7 +297,19 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
   });
 });
 
-function monthlyHolding(assetName: string, memberName: string, totalValueKRW: number) {
+function monthlyHolding(
+  assetName: string,
+  memberName: string,
+  totalValueKRW: number,
+  overrides: Partial<ReturnType<typeof monthlyHoldingBase>> = {}
+) {
+  return {
+    ...monthlyHoldingBase(assetName, memberName, totalValueKRW),
+    ...overrides,
+  };
+}
+
+function monthlyHoldingBase(assetName: string, memberName: string, totalValueKRW: number) {
   return {
     id: `${assetName}-${memberName}`,
     assetName,
@@ -212,6 +321,7 @@ function monthlyHolding(assetName: string, memberName: string, totalValueKRW: nu
     priceOriginal: totalValueKRW,
     exchangeRate: null,
     priceKRW: totalValueKRW,
+    avgCostKRW: totalValueKRW,
     totalValueKRW,
     percentage: 0,
     memberName,

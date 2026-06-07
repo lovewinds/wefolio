@@ -9,6 +9,7 @@ import {
   AssetRiskPieChart,
   AssetHoldingTable,
   AssetMonthlySummaryCards,
+  AssetChangeInsights,
   MonthlyAssetInputPanel,
 } from '@/components/features/asset';
 import { PageContainer, EmptyState } from '@/components/ui';
@@ -142,6 +143,7 @@ export function MonthlyAssetView({
       prevTotalValue,
       deltaAmount,
       deltaPercent,
+      changeBreakdown: null,
     };
   }, [data, selectedMember]);
 
@@ -212,6 +214,7 @@ export function MonthlyAssetView({
               />
             </div>
           </div>
+          <AssetChangeInsights breakdown={filteredData.changeBreakdown} />
           <AssetHoldingTable
             holdings={filteredData.holdings}
             totalValue={filteredData.totalValue}
