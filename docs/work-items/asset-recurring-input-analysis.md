@@ -23,7 +23,7 @@
 - 입력 주기: **월말 기본 + 주 단위 입력 확장성 필요**. ← 디자인의 "월 1회" 전제와 충돌하는 신규 제약.
 - 목표 모델: 디자인-코드 격차를 어느 쪽으로 통일할지는 **이 분석으로 판단**(열린 결정).
 
-근본 문제: **디자인 SSOT(`docs-new/`)와 실제 구현 코드가 서로 다른 자산 모델을 따르며, 둘 다 사용자의 "주 단위 확장성" 니즈와 어긋난다.** 이 격차가 입력 편의성·폼 UX·목적 명확성 문제의 공통 뿌리다.
+근본 문제: **디자인 SSOT(`docs/product/`)와 실제 구현 코드가 서로 다른 자산 모델을 따르며, 둘 다 사용자의 "주 단위 확장성" 니즈와 어긋난다.** 이 격차가 입력 편의성·폼 UX·목적 명확성 문제의 공통 뿌리다.
 
 ---
 
@@ -33,7 +33,7 @@
 
 디자인은 단순화를 위해 일자 granularity를 버렸으나, 그게 주 단위 확장성과 충돌한다. 코드는 일자 기반이라 주 단위에 더 가깝지만, 디자인이 없애려던 거래/가격/계좌 스냅샷 하이브리드를 아직 안고 있다.
 
-| 축 | 디자인 SSOT (`docs-new/data-model.md`) | 구현 코드 (`prisma/schema.prisma`) | 사용자 니즈 |
+| 축 | 디자인 SSOT (`docs/product/data-model.md`) | 구현 코드 (`prisma/schema.prisma`) | 사용자 니즈 |
 |---|---|---|---|
 | 스냅샷 키 | `HoldingSnapshot.yearMonth` 문자열("2024-12") — **월 전용**, "일자 모호성 제거" 명시(L157) | `HoldingValueSnapshot.date` DateTime, `@@unique([holdingId, date])`(schema L209·L224) — 일자 기반 | 월 + **주** 단위 |
 | 현금/종목 분리 | `CashSnapshot`(월별 현금 SSOT) + `HoldingSnapshot` 분리 | `HoldingValueSnapshot` 1종 + `Account.cashBalance`(현재값만, L135) + `AccountSnapshot`(L154, `@@unique([accountId, date])`) | — |
@@ -67,7 +67,7 @@
 
 ### D. 프로젝트 목적 명확성
 
-- 문서상 목적은 명확: `docs-new/prd.md` 기준 "가족 월말 자산 스냅샷 + 투자 수익/자산 증가 분해 인사이트".
+- 문서상 목적은 명확: `docs/product/prd.md` 기준 "가족 월말 자산 스냅샷 + 투자 수익/자산 증가 분해 인사이트".
 - 그러나 인지된 모호성:
   1. 디자인-코드 모델 격차(진단 A).
   2. `/asset/transactions` 존재 ↔ ADR "거래 미사용" 모순.
@@ -83,7 +83,7 @@
 - ADR의 "단일 SSOT · 파생값 비저장" 단순성은 **채택**한다.
 - 단, 디자인의 월 전용 `yearMonth`를 **일자 기반 `snapshotDate`(또는 period) 키로 일반화**해 주 단위 확장성을 확보한다.
 - 결과적으로 현재 코드의 date 기반 `HoldingValueSnapshot`에 더 가까운 모델. `HoldingTransaction` / `/asset/transactions`는 결정 4에 따라 **제거하지 않고 비권위로 격리**한다(아래 "결정 1 ↔ 4 긴장" 참조). `AssetPrice` / `AccountSnapshot`는 스냅샷 모델로 흡수 가능한지 별도 검토.
-- 디자인 우선 원칙(CLAUDE.md)에 따라 **먼저 `docs-new/data-model.md`의 `yearMonth` 항목과 `asset-management.md` ADR의 "월 1회" 전제·"거래 미사용" 단정을 개정**한 뒤 코드를 맞춘다(거래 화면 유지 결정을 ADR에 반영).
+- 디자인 우선 원칙(CLAUDE.md)에 따라 **먼저 `docs/product/data-model.md`의 `yearMonth` 항목과 `asset-management.md` ADR의 "월 1회" 전제·"거래 미사용" 단정을 개정**한 뒤 코드를 맞춘다(거래 화면 유지 결정을 ADR에 반영).
 - 트레이드오프: 거래 기반 실현손익 자동 추적은 표준 흐름에서 포기. 대신 단일 진실원천과 주 단위 확장성을 동시에 확보.
 
 ### 2. 입력 주기 정책 명문화
@@ -123,7 +123,7 @@ ADR이 `HoldingTransaction`을 폐기한 본래 이유는 "스냅샷과 거래 �
 
 ## 다음 단계 (결정 확정됨 → 구현 준비)
 
-- 디자인 문서 개정(디자인 우선): `docs-new/data-model.md`(`yearMonth` → `snapshotDate`/period, `AssetPrice`·`AccountSnapshot` 처리), `docs-new/asset-management.md`(ADR에 "거래 화면 비권위 유지", "월말 + 주 단위" 입력 주기 명시).
+- 디자인 문서 개정(디자인 우선): `docs/product/data-model.md`(`yearMonth` → `snapshotDate`/period, `AssetPrice`·`AccountSnapshot` 처리), `docs/product/asset-management.md`(ADR에 "거래 화면 비권위 유지", "월말 + 주 단위" 입력 주기 명시).
 - M006: 기준 데이터 수정/삭제 정책·UI, 스냅샷-거래 격리(거래가 `Holding` 상태를 덮어쓰지 않도록) 정합성 처리.
 - M009: 가계부를 별도 최상위 그룹으로 두는 IA, 신규 인사이트 화면(투자 수익 현황·자산 증가 분해) 설계 반영.
 - 환율은 수동 입력 유지 → 관련 자동 연동 검토 항목은 닫는다.
@@ -131,12 +131,12 @@ ADR이 `HoldingTransaction`을 폐기한 본래 이유는 "스냅샷과 거래 �
 ## 범위 / 제외
 
 - In scope: 자산 관리(월별 스냅샷 입력 패널 + 거래 입력 화면)의 진단·개선 방향 문서화.
-- Out of scope: 코드 변경, Prisma schema 마이그레이션, `docs-new/` 본 개정. 가계부 입력 흐름은 자산과 맞닿는 부분만 언급.
+- Out of scope: 코드 변경, Prisma schema 마이그레이션, `docs/product/` 본 개정. 가계부 입력 흐름은 자산과 맞닿는 부분만 언급.
 
 ## Verification
 
 - 문서 작업이므로 빌드/테스트 불필요(CLAUDE.md 검증 규칙).
-- 인용 경로 점검 완료(2026-06-04): `prisma/schema.prisma`(L107/L135/L154/L188/L209/L224), `src/services/holding-service.ts`(L497/L657/L711), `src/components/features/asset/monthly-asset-input-panel.tsx`, `src/components/features/asset-transaction/holding-transaction-input-row.tsx`, `src/app/(app)/asset/transactions/page.tsx`, `docs-new/data-model.md`, `docs-new/asset-management.md`.
+- 인용 경로 점검 완료(2026-06-04): `prisma/schema.prisma`(L107/L135/L154/L188/L209/L224), `src/services/holding-service.ts`(L497/L657/L711), `src/components/features/asset/monthly-asset-input-panel.tsx`, `src/components/features/asset-transaction/holding-transaction-input-row.tsx`, `src/app/(app)/asset/transactions/page.tsx`, `docs/product/data-model.md`, `docs/product/asset-management.md`.
 
 ## Progress Log
 

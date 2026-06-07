@@ -9,7 +9,7 @@
 1. 현재 진행 중인 작업과 충돌 위험을 확인하려면 `docs/current-work.md`를 봅니다.
 2. 전체 현황이나 다음 우선순위를 확인해야 하면 `docs/project-status.md`를 봅니다.
 3. 특정 태스크의 상세 목표, 범위, 검증 계획은 `docs/work-items/*.md`를 봅니다.
-4. 실제 구현에 들어갈 때는 관련 `docs/milestones/*.md`, 화면 작업이면 `docs-new/`(디자인·PRD), 코드만 추가로 확인합니다.
+4. 실제 구현에 들어갈 때는 관련 `docs/milestones/*.md`, 화면 작업이면 `docs/product/`(디자인·PRD), 코드만 추가로 확인합니다.
 5. 의존성/빌드 변경 전에는 `docs/build-and-dependencies.md`를 확인합니다.
 6. 누적 검증과 장기 위험은 각각 `docs/verification-log.md`, `docs/known-risks.md`에서 확인합니다.
 
@@ -25,7 +25,7 @@
 | `docs/known-risks.md` | 장기 제약, 위험, 수용/완화 상태 |
 | `docs/build-and-dependencies.md` | 기술 스택, 프로젝트 구조·아키텍처, 개발 명령어·데이터 초기화, 빌드 환경, 의존성, 알려진 빌드 이슈, 버전 호환성 |
 | `docs/manual-checklist.md` | 자동 테스트로 다루기 어려운 화면 수동 검증 체크리스트 |
-| `docs-new/` | 화면 구성과 UI 흐름, PRD의 단일 기준(디자인 우선) |
+| `docs/product/` | 화면 구성과 UI 흐름, PRD의 단일 기준(디자인 우선). 스펙(`prd`·`data-model`·`asset-management`·`insights`)과 디자인 프로토타입(`design/`)을 포함 |
 | `AGENTS.md` | 행동 가이드라인, 기술 스택, 문서 라우팅, 작업/검증/커밋 규칙 |
 | `README.md` | 사용자/개발자용 실행 요약 |
 

@@ -83,13 +83,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `docs/build-and-dependencies.md`: 기술 스택, 프로젝트 구조·아키텍처, 개발 명령어·데이터 초기화, 의존성, 알려진 빌드 이슈. 의존성/버전 변경 전에 먼저 확인하고, 바꾸면 함께 갱신합니다.
 - `docs/manual-checklist.md`: 자동 테스트로 다루기 어려운 화면 수동 검증 체크리스트.
 - `docs/doc-management.md`: 문서별 책임과 갱신 규칙. 문서 구조나 갱신 위치가 헷갈릴 때 확인합니다.
-- `docs-new/`: 화면 구성과 UI 흐름, PRD의 단일 기준(디자인 우선). UI·화면 흐름 작업에서 확인합니다.
+- `docs/product/`: 화면 구성과 UI 흐름, PRD의 단일 기준(디자인 우선). 스펙(`prd`·`data-model`·`asset-management`·`insights`)과 디자인 프로토타입(`design/`)을 포함합니다. UI·화면 흐름 작업에서 확인합니다.
 - `ROADMAP.md`: 초기 계획 참고용. 실제 구현 상태 판단은 코드와 `docs/project-status.md`를 우선합니다.
 
 ### 작업 시작 규칙
 
 - "이번에 구현할 내용", "다음 작업", "현재 상태", "마일스톤" 관련 질문은 코드 탐색보다 `docs/current-work.md`(진행 중 작업)와 `docs/project-status.md`(전체 현황)를 먼저 기준으로 답합니다.
-- 구현에 들어갈 때는 `docs/current-work.md`에서 활성 세션·충돌 주의 영역을 확인하고, `docs/project-status.md`의 해당 마일스톤과 (존재한다면) `docs/milestones/`의 상세 문서를 본 뒤 관련 코드를 확인합니다. 화면 작업이면 `docs-new/`를 먼저 확인합니다.
+- 구현에 들어갈 때는 `docs/current-work.md`에서 활성 세션·충돌 주의 영역을 확인하고, `docs/project-status.md`의 해당 마일스톤과 (존재한다면) `docs/milestones/`의 상세 문서를 본 뒤 관련 코드를 확인합니다. 화면 작업이면 `docs/product/`를 먼저 확인합니다.
 - 다단계 작업이나 여러 모듈/화면에 걸친 작업은 `docs/work-items/template.md`를 복사해 태스크 문서를 만들고, `docs/current-work.md`의 `Active Sessions`에 등록합니다. 단일 파일의 사소한 수정이나 문서만의 작은 변경은 생략할 수 있습니다.
 - 단일 개발자 선형 흐름에서는 worktree를 생략하고 `main`에서 바로 진행해도 됩니다. 대형 리팩토링, Prisma schema 변경, 여러 화면 동시 작업처럼 충돌 위험이 큰 경우에만 별도 worktree(`task/<milestone-or-area>-<slug>` 브랜치, 기본 경로 `/Users/ariens/source/wefolio.worktrees/<task-slug>`)를 권장합니다.
 - 작업 중 상세 진행 로그와 중간 검증 결과는 해당 `docs/work-items/*.md`에 기록합니다. `docs/project-status.md`와 `docs/verification-log.md`는 작업/통합 시점에 필요한 내용만 갱신합니다.
@@ -100,10 +100,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### 화면 구현 워크플로 (디자인 우선)
 
-- 화면(UI·화면 흐름) 작업은 코드부터 작성하지 않습니다. `docs-new/`의 디자인·PRD로 화면 구성을 먼저 검토·확정한 뒤 코드로 구현합니다.
-- 순서: ① `docs-new/`에서 대상 화면의 디자인(`docs-new/design/*.jsx`, `WeFolio Dashboard.html`, `design/screenshots/`)과 PRD(`docs-new/prd.md`, `insights.md`, `asset-management.md`, `data-model.md`)를 검토합니다. → ② 화면 구성·상태·인터랙션을 확정합니다. → ③ 확정된 디자인을 코드로 구현합니다.
-- 화면 구성의 단일 기준은 `docs-new/`입니다. 구현 중 디자인과 차이가 생기면 디자인 문서를 먼저 갱신한 뒤 코드를 맞춥니다.
-- IA 재편과 신규 인사이트 화면(투자 수익 현황, 자산 증가 분해 워터폴)은 M009 계획 문서와 `docs-new/`를 함께 참고합니다.
+- 화면(UI·화면 흐름) 작업은 코드부터 작성하지 않습니다. `docs/product/`의 디자인·PRD로 화면 구성을 먼저 검토·확정한 뒤 코드로 구현합니다.
+- 순서: ① `docs/product/`에서 대상 화면의 디자인(`docs/product/design/*.jsx`, `WeFolio Dashboard.html`, `design/screenshots/`)과 PRD(`docs/product/prd.md`, `insights.md`, `asset-management.md`, `data-model.md`)를 검토합니다. → ② 화면 구성·상태·인터랙션을 확정합니다. → ③ 확정된 디자인을 코드로 구현합니다.
+- 화면 구성의 단일 기준은 `docs/product/`입니다. 구현 중 디자인과 차이가 생기면 디자인 문서를 먼저 갱신한 뒤 코드를 맞춥니다.
+- IA 재편과 신규 인사이트 화면(투자 수익 현황, 자산 증가 분해 워터폴)은 M009 계획 문서와 `docs/product/`를 함께 참고합니다.
 
 ### 검증
 

@@ -49,7 +49,7 @@
 |------|------|------|----------------|
 | 앱 구조/네비게이션 | `Partial` | `src/app`·`components`·`services`·`repositories`·`lib`·`types`·`prisma` 계층화. `(app)` 그룹 레이아웃 + 라벨형 사이드바, 월별 요약/자산 메뉴. 루트 `/`는 `/budget/monthly`로 redirect | `docs/build-and-dependencies.md`, [m009](./milestones/m009-ia-restructure-and-new-insights.md) |
 | 디자인 시스템/공통 UI | `Partial` | 웜 코랄/크림 토큰 + Pretendard/JetBrains Mono + `@theme inline` 시맨틱 유틸리티 적용(M008). Button/Input/Select/Tabs/Card 등 프리미티브 존재, Modal/Toast/ConfirmDialog 부족 | [m008](./milestones/m008-design-system-migration.md) |
-| 데이터/스키마 | `Partial` | 예산(거래/카테고리/반복 템플릿)·자산(Member/Institution/계좌/종목/보유/HoldingSnapshot/CashSnapshot/거래) Prisma 모델, repository, zod 검증 구현. 자산은 docs-new V2 정합(스냅샷 SSOT·일자 키·현재상태 파생·다통화 원통화 보존), 상수 SSOT는 `src/constants/asset.ts`. 개발용 `db push` 중심 | `docs/known-risks.md`, `docs/build-and-dependencies.md` |
+| 데이터/스키마 | `Partial` | 예산(거래/카테고리/반복 템플릿)·자산(Member/Institution/계좌/종목/보유/HoldingSnapshot/CashSnapshot/거래) Prisma 모델, repository, zod 검증 구현. 자산은 docs/product V2 정합(스냅샷 SSOT·일자 키·현재상태 파생·다통화 원통화 보존), 상수 SSOT는 `src/constants/asset.ts`. 개발용 `db push` 중심 | `docs/known-risks.md`, `docs/build-and-dependencies.md` |
 | API/서비스 | `Partial` | transaction/category/dashboard/statistics/account/holding 서비스, `{success,data,error}` 응답. 공통 response helper 없음, 통계는 월/카테고리 일부만 | `docs/known-risks.md` |
 | 월간 가계부 | `Partial` | `/budget/monthly` 월별 요약(잔액 우선 KPI·수입/지출 비교·카테고리 breakdown·빈 상태), 상세 거래 탭(필터/삭제/인라인), 추천 입력 패널, detail/input 호환 redirect | [m003](./milestones/m003-budget-monthly-flow-integration.md) |
 | 카테고리/반복 템플릿 | `Partial` | 계층형 카테고리·반복 템플릿 조회 API(flat/grouped) 구현. CRUD API와 관리 UI 없음 | [m004](./milestones/m004-category-template-management.md) |

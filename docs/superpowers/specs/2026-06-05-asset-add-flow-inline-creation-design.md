@@ -15,7 +15,7 @@
 
 - 추가 UI: `showNewHoldingRow` + `newHolding {accountId, assetMasterId}` + `handleAddHolding`. 기존 계좌·종목 조합만 선택해 인메모리 `EditableMonthlyRow`(isNew, holdingId=null) 추가. 평가액은 "업로드"(`saveMonthlyInput`) 시 스냅샷으로 확정.
 - 생성 백엔드: `apiClient.asset.createInstitution / createAccount / createAssetMaster` + 서비스/POST 라우트 **이미 존재**. **Member 생성 API는 없음**(가족 고정).
-- 기준 데이터 관리 화면: 미구현(목업 `docs-new/design/views-manage.jsx` `BaseDataView`만).
+- 기준 데이터 관리 화면: 미구현(목업 `docs/product/design/views-manage.jsx` `BaseDataView`만).
 - 트리(sections/steps/accountGroups)는 `rows`(스냅샷·보유 파생)에서 빌드 → **보유 행이 없는 빈 계좌는 트리에 안 보인다.**
 
 ## 설계
@@ -73,4 +73,4 @@
 - `src/components/features/asset/monthly-asset-input-panel.tsx` (추가 UI 교체, `addHoldingRow` 리팩터)
 - `src/components/features/asset/add-holding-inline.tsx` (신규)
 - `src/components/features/asset/add-account-flow.tsx` (신규)
-- 문서: `docs/known-risks.md`, `docs/manual-checklist.md`, `docs-new/asset-management.md`(추가 흐름 절)
+- 문서: `docs/known-risks.md`, `docs/manual-checklist.md`, `docs/product/asset-management.md`(추가 흐름 절)

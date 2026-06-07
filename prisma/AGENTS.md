@@ -8,7 +8,7 @@ WeFolio 데이터 모델의 설계 원칙과 사용 지침을 정리한 문서�
 > 계좌 현금은 `CashSnapshot`(일자별 `cashBalanceKRW`)으로 관리한다(`Account.cashBalance` 컬럼은 제거됨).
 > `HoldingTransaction`/거래 화면은 **비권위 보조**로만 유지하고 `Holding`을 자동으로 갱신하지 않는다.
 > `AssetPrice`/`AccountSnapshot` 모델은 **제거됨**(2026-06-04, M006 incr 3c).
-> 설계 기준(SSOT)은 `docs-new/data-model.md`·`docs-new/asset-management.md`이며, 배경은 `docs/work-items/asset-recurring-input-analysis.md` 참조.
+> 설계 기준(SSOT)은 `docs/product/data-model.md`·`docs/product/asset-management.md`이며, 배경은 `docs/work-items/asset-recurring-input-analysis.md` 참조.
 
 ---
 

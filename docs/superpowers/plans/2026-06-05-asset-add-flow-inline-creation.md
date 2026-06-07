@@ -20,7 +20,7 @@
 - **Create** `src/components/features/asset/add-holding-inline.tsx` — 계좌 컨텍스트 "+ 종목 추가".
 - **Create** `src/components/features/asset/add-account-flow.tsx` — "+ 계좌·기관 추가" 드릴다운(소유자→기관→계좌→첫 종목).
 - **Modify** `src/components/features/asset/monthly-asset-input-panel.tsx` — 타입/`getInputType` import 전환, 멤버 로드, 생성·추가 핸들러, `StepTable`에 인라인 추가 배선, 하단 평면 추가 UI를 `AddAccountFlow`로 교체.
-- **Modify** `docs/known-risks.md`, `docs/manual-checklist.md`, `docs-new/asset-management.md` — 제약·수동 체크·추가 흐름 문서화.
+- **Modify** `docs/known-risks.md`, `docs/manual-checklist.md`, `docs/product/asset-management.md` — 제약·수동 체크·추가 흐름 문서화.
 
 기존 재사용: `apiClient.asset.create{Institution,Account,AssetMaster}` / `get{Institutions,Accounts,AssetMasters,Members}`, 패널의 `getStepKey`·`DEPOSIT_STEP_LABEL`·`setActiveStepKey`·`setExpandedAccounts`, 상수 `@/constants/asset`.
 
@@ -1111,7 +1111,7 @@ git commit -m "feat(asset): 새 계좌·기관 드릴다운(AddAccountFlow)으�
 ## Task 6: 문서화 + 전체 검증
 
 **Files:**
-- Modify: `docs/known-risks.md`, `docs/manual-checklist.md`, `docs-new/asset-management.md`, `docs/verification-log.md`
+- Modify: `docs/known-risks.md`, `docs/manual-checklist.md`, `docs/product/asset-management.md`, `docs/verification-log.md`
 
 - [ ] **Step 1: 알려진 제약 추가**
 
@@ -1132,9 +1132,9 @@ git commit -m "feat(asset): 새 계좌·기관 드릴다운(AddAccountFlow)으�
 - [ ] 추가한 행의 평가액 입력 후 "업로드" → 스냅샷 저장 확인.
 ```
 
-- [ ] **Step 3: 설계 문서 보강(docs-new)**
+- [ ] **Step 3: 설계 문서 보강(docs/product)**
 
-`docs-new/asset-management.md`의 "입력 화면 구조: 소유자 ▸ 기관 스텝" 절 끝에 추가:
+`docs/product/asset-management.md`의 "입력 화면 구조: 소유자 ▸ 기관 스텝" 절 끝에 추가:
 
 ```markdown
 #### 자산/계좌/기관 추가
@@ -1165,7 +1165,7 @@ Expected: tsc 0 에러, lint 0, vitest 전체 통과(신규 6 테스트 포함),
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add docs/known-risks.md docs/manual-checklist.md docs-new/asset-management.md docs/verification-log.md
+git add docs/known-risks.md docs/manual-checklist.md docs/product/asset-management.md docs/verification-log.md
 git commit -m "docs(asset): 자산 추가 인라인 생성 흐름 문서화·검증 로그"
 ```
 

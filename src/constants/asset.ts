@@ -1,6 +1,6 @@
 // 자산 도메인 enum성 상수 (SSOT)
 // 값은 시드 파서(prisma/seed/read-xlsx-asset.ts)의 정규화 결과 및
-// docs-new/data-model.md 의 정의와 일치시킨다.
+// docs/product/data-model.md 의 정의와 일치시킨다.
 
 export const ASSET_CLASS = ['주식', '채권', '예금', '금', '코인'] as const;
 export type AssetClass = (typeof ASSET_CLASS)[number];
