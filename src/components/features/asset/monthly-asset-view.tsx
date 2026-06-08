@@ -4,12 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { FilePenLine, ListPlus } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { MonthSelector } from '@/components/features/navigation';
 import {
   AssetRiskPieChart,
-  AssetHoldingTable,
   AssetMonthlySummaryCards,
-  AssetChangeInsights,
+  AssetCompositionBreakdown,
+  AssetPageToolbar,
   MonthlyAssetInputPanel,
 } from '@/components/features/asset';
 import { PageContainer, EmptyState } from '@/components/ui';
@@ -150,7 +149,7 @@ export function MonthlyAssetView({
   const isEmpty = filteredData.holdings.length === 0 && filteredData.byRiskLevel.length === 0;
 
   const monthActions = (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-6 flex flex-wrap items-center justify-end gap-2">
       <button
         type="button"
         onClick={() => setIsInputOpen(true)}
@@ -160,31 +159,28 @@ export function MonthlyAssetView({
         이번 달 자산 입력
       </button>
       <Link
-        href={`/asset/transactions?year=${selectedYear}&month=${selectedMonth}`}
+        href={`/asset/detail?year=${selectedYear}&month=${selectedMonth}`}
         className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface px-4 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft"
       >
         <ListPlus size={16} />
-        자산 거래 상세
+        자산 상세
       </Link>
     </div>
   );
 
   return (
-    <PageContainer isFetching={isFetching} className="flush-top">
-      <section className="mb-8">
-        <MonthSelector
-          year={selectedYear}
-          month={selectedMonth}
-          titleSuffix="자산 현황"
-          canPrev={canMovePrev}
-          canNext={canMoveNext}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
-          onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
-          actions={monthActions}
-        />
-      </section>
+    <PageContainer isFetching={isFetching}>
+      <AssetPageToolbar
+        year={selectedYear}
+        month={selectedMonth}
+        titleSuffix="월별 현황"
+        canPrev={canMovePrev}
+        canNext={canMoveNext}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onYearChange={year => setSelectedDate({ year, month: selectedMonth })}
+        onMonthChange={month => setSelectedDate({ year: selectedYear, month })}
+      />
 
       {isEmpty ? (
         <EmptyState
@@ -193,6 +189,7 @@ export function MonthlyAssetView({
         />
       ) : (
         <>
+          {monthActions}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
             <AssetMonthlySummaryCards
               totalValue={filteredData.totalValue}
@@ -214,13 +211,9 @@ export function MonthlyAssetView({
               />
             </div>
           </div>
-          <AssetChangeInsights breakdown={filteredData.changeBreakdown} />
-          <AssetHoldingTable
+          <AssetCompositionBreakdown
             holdings={filteredData.holdings}
             totalValue={filteredData.totalValue}
-            members={members}
-            selectedMember={selectedMember}
-            onMemberChange={setSelectedMember}
           />
         </>
       )}

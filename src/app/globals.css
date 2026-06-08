@@ -390,6 +390,35 @@ body {
 .nav-item.on svg {
   color: var(--acc);
 }
+.nav-subtree {
+  margin: 2px 0 6px 29px;
+  display: grid;
+  gap: 1px;
+}
+.nav-sub-item {
+  display: block;
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  color: var(--ink-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+.nav-sub-item::before {
+  content: '└─ ';
+  color: var(--ink-faint);
+}
+.nav-sub-item:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.nav-sub-item.on {
+  color: var(--acc);
+  font-weight: 650;
+}
 .nav-item .star {
   margin-left: auto;
   color: var(--goal);
@@ -586,6 +615,8 @@ body {
 /* segmented control (dimension / variation toggles) */
 .toggle {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   background: var(--surface-soft);
   border: 1px solid var(--hairline);
   border-radius: var(--r-pill);

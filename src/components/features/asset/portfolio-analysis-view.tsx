@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-import { MonthSelector } from '@/components/features/navigation';
+import { AssetPageToolbar } from './asset-page-toolbar';
 import { DrillDownPieChart, type DrillDownNode } from './drill-down-pie-chart';
 import { PortfolioDetailPanel } from './portfolio-detail-panel';
 import {
@@ -278,19 +278,17 @@ export function PortfolioAnalysisView({
 
   return (
     <PageContainer isFetching={isFetching}>
-      <section className="mb-8">
-        <MonthSelector
-          year={selectedYear}
-          month={selectedMonth}
-          titleSuffix="포트폴리오 분석"
-          canPrev={canMovePrev}
-          canNext={canMoveNext}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          onYearChange={y => setSelectedDate({ year: y, month: selectedMonth })}
-          onMonthChange={m => setSelectedDate({ year: selectedYear, month: m })}
-        />
-      </section>
+      <AssetPageToolbar
+        year={selectedYear}
+        month={selectedMonth}
+        titleSuffix="포트폴리오"
+        canPrev={canMovePrev}
+        canNext={canMoveNext}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onYearChange={year => setSelectedDate({ year, month: selectedMonth })}
+        onMonthChange={month => setSelectedDate({ year: selectedYear, month })}
+      />
 
       {isEmpty ? (
         <EmptyState

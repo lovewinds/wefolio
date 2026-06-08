@@ -1,4 +1,8 @@
 export { AssetSubNav } from './asset-sub-nav';
+export { AssetPageToolbar } from './asset-page-toolbar';
+export { AssetOverviewView } from './asset-overview-view';
+export { AssetCompositionBreakdown } from './asset-composition-breakdown';
+export { AssetDetailView } from './asset-detail-view';
 export { AssetRiskPieChart } from './asset-risk-pie-chart';
 export { AssetHoldingTable } from './asset-holding-table';
 export { AssetMonthlySummaryCards } from './asset-monthly-summary-cards';

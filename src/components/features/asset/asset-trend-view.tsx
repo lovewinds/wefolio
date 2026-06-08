@@ -1,60 +1,50 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { PeriodSelector } from '@/components/features/navigation';
+import { AssetPageToolbar } from './asset-page-toolbar';
 import { AssetTotalTrendChart } from './asset-total-trend-chart';
 import { AssetRiskTrendChart } from './asset-risk-trend-chart';
 import { MonthlyChangeTable } from './monthly-change-table';
 import { PageContainer, EmptyState } from '@/components/ui';
 import type { AssetTrendData, AssetTrendEntry } from '@/types';
+import { useMonthNavigation } from '@/hooks';
+import { computeAssetTrendRange } from './asset-trend-range';
 
 interface AssetTrendViewProps {
   initialData: AssetTrendData;
+  initialEndDate: { year: number; month: number };
   availableRange: {
     min: { year: number; month: number };
     max: { year: number; month: number };
   } | null;
 }
 
-function computeDateRange(
-  periodMonths: number,
-  availableRange: {
-    min: { year: number; month: number };
-    max: { year: number; month: number };
-  } | null
-) {
-  const now = new Date();
-  const endYear = now.getFullYear();
-  const endMonth = now.getMonth() + 1;
-
-  if (periodMonths === 0 && availableRange) {
-    return {
-      startYear: availableRange.min.year,
-      startMonth: availableRange.min.month,
-      endYear,
-      endMonth,
-    };
-  }
-
-  let startYear = endYear;
-  let startMonth = endMonth - (periodMonths - 1);
-  while (startMonth < 1) {
-    startMonth += 12;
-    startYear--;
-  }
-
-  return { startYear, startMonth, endYear, endMonth };
-}
-
-export function AssetTrendView({ initialData, availableRange }: AssetTrendViewProps) {
+export function AssetTrendView({
+  initialData,
+  initialEndDate,
+  availableRange,
+}: AssetTrendViewProps) {
   const [periodMonths, setPeriodMonths] = useState(6);
   const [data, setData] = useState<AssetTrendEntry[]>(initialData.trend);
   const [isFetching, setIsFetching] = useState(false);
 
+  const {
+    selectedYear,
+    selectedMonth,
+    setSelectedDate,
+    canMovePrev,
+    canMoveNext,
+    updateRangeFromData,
+  } = useMonthNavigation({
+    initialDate: initialEndDate,
+    allowFutureNavigation: false,
+  });
+
   const fetchTrend = useCallback(
-    async (months: number) => {
-      const range = computeDateRange(months, availableRange);
+    async (months: number, endDate = { year: selectedYear, month: selectedMonth }) => {
+      const range = computeAssetTrendRange(months, endDate, availableRange);
       try {
         setIsFetching(true);
         const result = await apiClient.asset.getTrend<AssetTrendData>(
@@ -70,13 +60,22 @@ export function AssetTrendView({ initialData, availableRange }: AssetTrendViewPr
         setIsFetching(false);
       }
     },
-    [availableRange]
+    [availableRange, selectedMonth, selectedYear]
   );
 
   const handlePeriodChange = (months: number) => {
     setPeriodMonths(months);
     fetchTrend(months);
   };
+
+  const handleDateChange = (date: { year: number; month: number }) => {
+    setSelectedDate(date);
+    fetchTrend(periodMonths, date);
+  };
+
+  useEffect(() => {
+    updateRangeFromData(availableRange);
+  }, [availableRange, updateRangeFromData]);
 
   // Filter out months with no data
   const filteredData = useMemo(() => {
@@ -87,11 +86,28 @@ export function AssetTrendView({ initialData, availableRange }: AssetTrendViewPr
 
   return (
     <PageContainer isFetching={isFetching}>
-      <section className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-ink">자산 추이</h2>
-          <PeriodSelector selectedMonths={periodMonths} onSelect={handlePeriodChange} />
-        </div>
+      <AssetPageToolbar
+        year={selectedYear}
+        month={selectedMonth}
+        titleSuffix="자산 추이"
+        canPrev={canMovePrev}
+        canNext={canMoveNext}
+        onPrevMonth={() => {
+          const month = selectedMonth === 1 ? 12 : selectedMonth - 1;
+          const year = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+          handleDateChange({ year, month });
+        }}
+        onNextMonth={() => {
+          const month = selectedMonth === 12 ? 1 : selectedMonth + 1;
+          const year = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
+          handleDateChange({ year, month });
+        }}
+        onYearChange={year => handleDateChange({ year, month: selectedMonth })}
+        onMonthChange={month => handleDateChange({ year: selectedYear, month })}
+      />
+
+      <section className="mb-6 flex justify-end">
+        <PeriodSelector selectedMonths={periodMonths} onSelect={handlePeriodChange} />
       </section>
 
       {isEmpty ? (

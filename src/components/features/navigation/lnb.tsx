@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useSyncExternalStore } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { NAV_ITEMS } from '@/lib/constants';
+import { ASSET_SUB_NAV_ITEMS, NAV_ITEMS } from '@/lib/constants';
 
 function useTheme() {
   const subscribe = useCallback((callback: () => void) => {
@@ -62,10 +62,29 @@ export function LNB() {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
-              <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
+                <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
+                {item.label}
+              </Link>
+              {item.href === '/asset' && isActive && (
+                <div className="nav-subtree">
+                  {ASSET_SUB_NAV_ITEMS.filter(subItem => subItem.href !== '/asset').map(subItem => {
+                    const isSubActive =
+                      pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
+                    return (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`nav-sub-item${isSubActive ? ' on' : ''}`}
+                      >
+                        {subItem.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

@@ -9,7 +9,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: '/budget/monthly', label: '월별 요약', icon: Calendar },
-  { href: '/asset', label: '자산 현황', icon: PieChart },
+  { href: '/asset', label: '자산', icon: PieChart },
 ];
 
 // Asset Sub Navigation
@@ -19,10 +19,11 @@ export interface AssetSubNavItem {
 }
 
 export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
+  { href: '/asset', label: '자산' },
   { href: '/asset/monthly', label: '월별 현황' },
+  { href: '/asset/detail', label: '자산 상세' },
   { href: '/asset/trend', label: '자산 추이' },
-  { href: '/asset/portfolio', label: '포트폴리오 분석' },
-  { href: '/asset/transactions', label: '자산 거래 상세' },
+  { href: '/asset/portfolio', label: '포트폴리오' },
 ];
 
 // Warm-tuned palette (matches design tokens: gain/accent/loss)

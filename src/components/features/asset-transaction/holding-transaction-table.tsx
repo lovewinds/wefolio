@@ -278,7 +278,8 @@ export function HoldingTransactionTable({
 
   return (
     <section className="mt-6 space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold text-ink">자산 거래 상세</h3>
         <div className="flex rounded-full bg-surface-soft p-1 text-sm font-medium text-ink-muted">
           {[
             { value: null, label: '전체' },

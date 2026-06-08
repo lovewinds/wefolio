@@ -1,9 +1,9 @@
 import { holdingValueSnapshotService } from '@/services/holding-service';
-import { AssetOverviewView } from '@/components/features/asset';
+import { AssetDetailView } from '@/components/features/asset';
 
 export const dynamic = 'force-dynamic';
 
-interface AssetOverviewPageProps {
+interface AssetDetailPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
@@ -22,7 +22,7 @@ function parseQueryNumber(value: string | undefined, min: number, max: number): 
   return parsed;
 }
 
-export default async function AssetOverviewPage({ searchParams }: AssetOverviewPageProps) {
+export default async function AssetDetailPage({ searchParams }: AssetDetailPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const now = new Date();
   const queryYear = parseQueryNumber(getSearchValue(resolvedSearchParams, 'year'), 2000, 9999);
@@ -32,5 +32,5 @@ export default async function AssetOverviewPage({ searchParams }: AssetOverviewP
 
   const data = await holdingValueSnapshotService.getMonthlyAssetDataWithDelta(year, month);
 
-  return <AssetOverviewView initialData={data} initialYear={year} initialMonth={month} />;
+  return <AssetDetailView initialData={data} initialYear={year} initialMonth={month} />;
 }

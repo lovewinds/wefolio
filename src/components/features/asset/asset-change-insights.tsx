@@ -7,6 +7,8 @@ import type { AssetChangeBreakdown } from '@/types';
 
 interface AssetChangeInsightsProps {
   breakdown: AssetChangeBreakdown | null;
+  title?: string;
+  eyebrow?: string;
 }
 
 function signedAmount(value: number): string {
@@ -25,7 +27,11 @@ function barWidth(value: number, maxAbs: number): string {
   return `${Math.max(8, Math.round((Math.abs(value) / maxAbs) * 100))}%`;
 }
 
-export function AssetChangeInsights({ breakdown }: AssetChangeInsightsProps) {
+export function AssetChangeInsights({
+  breakdown,
+  title = '총자산',
+  eyebrow = '이번 달 자산 변화',
+}: AssetChangeInsightsProps) {
   if (!breakdown) return null;
 
   const waterfallRows = [
@@ -44,9 +50,9 @@ export function AssetChangeInsights({ breakdown }: AssetChangeInsightsProps) {
     <Card className="mb-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-ink-subtle">이번 달 자산 변화</p>
+          <p className="text-sm font-medium text-ink-subtle">{eyebrow}</p>
           <h2 className="mt-1 text-xl font-bold text-ink">
-            총자산 {signedAmount(breakdown.delta.totalValue)}
+            {title} {signedAmount(breakdown.delta.totalValue)}
           </h2>
         </div>
         <div className="rounded-lg bg-surface-soft px-3 py-2 text-right">
