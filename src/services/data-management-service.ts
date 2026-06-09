@@ -84,6 +84,11 @@ async function loadFromUpload(buffer: Buffer): Promise<DataLoadResult> {
   const { seedIncome } = await import('../../prisma/seed/seed-income');
   const { seedAsset } = await import('../../prisma/seed/seed-asset');
 
+  // SheetJS는 번들 환경에서 fs 를 자동 인식하지 못해 XLSX.readFile 이 "Cannot access file" 로
+  // 실패한다(시드 readers/loadPredefinedCategories 가 사용). Node fs 를 주입해 해결한다.
+  const XLSX = await import('xlsx');
+  XLSX.set_fs(await import('node:fs'));
+
   const dir = await mkdtemp(path.join(os.tmpdir(), 'wefolio-seed-'));
   const filePath = path.join(dir, `upload-${randomUUID()}.xlsx`);
   await writeFile(filePath, buffer);
