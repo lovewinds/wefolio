@@ -407,10 +407,6 @@ body {
     background 0.14s ease,
     color 0.14s ease;
 }
-.nav-sub-item::before {
-  content: '└─ ';
-  color: var(--ink-faint);
-}
 .nav-sub-item:hover {
   background: var(--surface-soft);
   color: var(--ink);

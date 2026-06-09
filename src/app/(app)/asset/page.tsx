@@ -1,7 +1,10 @@
 import { holdingValueSnapshotService } from '@/services/holding-service';
 import { AssetOverviewView } from '@/components/features/asset';
+import { computeAssetTrendRange } from '@/components/features/asset/asset-trend-range';
 
 export const dynamic = 'force-dynamic';
+
+const SPARKLINE_MONTHS = 7;
 
 interface AssetOverviewPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -32,5 +35,20 @@ export default async function AssetOverviewPage({ searchParams }: AssetOverviewP
 
   const data = await holdingValueSnapshotService.getMonthlyAssetDataWithDelta(year, month);
 
-  return <AssetOverviewView initialData={data} initialYear={year} initialMonth={month} />;
+  const range = computeAssetTrendRange(SPARKLINE_MONTHS, { year, month }, data.availableRange);
+  const { trend } = await holdingValueSnapshotService.getAssetTrendData(
+    range.startYear,
+    range.startMonth,
+    range.endYear,
+    range.endMonth
+  );
+
+  return (
+    <AssetOverviewView
+      initialData={data}
+      initialSparkline={trend}
+      initialYear={year}
+      initialMonth={month}
+    />
+  );
 }

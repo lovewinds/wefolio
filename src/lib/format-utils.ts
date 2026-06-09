@@ -6,6 +6,22 @@ export function formatAmount(amount: number): string {
   }).format(amount);
 }
 
+export function formatKoreanWonCompact(amount: number, options: { signed?: boolean } = {}): string {
+  const rounded = Math.trunc(amount);
+  const absolute = Math.abs(rounded);
+  const eok = Math.floor(absolute / 100_000_000);
+  const man = Math.floor((absolute % 100_000_000) / 10_000);
+
+  const parts: string[] = [];
+  if (eok > 0) parts.push(`${eok}억`);
+  if (man > 0) parts.push(`${man}만원`);
+
+  const body = parts.length > 0 ? parts.join(' ') : '0원';
+  if (body === '0원') return body;
+  if (rounded < 0) return `-${body}`;
+  return options.signed ? `+${body}` : body;
+}
+
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$',
   EUR: '€',

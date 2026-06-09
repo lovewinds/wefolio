@@ -932,6 +932,7 @@ export const holdingValueSnapshotService = {
         year: current.year,
         month: current.month,
         totalValue: current.totalValue,
+        metrics: current.metrics,
         deltaAmount,
         deltaPercent,
         byRiskLevel,

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { formatSignedPercent, formatThousandsInput, stripThousandsInput } from '../format-utils';
+import {
+  formatKoreanWonCompact,
+  formatSignedPercent,
+  formatThousandsInput,
+  stripThousandsInput,
+} from '../format-utils';
 
 describe('formatThousandsInput', () => {
   it('빈 문자열은 그대로', () => {
@@ -50,5 +55,28 @@ describe('formatSignedPercent', () => {
   it('전월값이 0 이하면 비교 불가(0분모 방지)', () => {
     expect(formatSignedPercent(0, 1000)).toEqual({ text: '', tone: 'none' });
     expect(formatSignedPercent(-10, 1000)).toEqual({ text: '', tone: 'none' });
+  });
+});
+
+describe('formatKoreanWonCompact', () => {
+  it('만원 미만은 표시하지 않는다', () => {
+    expect(formatKoreanWonCompact(0)).toBe('0원');
+    expect(formatKoreanWonCompact(9999)).toBe('0원');
+  });
+
+  it('만원 단위로 절삭해 표시한다', () => {
+    expect(formatKoreanWonCompact(12345)).toBe('1만원');
+    expect(formatKoreanWonCompact(12345678)).toBe('1234만원');
+  });
+
+  it('억과 만원을 조합해 표시한다', () => {
+    expect(formatKoreanWonCompact(412340000)).toBe('4억 1234만원');
+    expect(formatKoreanWonCompact(400000000)).toBe('4억');
+  });
+
+  it('부호를 붙여 표시할 수 있다', () => {
+    expect(formatKoreanWonCompact(412340000, { signed: true })).toBe('+4억 1234만원');
+    expect(formatKoreanWonCompact(-412340000, { signed: true })).toBe('-4억 1234만원');
+    expect(formatKoreanWonCompact(0, { signed: true })).toBe('0원');
   });
 });

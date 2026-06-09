@@ -237,6 +237,7 @@ export interface AssetTrendEntry {
   year: number;
   month: number;
   totalValue: number;
+  metrics: AssetMonthlyMetrics;
   deltaAmount: number | null;
   deltaPercent: number | null;
   byRiskLevel: RiskGroupDelta[];

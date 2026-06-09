@@ -9,9 +9,11 @@ interface AssetChangeInsightsProps {
   breakdown: AssetChangeBreakdown | null;
   title?: string;
   eyebrow?: string;
+  amountFormatter?: (value: number) => string;
+  signedAmountFormatter?: (value: number) => string;
 }
 
-function signedAmount(value: number): string {
+function defaultSignedAmount(value: number): string {
   if (value === 0) return formatAmount(0);
   return `${value > 0 ? '+' : ''}${formatAmount(value)}`;
 }
@@ -31,6 +33,8 @@ export function AssetChangeInsights({
   breakdown,
   title = '총자산',
   eyebrow = '이번 달 자산 변화',
+  amountFormatter = formatAmount,
+  signedAmountFormatter = defaultSignedAmount,
 }: AssetChangeInsightsProps) {
   if (!breakdown) return null;
 
@@ -52,13 +56,13 @@ export function AssetChangeInsights({
         <div>
           <p className="text-sm font-medium text-ink-subtle">{eyebrow}</p>
           <h2 className="mt-1 text-xl font-bold text-ink">
-            {title} {signedAmount(breakdown.delta.totalValue)}
+            {title} {signedAmountFormatter(breakdown.delta.totalValue)}
           </h2>
         </div>
         <div className="rounded-lg bg-surface-soft px-3 py-2 text-right">
           <p className="text-xs text-ink-subtle">현재 총자산</p>
           <p className="text-sm font-semibold text-ink">
-            {formatAmount(breakdown.current.totalValue)}
+            {amountFormatter(breakdown.current.totalValue)}
           </p>
         </div>
       </div>
@@ -82,7 +86,7 @@ export function AssetChangeInsights({
                 />
               </div>
               <p className={`text-right text-sm font-semibold ${toneClass(row.value)}`}>
-                {signedAmount(row.value)}
+                {signedAmountFormatter(row.value)}
               </p>
             </div>
           );
@@ -98,7 +102,7 @@ export function AssetChangeInsights({
               <span
                 className={`text-sm font-semibold ${toneClass(breakdown.delta.principalValue)}`}
               >
-                {signedAmount(breakdown.delta.principalValue)}
+                {signedAmountFormatter(breakdown.delta.principalValue)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
@@ -106,7 +110,7 @@ export function AssetChangeInsights({
               <span
                 className={`text-sm font-semibold ${toneClass(breakdown.delta.unrealizedGain)}`}
               >
-                {signedAmount(breakdown.delta.unrealizedGain)}
+                {signedAmountFormatter(breakdown.delta.unrealizedGain)}
               </span>
             </div>
           </div>
