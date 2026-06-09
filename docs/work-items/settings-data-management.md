@@ -9,7 +9,7 @@
 - Worktree: 미사용 (`main`에서 직접 진행, 단일 개발자 선형 흐름)
 - Branch: `main`
 - Owner: 구현 세션
-- Status: `In Progress` (Phase 1 레이아웃 완료, Phase 2 백엔드 후속)
+- Status: `Ready to Merge` (Phase 1 레이아웃 + Phase 2 백엔드 완료)
 
 ## Goal
 
@@ -40,9 +40,10 @@
 | 일시 | 내용 | 검증 |
 |------|------|------|
 | 2026-06-09 | Phase 1 레이아웃 구현: LNB `설정` 그룹+`데이터` 항목, `/settings/data` 로드/삭제 화면 | `pnpm lint`(0) / `pnpm exec tsc --noEmit`(0) / 실행 중 dev 서버 `/settings/data` HTTP 200·콘텐츠 확인 |
+| 2026-06-09 | Phase 2 백엔드: `data-management-service`(getCounts/deleteDomain/loadFromUpload), API `GET·DELETE /api/settings/data`·`POST /api/settings/data/load`, api-client·타입·뷰 연결. 시드 무수정 재사용(임시 파일+autoApprove). | `pnpm lint`(0)/`tsc`(0)/`pnpm test`(72) / GET counts 200(실데이터) / 일회용 빈 DB e2e: 로드 후 거래1846·스냅샷706, 가계부·자산 삭제 각 0(FK 위반 없음) |
 
 ## Completion Notes
 
-- 변경 요약: `SETTINGS_NAV_ITEMS` 추가, LNB `설정` 그룹 렌더, `DataManagementView`(업로드 드롭존 + 도메인별 삭제 카드) 신설, `/settings/data` 라우트. UI는 `Card`/`Button`/`PageContainer` 재사용, `globals.css` 미변경.
-- 남은 후속 작업: Phase 2 백엔드(로드/삭제 API·건수). 로드 결과·삭제 확인 다이얼로그.
+- 변경 요약: (P1) `SETTINGS_NAV_ITEMS`·LNB `설정` 그룹·`DataManagementView`·`/settings/data` 라우트. (P2) `data-management-service` + API 2개(`/api/settings/data` GET·DELETE, `/load` POST multipart) + api-client `settingsData` 그룹 + `DataCounts`/`DataLoadResult` 타입 + 뷰 연결(건수·내역·로드 delta·삭제 confirm). `prisma/seed/*`·`globals.css` 미변경.
+- 동작: 로드=append(시드 재사용), 삭제=도메인 전체 비우기(자식→부모 순서 `deleteMany`).
 - 통합 시 주의점: M009 착수 시 `설정` 그룹에 `기준 데이터` 항목을 형제로 추가하며 그룹 구성 조정.

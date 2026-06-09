@@ -17,16 +17,19 @@
 ### 데이터 로드 (카드)
 
 - xlsx 파일 업로드 방식. 점선 드롭존(클릭 선택 + 드래그 앤 드롭, `accept=".xlsx"`), 선택 파일명 표시.
-- `로드` 기본 버튼(파일 선택 전 비활성). 로드 결과(삽입 건수 등)는 버튼 아래 결과 영역에 표시.
+- `로드` 기본 버튼(파일 선택 전 비활성). 로드 후 결과 영역에 추가 건수(가계부 거래 +Δ · 자산 스냅샷 +Δ)를 표시.
+- 동작 = **추가(append)**: CLI `pnpm db:seed`와 동일 의미. 기존 시드 파이프라인을 그대로 재사용(자산은 동일 일자 스냅샷 upsert, 가계부 거래는 추가). 업로드 버퍼를 임시 파일로 쓴 뒤 `seedExpense/seedIncome/seedAsset(autoApprove)`을 호출.
+- 업로드 파일은 프로젝트 포맷(`자산정리v2.xlsx`: 지출=시트4, 수입=시트5, 자산=시트7, 카테고리=시트3)을 전제로 한다.
 
 ### 데이터 삭제 (카드)
 
-- 도메인별 선택 삭제. 도메인 분리는 `prisma/CLAUDE.md` 기준(가계부 / 자산은 독립 도메인).
-  - `가계부`: 수입·지출 거래·카테고리 (`BudgetTransaction`·`BudgetCategory`·`BudgetRecurringTemplate`)
-  - `자산`: 계좌·보유 종목·스냅샷 (`Account`·`Holding`·`HoldingSnapshot`·`CashSnapshot`·`HoldingTransaction`·`AssetMaster`·`Institution`·`Member`)
-- 각 도메인 카드: 도메인명·설명·현재 건수·`삭제` 버튼. 삭제는 확인 후 실행.
+- 도메인별 선택 삭제(**전체 비우기**). 도메인 분리는 `prisma/CLAUDE.md` 기준(가계부 / 자산은 독립 도메인). SQLite·cascade 없음이라 자식→부모 순서로 `deleteMany`.
+  - `가계부`: 거래·반복템플릿·카테고리 전체 (`BudgetTransaction`·`BudgetRecurringTemplate`·`BudgetCategory`)
+  - `자산`: 계좌·보유 종목·스냅샷 전체 (`HoldingSnapshot`·`HoldingTransaction`·`CashSnapshot`·`Holding`·`Account`·`Member`·`Institution`·`AssetMaster`)
+- 각 도메인 카드: 도메인명·설명·현재 대표 건수+내역·`삭제` 버튼. 삭제는 브라우저 `confirm` 후 실행.
 
 ## 구현 단계
 
-- Phase 1 (레이아웃·내비게이션): `설정` 그룹 + `데이터` 항목, `/settings/data` 로드/삭제 레이아웃. 파일 선택·상태 표시는 동작하되 실제 로드/삭제·건수는 placeholder.
-- Phase 2 (백엔드): 업로드 xlsx 파싱→삽입 API, 도메인별 일괄 삭제·건수 조회 API, 실제 결과·확인 다이얼로그. 시드 파서(`prisma/seed/*`) 재사용 검토.
+- Phase 1 (레이아웃·내비게이션): `설정` 그룹 + `데이터` 항목, `/settings/data` 로드/삭제 레이아웃. — 완료.
+- Phase 2 (백엔드): 업로드 xlsx 로드(append)·도메인별 전체 삭제·건수 조회. API `GET·DELETE /api/settings/data`, `POST /api/settings/data/load`(multipart). 서비스 `data-management-service`(getCounts/deleteDomain/loadFromUpload). — 완료.
+- (예정) 로드 시 행 경고(warnings) UI 노출, replace(비우고 로드) 모드는 범위 밖(필요 시 삭제 후 로드).
