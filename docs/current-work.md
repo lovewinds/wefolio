@@ -1,6 +1,6 @@
 # Current Work
 
-최종 갱신: 2026-06-08
+최종 갱신: 2026-06-09
 
 이 문서는 작업 조정판입니다. 각 작업의 상세 목표, 성공 기준, 진행 로그는 `docs/work-items/*.md`에 기록하고, 이 문서에는 진행 중인 작업의 소유권과 충돌 위험만 유지합니다.
 
@@ -9,6 +9,7 @@
 | Task                                                                | Worktree | Branch | Owner     | Status      | Last Verification         |
 | ------------------------------------------------------------------- | -------- | ------ | --------- | ----------- | ------------------------- |
 | [자산 반복 입력 진단](work-items/asset-recurring-input-analysis.md) | —        | main   | 분석 세션 | In Progress | 2026-06-04 인용 경로 확인 |
+| [설정 > 데이터 관리](work-items/settings-data-management.md)         | —        | main   | 구현 세션 | In Progress | 2026-06-09 lint·tsc·dev 200 |
 
 ## Integration Queue
 
@@ -20,11 +21,9 @@
 
 ## Conflict Watch
 
-활성 충돌 주의 영역 없음.
-
 | Area | Owner Task | Notes |
 | ---- | ---------- | ----- |
-| —    | —          | —     |
+| LNB `설정` 그룹 / `기준 데이터` | 설정 > 데이터 관리 | M009 `설정 · 기준 데이터`(구성원/기관/계좌/종목 CRUD)가 같은 `설정` 그룹에 들어옴. 이번 `데이터`(일괄 로드/삭제)와 형제 항목으로 구분하고, M009 착수 시 그룹 구성 통합·조정. |
 
 ## Worktree Convention
 
