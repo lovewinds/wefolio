@@ -1,11 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import { Button, Card, PageContainer } from '@/components/ui';
+import { apiClient } from '@/lib/api-client';
+import type { DataCounts } from '@/types';
+
+type DomainKey = 'budget' | 'asset';
 
 interface DeleteDomain {
-  key: string;
+  key: DomainKey;
   label: string;
   description: string;
 }
@@ -15,18 +19,85 @@ const DELETE_DOMAINS: DeleteDomain[] = [
   { key: 'asset', label: '자산', description: '계좌·보유 종목·스냅샷' },
 ];
 
+function domainSummary(counts: DataCounts, key: DomainKey) {
+  if (key === 'budget') {
+    return {
+      value: counts.budget.transactions,
+      unit: '거래',
+      breakdown: `카테고리 ${counts.budget.categories} · 반복 ${counts.budget.templates}`,
+    };
+  }
+  return {
+    value: counts.asset.snapshots,
+    unit: '스냅샷',
+    breakdown: `계좌 ${counts.asset.accounts} · 보유 ${counts.asset.holdings} · 현금 ${counts.asset.cashSnapshots}`,
+  };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+}
+
 export function DataManagementView() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [counts, setCounts] = useState<DataCounts | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadNote, setLoadNote] = useState<string | null>(null);
+  const [deletingDomain, setDeletingDomain] = useState<DomainKey | null>(null);
   const [deleteNote, setDeleteNote] = useState<string | null>(null);
+
+  const refreshCounts = useCallback(async () => {
+    try {
+      setCounts(await apiClient.settingsData.getCounts());
+    } catch (error) {
+      console.error('Failed to load data counts:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshCounts();
+  }, [refreshCounts]);
 
   const handleFiles = (files: FileList | null) => {
     const picked = files?.[0] ?? null;
     if (picked) {
       setFile(picked);
       setLoadNote(null);
+    }
+  };
+
+  const handleLoad = async () => {
+    if (!file) return;
+    setIsLoading(true);
+    setLoadNote(null);
+    try {
+      const { before, after } = await apiClient.settingsData.load(file);
+      setCounts(after);
+      const addedTransactions = after.budget.transactions - before.budget.transactions;
+      const addedSnapshots = after.asset.snapshots - before.asset.snapshots;
+      setLoadNote(`로드 완료 · 가계부 거래 +${addedTransactions} · 자산 스냅샷 +${addedSnapshots}`);
+      setFile(null);
+      if (inputRef.current) inputRef.current.value = '';
+    } catch (error) {
+      setLoadNote(`로드 실패: ${errorMessage(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (domain: DeleteDomain) => {
+    if (!window.confirm(`${domain.label} 데이터를 모두 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    setDeletingDomain(domain.key);
+    setDeleteNote(null);
+    try {
+      setCounts(await apiClient.settingsData.deleteDomain(domain.key));
+      setDeleteNote(`${domain.label} 데이터를 삭제했습니다.`);
+    } catch (error) {
+      setDeleteNote(`${domain.label} 삭제 실패: ${errorMessage(error)}`);
+    } finally {
+      setDeletingDomain(null);
     }
   };
 
@@ -48,7 +119,7 @@ export function DataManagementView() {
             <h3 className="text-base font-semibold text-ink">데이터 로드</h3>
           </div>
           <p className="mb-5 text-sm text-ink-subtle">
-            xlsx 파일을 업로드해 상세 데이터를 로드합니다.
+            xlsx 파일을 업로드해 상세 데이터를 로드합니다. (기존 데이터에 추가됩니다)
           </p>
 
           <div
@@ -91,12 +162,8 @@ export function DataManagementView() {
             <p className="text-xs text-ink-subtle">
               {loadNote ?? '로드 결과는 로드 후 이 영역에 표시됩니다.'}
             </p>
-            <Button
-              variant="primary"
-              disabled={!file}
-              onClick={() => setLoadNote('데이터 로드 기능은 후속 작업에서 연결됩니다.')}
-            >
-              로드
+            <Button variant="primary" disabled={!file || isLoading} onClick={handleLoad}>
+              {isLoading ? '로드 중…' : '로드'}
             </Button>
           </div>
         </Card>
@@ -110,30 +177,37 @@ export function DataManagementView() {
           <p className="mb-5 text-sm text-ink-subtle">도메인을 선택해 해당 데이터를 삭제합니다.</p>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {DELETE_DOMAINS.map(domain => (
-              <div
-                key={domain.key}
-                className="rounded-lg border border-hairline bg-surface-soft p-5"
-              >
-                <p className="text-sm font-semibold text-ink">{domain.label}</p>
-                <p className="mt-1 text-xs text-ink-subtle">{domain.description}</p>
-                <p className="mt-3 text-2xl font-bold text-ink">
-                  —<span className="ml-1 text-sm font-medium text-ink-subtle">건</span>
-                </p>
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="text-loss"
-                    onClick={() =>
-                      setDeleteNote(`${domain.label} 삭제 기능은 후속 작업에서 연결됩니다.`)
-                    }
-                  >
-                    삭제
-                  </Button>
+            {DELETE_DOMAINS.map(domain => {
+              const summary = counts ? domainSummary(counts, domain.key) : null;
+              const isDeleting = deletingDomain === domain.key;
+              return (
+                <div
+                  key={domain.key}
+                  className="rounded-lg border border-hairline bg-surface-soft p-5"
+                >
+                  <p className="text-sm font-semibold text-ink">{domain.label}</p>
+                  <p className="mt-1 text-xs text-ink-subtle">{domain.description}</p>
+                  <p className="mt-3 text-2xl font-bold text-ink">
+                    {summary ? summary.value.toLocaleString() : '—'}
+                    <span className="ml-1 text-sm font-medium text-ink-subtle">
+                      {summary?.unit ?? '건'}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-ink-subtle">{summary?.breakdown ?? ' '}</p>
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-loss"
+                      disabled={isDeleting}
+                      onClick={() => handleDelete(domain)}
+                    >
+                      {isDeleting ? '삭제 중…' : '삭제'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {deleteNote && <p className="mt-4 text-xs text-ink-subtle">{deleteNote}</p>}

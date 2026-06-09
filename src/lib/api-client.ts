@@ -1,4 +1,10 @@
-import type { ApiResponse, DashboardData, AssetMonthlyInputSaveRequest } from '@/types';
+import type {
+  ApiResponse,
+  DashboardData,
+  AssetMonthlyInputSaveRequest,
+  DataCounts,
+  DataLoadResult,
+} from '@/types';
 
 class ApiError extends Error {
   constructor(
@@ -205,6 +211,27 @@ export const apiClient = {
 
     getFlat<T>(type?: 'income' | 'expense'): Promise<T> {
       return request<T>(`/api/categories${buildQuery({ type })}`);
+    },
+  },
+
+  settingsData: {
+    getCounts(): Promise<DataCounts> {
+      return request<DataCounts>('/api/settings/data');
+    },
+
+    deleteDomain(domain: 'budget' | 'asset'): Promise<DataCounts> {
+      return request<DataCounts>(`/api/settings/data${buildQuery({ domain })}`, {
+        method: 'DELETE',
+      });
+    },
+
+    load(file: File): Promise<DataLoadResult> {
+      const formData = new FormData();
+      formData.append('file', file);
+      return request<DataLoadResult>('/api/settings/data/load', {
+        method: 'POST',
+        body: formData,
+      });
     },
   },
 };

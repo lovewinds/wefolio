@@ -97,3 +97,31 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// Data Management (설정 > 데이터)
+export interface BudgetDataCounts {
+  transactions: number;
+  categories: number;
+  templates: number;
+}
+
+export interface AssetDataCounts {
+  members: number;
+  institutions: number;
+  assetMasters: number;
+  accounts: number;
+  holdings: number;
+  snapshots: number;
+  cashSnapshots: number;
+  holdingTransactions: number;
+}
+
+export interface DataCounts {
+  budget: BudgetDataCounts;
+  asset: AssetDataCounts;
+}
+
+export interface DataLoadResult {
+  before: DataCounts;
+  after: DataCounts;
+}
