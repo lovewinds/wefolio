@@ -1,4 +1,4 @@
-import { Calendar, PieChart, type LucideIcon } from 'lucide-react';
+import { Calendar, Database, PieChart, type LucideIcon } from 'lucide-react';
 
 // Navigation
 export interface NavItem {
@@ -10,6 +10,11 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/budget/monthly', label: '월별 요약', icon: Calendar },
   { href: '/asset', label: '자산', icon: PieChart },
+];
+
+// Settings Navigation
+export const SETTINGS_NAV_ITEMS: NavItem[] = [
+  { href: '/settings/data', label: '데이터', icon: Database },
 ];
 
 // Asset Sub Navigation

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useSyncExternalStore } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { ASSET_SUB_NAV_ITEMS, NAV_ITEMS } from '@/lib/constants';
+import { ASSET_SUB_NAV_ITEMS, NAV_ITEMS, SETTINGS_NAV_ITEMS } from '@/lib/constants';
 
 function useTheme() {
   const subscribe = useCallback((callback: () => void) => {
@@ -85,6 +85,20 @@ export function LNB() {
                 </div>
               )}
             </div>
+          );
+        })}
+      </div>
+
+      <div className="sb-group">
+        <div className="sb-group-label">설정</div>
+        {SETTINGS_NAV_ITEMS.map(item => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
+              <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
+              {item.label}
+            </Link>
           );
         })}
       </div>
