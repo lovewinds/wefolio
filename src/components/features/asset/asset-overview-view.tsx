@@ -60,7 +60,7 @@ export function AssetOverviewView({
     updateRangeFromData,
   } = useMonthNavigation({
     initialDate: { year: initialYear, month: initialMonth },
-    allowFutureNavigation: true,
+    allowFutureNavigation: false,
   });
 
   const loadOverviewData = useCallback(async () => {

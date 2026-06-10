@@ -45,7 +45,7 @@ export function AssetDetailView({ initialData, initialYear, initialMonth }: Asse
     updateRangeFromData,
   } = useMonthNavigation({
     initialDate: { year: initialYear, month: initialMonth },
-    allowFutureNavigation: true,
+    allowFutureNavigation: false,
   });
 
   const loadDetailData = useCallback(async () => {

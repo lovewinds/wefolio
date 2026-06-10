@@ -77,7 +77,7 @@ export function MonthlyAssetView({
     updateRangeFromData,
   } = useMonthNavigation({
     initialDate: { year: initialYear, month: initialMonth },
-    allowFutureNavigation: true,
+    allowFutureNavigation: false,
   });
 
   const loadMonthlyData = useCallback(async () => {
