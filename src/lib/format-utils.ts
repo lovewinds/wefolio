@@ -36,8 +36,14 @@ export function formatForeignAmount(amount: number, currency: string): string {
   return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })}`;
 }
 
-export function formatExchangeRate(rate: number): string {
-  return `₩${Math.round(rate).toLocaleString('ko-KR')}`;
+// 환율 표시(KRW 기준). 관례에 맞춰 통화별로 단위를 다르게 둔다.
+// - JPY: 100엔 기준 환율, 소수점 없이 (예: 9.3749 → "937 (100엔)").
+// - USD 등: 1단위 기준, 소수점 2자리 (예: 1525.4 → "1,525.40").
+export function formatExchangeRate(rate: number, currency = 'USD'): string {
+  if (currency === 'JPY') {
+    return `${Math.round(rate * 100).toLocaleString('ko-KR')} (100엔)`;
+  }
+  return rate.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // 입력칸 표시용: 평문 숫자 문자열에 천 단위 콤마를 붙인다.

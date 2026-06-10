@@ -1,10 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import {
+  formatExchangeRate,
   formatKoreanWonCompact,
   formatSignedPercent,
   formatThousandsInput,
   stripThousandsInput,
 } from '../format-utils';
+
+describe('formatExchangeRate', () => {
+  it('USD 등은 1단위 기준 소수점 2자리', () => {
+    expect(formatExchangeRate(1525.4, 'USD')).toBe('1,525.40');
+    expect(formatExchangeRate(1390.358361774744, 'USD')).toBe('1,390.36');
+  });
+  it('JPY는 100엔 기준 정수', () => {
+    expect(formatExchangeRate(9.3749, 'JPY')).toBe('937 (100엔)');
+    expect(formatExchangeRate(9, 'JPY')).toBe('900 (100엔)');
+  });
+  it('통화 미지정은 USD 스타일', () => {
+    expect(formatExchangeRate(1427)).toBe('1,427.00');
+  });
+});
 
 describe('formatThousandsInput', () => {
   it('빈 문자열은 그대로', () => {

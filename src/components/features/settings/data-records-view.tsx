@@ -245,7 +245,7 @@ function AssetTable({ rows }: { rows: AssetRecordRow[] }) {
               <td className={TD}>
                 {row.currency === 'KRW'
                   ? 'KRW'
-                  : `${row.currency}${row.exchangeRate ? ` · ${formatExchangeRate(row.exchangeRate)}` : ''}${
+                  : `${row.currency}/KRW${row.exchangeRate ? ` ${formatExchangeRate(row.exchangeRate, row.currency)}` : ''}${
                       row.priceOriginal != null
                         ? ` · ${formatForeignAmount(row.priceOriginal, row.currency)}`
                         : ''
