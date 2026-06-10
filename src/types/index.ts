@@ -125,3 +125,38 @@ export interface DataLoadResult {
   before: DataCounts;
   after: DataCounts;
 }
+
+// 데이터 확인 (설정 > 데이터)
+export interface RecordMonth {
+  year: number;
+  month: number;
+  count: number;
+}
+
+export interface BudgetRecordRow {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: TransactionType;
+  category: string;
+  parentCategory: string | null;
+  amount: number;
+  paymentMethod: string | null;
+  user: string | null;
+  description: string | null;
+}
+
+export interface AssetRecordRow {
+  id: string;
+  date: string; // snapshotDate, YYYY-MM-DD
+  member: string;
+  institution: string;
+  account: string;
+  assetName: string;
+  riskLevel: string | null;
+  currency: string;
+  quantity: number;
+  currentPriceKRW: number;
+  valueKRW: number; // quantity × currentPriceKRW (파생)
+  exchangeRate: number | null;
+  priceOriginal: number | null;
+}

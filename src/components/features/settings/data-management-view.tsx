@@ -5,6 +5,7 @@ import { Trash2, Upload } from 'lucide-react';
 import { Button, Card, PageContainer } from '@/components/ui';
 import { apiClient } from '@/lib/api-client';
 import type { DataCounts } from '@/types';
+import { DataRecordsView } from './data-records-view';
 
 type DomainKey = 'budget' | 'asset';
 
@@ -47,6 +48,7 @@ export function DataManagementView() {
   const [loadNote, setLoadNote] = useState<string | null>(null);
   const [deletingDomain, setDeletingDomain] = useState<DomainKey | null>(null);
   const [deleteNote, setDeleteNote] = useState<string | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   const refreshCounts = useCallback(async () => {
     try {
@@ -80,6 +82,7 @@ export function DataManagementView() {
       setLoadNote(`로드 완료 · 가계부 거래 +${addedTransactions} · 자산 스냅샷 +${addedSnapshots}`);
       setFile(null);
       if (inputRef.current) inputRef.current.value = '';
+      setDataVersion(v => v + 1);
     } catch (error) {
       setLoadNote(`로드 실패: ${errorMessage(error)}`);
     } finally {
@@ -94,6 +97,7 @@ export function DataManagementView() {
     try {
       setCounts(await apiClient.settingsData.deleteDomain(domain.key));
       setDeleteNote(`${domain.label} 데이터를 삭제했습니다.`);
+      setDataVersion(v => v + 1);
     } catch (error) {
       setDeleteNote(`${domain.label} 삭제 실패: ${errorMessage(error)}`);
     } finally {
@@ -212,6 +216,8 @@ export function DataManagementView() {
 
           {deleteNote && <p className="mt-4 text-xs text-ink-subtle">{deleteNote}</p>}
         </Card>
+
+        <DataRecordsView reloadSignal={dataVersion} />
       </div>
     </PageContainer>
   );

@@ -4,6 +4,9 @@ import type {
   AssetMonthlyInputSaveRequest,
   DataCounts,
   DataLoadResult,
+  RecordMonth,
+  BudgetRecordRow,
+  AssetRecordRow,
 } from '@/types';
 
 class ApiError extends Error {
@@ -232,6 +235,22 @@ export const apiClient = {
         method: 'POST',
         body: formData,
       });
+    },
+
+    getRecordMonths(domain: 'budget' | 'asset'): Promise<RecordMonth[]> {
+      return request<RecordMonth[]>(`/api/settings/data/records${buildQuery({ domain })}`);
+    },
+
+    getBudgetRecords(year: number, month: number): Promise<BudgetRecordRow[]> {
+      return request<BudgetRecordRow[]>(
+        `/api/settings/data/records${buildQuery({ domain: 'budget', year, month })}`
+      );
+    },
+
+    getAssetRecords(year: number, month: number): Promise<AssetRecordRow[]> {
+      return request<AssetRecordRow[]>(
+        `/api/settings/data/records${buildQuery({ domain: 'asset', year, month })}`
+      );
     },
   },
 };
