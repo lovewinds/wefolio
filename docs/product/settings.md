@@ -28,8 +28,18 @@
   - `자산`: 계좌·보유 종목·스냅샷 전체 (`HoldingSnapshot`·`HoldingTransaction`·`CashSnapshot`·`Holding`·`Account`·`Member`·`Institution`·`AssetMaster`)
 - 각 도메인 카드: 도메인명·설명·현재 대표 건수+내역·`삭제` 버튼. 삭제는 브라우저 `confirm` 후 실행.
 
+### 데이터 확인 (카드)
+
+로드/파싱이 제대로 됐는지 검증하기 위해 로드된 내역을 보여준다. **도메인 탭(가계부/자산) → 월 칩 선택 → 선택 월의 항목을 단일 테이블**로 표시(한 항목 = 1 row, 한 번에 한 달만 렌더).
+
+- 월 칩: 데이터가 있는 월만 최신 우선으로 나열(+건수). 기본 = 최신 월. active = `bg-accent`.
+- 가계부 row: 날짜 · 유형(수입/지출 색) · 분류(대분류>소분류) · 금액(+/- 색) · 결제수단 · 사용자 · 메모.
+- 자산 row(HoldingSnapshot): 일자 · 구성원 · 기관 · 계좌 · 종목(+위험등급 색) · 수량 · 현재가(원) · 평가액(수량×현재가 파생) · 통화/환율(외화는 환율·원통화가).
+- 데이터 흐름: `GET /api/settings/data/records?domain=`(월 목록), `&year=&month=`(해당 월 행). 로드/삭제 후 자동 재조회.
+
 ## 구현 단계
 
 - Phase 1 (레이아웃·내비게이션): `설정` 그룹 + `데이터` 항목, `/settings/data` 로드/삭제 레이아웃. — 완료.
 - Phase 2 (백엔드): 업로드 xlsx 로드(append)·도메인별 전체 삭제·건수 조회. API `GET·DELETE /api/settings/data`, `POST /api/settings/data/load`(multipart). 서비스 `data-management-service`(getCounts/deleteDomain/loadFromUpload). — 완료.
-- (예정) 로드 시 행 경고(warnings) UI 노출, replace(비우고 로드) 모드는 범위 밖(필요 시 삭제 후 로드).
+- Phase 3 (데이터 확인): 도메인 탭·월 선택·단일 테이블. API `GET /api/settings/data/records`. 서비스 `getRecordMonths`/`getRecords`. — 완료.
+- (예정) 로드 시 행 경고(warnings) UI 노출, 정렬/필터/검색, replace(비우고 로드) 모드는 범위 밖.

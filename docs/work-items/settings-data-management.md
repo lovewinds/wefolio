@@ -41,9 +41,11 @@
 |------|------|------|
 | 2026-06-09 | Phase 1 레이아웃 구현: LNB `설정` 그룹+`데이터` 항목, `/settings/data` 로드/삭제 화면 | `pnpm lint`(0) / `pnpm exec tsc --noEmit`(0) / 실행 중 dev 서버 `/settings/data` HTTP 200·콘텐츠 확인 |
 | 2026-06-09 | Phase 2 백엔드: `data-management-service`(getCounts/deleteDomain/loadFromUpload), API `GET·DELETE /api/settings/data`·`POST /api/settings/data/load`, api-client·타입·뷰 연결. 시드 무수정 재사용(임시 파일+autoApprove). | `pnpm lint`(0)/`tsc`(0)/`pnpm test`(72) / GET counts 200(실데이터) / 일회용 빈 DB e2e: 로드 후 거래1846·스냅샷706, 가계부·자산 삭제 각 0(FK 위반 없음) |
+| 2026-06-09 | 로드 fix: 번들 SheetJS `set_fs(node:fs)` 주입(`XLSX.readFile` "Cannot access file" 해소). | xlsx.mjs 재현: 주입 전 throw → 주입 후 9 sheets. UI 로드 성공 확인 |
+| 2026-06-10 | Phase 3 데이터 확인 뷰: 도메인 탭+월 칩+단일 테이블, `getRecordMonths`/`getRecords`, `GET /api/settings/data/records`, api-client·타입·`DataRecordsView`, 로드/삭제 후 재조회. | `pnpm lint`(0)/`tsc`(0)/`pnpm test`(72) / records GET 200(월 목록·행, 양 도메인 실데이터, 검증 400) |
 
 ## Completion Notes
 
-- 변경 요약: (P1) `SETTINGS_NAV_ITEMS`·LNB `설정` 그룹·`DataManagementView`·`/settings/data` 라우트. (P2) `data-management-service` + API 2개(`/api/settings/data` GET·DELETE, `/load` POST multipart) + api-client `settingsData` 그룹 + `DataCounts`/`DataLoadResult` 타입 + 뷰 연결(건수·내역·로드 delta·삭제 confirm). `prisma/seed/*`·`globals.css` 미변경.
-- 동작: 로드=append(시드 재사용), 삭제=도메인 전체 비우기(자식→부모 순서 `deleteMany`).
+- 변경 요약: (P1) `SETTINGS_NAV_ITEMS`·LNB `설정` 그룹·`DataManagementView`·`/settings/data` 라우트. (P2) `data-management-service` + API 2개(`/api/settings/data` GET·DELETE, `/load` POST multipart) + api-client `settingsData` 그룹 + `DataCounts`/`DataLoadResult` 타입 + 뷰 연결(건수·내역·로드 delta·삭제 confirm). (P3) `getRecordMonths`/`getRecords` + `GET /api/settings/data/records` + `DataRecordsView`(탭·월 칩·테이블) + `RecordMonth`/`BudgetRecordRow`/`AssetRecordRow` 타입. `prisma/seed/*`·`globals.css` 미변경.
+- 동작: 로드=append(시드 재사용), 삭제=도메인 전체 비우기(자식→부모 순서 `deleteMany`), 확인=도메인 탭·월별 단일 테이블.
 - 통합 시 주의점: M009 착수 시 `설정` 그룹에 `기준 데이터` 항목을 형제로 추가하며 그룹 구성 조정.
