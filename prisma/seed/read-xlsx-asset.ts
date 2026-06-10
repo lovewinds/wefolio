@@ -337,9 +337,12 @@ export function buildAssetSnapshotsFromXlsx(options: SeedOptions): AssetBuildRes
       assetName.includes('RP') ||
       assetName.includes('MMF');
     if (isCashLikeAsset && (quantity === null || priceOriginal === null)) {
-      // 캐시 예금은 수량 1, 개당 가격 = 총 가치로 처리
+      // 캐시 예금은 수량 1로 처리. 외화는 원통화 단가 = 원화총액 ÷ 환율로 두어, 삽입 단계의
+      // `priceOriginal × 환율`이 원화총액을 그대로 복원하도록 한다(원화총액을 그대로 단가로
+      // 넣으면 삽입 시 환율이 한 번 더 곱해져 이중환산됨). 원화는 원화총액을 단가로 사용.
       quantity = 1;
-      priceOriginal = totalValueKRW;
+      priceOriginal =
+        exchangeRate && exchangeRate > 1 ? totalValueKRW / exchangeRate : totalValueKRW;
     }
 
     if (quantity === null) {
