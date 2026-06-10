@@ -47,6 +47,7 @@ const ASSET_CLASS_OPTIONS = [
 const CURRENCY_OPTIONS = [
   { value: 'KRW', label: 'KRW' },
   { value: 'USD', label: 'USD' },
+  { value: 'JPY', label: 'JPY' },
 ] as const;
 
 interface HoldingTransactionInputRowProps {

@@ -25,7 +25,7 @@ export const ACCOUNT_TYPE = [
 ] as const;
 export type AccountType = (typeof ACCOUNT_TYPE)[number];
 
-export const CURRENCY = ['KRW', 'USD'] as const;
+export const CURRENCY = ['KRW', 'USD', 'JPY'] as const;
 export type Currency = (typeof CURRENCY)[number];
 
 // 금융기관 유형

@@ -32,7 +32,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 export function formatForeignAmount(amount: number, currency: string): string {
   const symbol = CURRENCY_SYMBOLS[currency];
   if (!symbol) return amount.toLocaleString('ko-KR');
-  return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const fractionDigits = currency === 'JPY' ? 0 : 2;
+  return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })}`;
 }
 
 export function formatExchangeRate(rate: number): string {

@@ -71,8 +71,8 @@ export type SeedAssetSnapshotInput = {
   exchangeRate?: number;
   totalValueKRW: number;
 
-  // 통화 추론 (환율 유무로 판단)
-  currency: 'KRW' | 'USD';
+  // 통화 추론 (환율 유무·종목명·환율 크기로 판단)
+  currency: 'KRW' | 'USD' | 'JPY';
 };
 
 export type AssetBuildResult = {
@@ -83,11 +83,18 @@ export type AssetBuildResult = {
 };
 
 /**
- * 통화 추론 - 환율이 1보다 크면 USD, 그 외는 KRW
+ * 통화 추론
+ * - 환율이 없거나 1 이하면 KRW(원화).
+ * - 외화는 종목명 힌트 우선("엔화"/円/JPY → JPY, "달러"/USD → USD).
+ *   ※ "엔" 단순 포함은 "엔비디아" 등을 오분류하므로 "엔화"로 매칭한다.
+ * - 힌트가 없으면 환율 크기로 추론(원/엔은 한 자릿수~수십, 원/달러는 1,000대).
  */
-function inferCurrency(exchangeRate: number | null): 'KRW' | 'USD' {
-  if (exchangeRate && exchangeRate > 1) return 'USD';
-  return 'KRW';
+function inferCurrency(assetName: string, exchangeRate: number | null): 'KRW' | 'USD' | 'JPY' {
+  if (!exchangeRate || exchangeRate <= 1) return 'KRW';
+  const name = assetName ?? '';
+  if (name.includes('엔화') || /JPY|円/i.test(name)) return 'JPY';
+  if (name.includes('달러') || /USD/i.test(name)) return 'USD';
+  return exchangeRate < 100 ? 'JPY' : 'USD';
 }
 
 /**
@@ -356,7 +363,7 @@ export function buildAssetSnapshotsFromXlsx(options: SeedOptions): AssetBuildRes
     }
 
     // 통화 추론
-    const currency = inferCurrency(exchangeRate);
+    const currency = inferCurrency(assetName, exchangeRate);
 
     // 정규화된 값으로 스냅샷 생성
     snapshots.push({
