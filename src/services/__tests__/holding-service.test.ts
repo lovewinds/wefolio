@@ -183,8 +183,8 @@ describe('holdingValueSnapshotService', () => {
         totalValue: 0,
         cashValue: 400,
         investmentValue: -400,
-        principalValue: -300,
-        unrealizedGain: -100,
+        externalInflow: -100,
+        marketGain: 100,
       },
       movementInsight: {
         type: 'investment_to_cash',
@@ -199,6 +199,68 @@ describe('holdingValueSnapshotService', () => {
     });
 
     expect(result.changeBreakdown?.movementInsight?.title).toContain('현금화');
+    monthlySpy.mockRestore();
+  });
+
+  it('decomposes 외부 순유입·시장 손익 across held/new/closed holdings', async () => {
+    const monthlySpy = vi
+      .spyOn(holdingValueSnapshotService, 'getMonthlyAssetData')
+      .mockImplementation(async (year, month) => {
+        if (year === 2026 && month === 4) {
+          return {
+            totalValue: 1850,
+            metrics: {
+              cashValue: 50,
+              investmentValue: 1800,
+              principalValue: 1800,
+              unrealizedGain: 0,
+            },
+            byRiskLevel: [],
+            holdings: [
+              // 직전: A 10주@100(보유), C 4주@200(이번 달 정리)
+              monthlyHolding('Asset A', 'Mom', 1000, { quantity: 10, priceKRW: 100 }),
+              monthlyHolding('Asset C', 'Mom', 800, { quantity: 4, priceKRW: 200 }),
+            ],
+            availableRange: null,
+          };
+        }
+
+        return {
+          totalValue: 1598,
+          metrics: {
+            cashValue: 28,
+            investmentValue: 1570,
+            principalValue: 1570,
+            unrealizedGain: 0,
+          },
+          byRiskLevel: [],
+          holdings: [
+            // 이번 달: A 12주@110(+2주·+10가격), B 5주@50(신규)
+            monthlyHolding('Asset A', 'Mom', 1320, { quantity: 12, priceKRW: 110 }),
+            monthlyHolding('Asset B', 'Dad', 250, { quantity: 5, priceKRW: 50 }),
+          ],
+          availableRange: null,
+        };
+      });
+
+    const result = await holdingValueSnapshotService.getMonthlyAssetDataWithDelta(2026, 5);
+
+    // 시장 손익 = A 가격효과 10×(110−100)=100. 매매효과 = A 220 + B(신규) 250 + C(정리) −800 = −330.
+    // 외부 순유입 = ΔC(−22) + 매매효과(−330) = −352. ΔN = −352 + 100 = −252 (항등식).
+    expect(result.changeBreakdown?.delta).toEqual({
+      totalValue: -252,
+      cashValue: -22,
+      investmentValue: -230,
+      externalInflow: -352,
+      marketGain: 100,
+    });
+    expect(result.changeBreakdown?.holdingChanges).toEqual({
+      newCount: 1,
+      increasedCount: 1,
+      decreasedCount: 0,
+      closedCount: 1,
+    });
+    expect(result.changeBreakdown?.movementInsight?.type).toBe('net_decrease');
     monthlySpy.mockRestore();
   });
 });

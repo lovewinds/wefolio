@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   BarChart3,
-  Coins,
   LineChart,
+  PiggyBank,
   Sparkles,
   TrendingDown,
   TrendingUp,
@@ -102,7 +102,6 @@ export function AssetOverviewView({
 
   const isEmpty = data.totalValue === 0 && data.metrics.cashValue === 0;
   const delta = data.changeBreakdown?.delta ?? null;
-  const cashAndPrincipalDelta = delta !== null ? delta.cashValue + delta.principalValue : null;
   const prevPeriod = fromMonthIndex(toMonthIndex({ year: selectedYear, month: selectedMonth }) - 1);
   const changePeriodLabel = `${prevPeriod.year}.${String(prevPeriod.month).padStart(2, '0')} → ${selectedYear}.${String(selectedMonth).padStart(2, '0')}`;
 
@@ -181,19 +180,19 @@ export function AssetOverviewView({
                     <div className="grid gap-3 sm:grid-cols-2">
                       <DriverCard
                         tone="gain"
-                        icon={Coins}
-                        label="현금·원금 변화"
-                        value={cashAndPrincipalDelta}
-                        share={driverSharePct(cashAndPrincipalDelta, delta.unrealizedGain)}
-                        tooltip={`현금 ${signedAmount(delta.cashValue)} · 원금 ${signedAmount(delta.principalValue)}`}
+                        icon={PiggyBank}
+                        label="외부 순유입"
+                        value={delta.externalInflow}
+                        share={driverSharePct(delta.externalInflow, delta.marketGain)}
+                        tooltip={`현금 ${signedAmount(delta.cashValue)} · 매매 ${signedAmount(delta.externalInflow - delta.cashValue)}`}
                       />
                       <DriverCard
                         tone="accent"
                         icon={LineChart}
-                        label="평가손익 변화"
-                        value={delta.unrealizedGain}
-                        share={driverSharePct(delta.unrealizedGain, cashAndPrincipalDelta)}
-                        tooltip="현재 보유 자산의 미실현손익 변화"
+                        label="시장 손익"
+                        value={delta.marketGain}
+                        share={driverSharePct(delta.marketGain, delta.externalInflow)}
+                        tooltip="보유 자산의 가격 변동으로 생긴 이번 달 손익"
                       />
                     </div>
                     <div className="mt-auto">
@@ -202,14 +201,11 @@ export function AssetOverviewView({
                           총자산 변화 {signedAmount(delta.totalValue)}
                         </span>
                         <span className="min-w-0">
-                          원금 {formatDriverShare(cashAndPrincipalDelta, delta.unrealizedGain)} ·
-                          손익 {formatDriverShare(delta.unrealizedGain, cashAndPrincipalDelta)}
+                          순유입 {formatDriverShare(delta.externalInflow, delta.marketGain)} · 시장{' '}
+                          {formatDriverShare(delta.marketGain, delta.externalInflow)}
                         </span>
                       </div>
-                      <DriverGauge
-                        principal={cashAndPrincipalDelta ?? 0}
-                        gain={delta.unrealizedGain}
-                      />
+                      <DriverGauge savings={delta.externalInflow} market={delta.marketGain} />
                     </div>
                   </div>
                 ) : (
@@ -402,23 +398,23 @@ function DriverCard({
   );
 }
 
-function DriverGauge({ principal, gain }: { principal: number; gain: number }) {
-  const principalPositive = Math.max(principal, 0);
-  const gainPositive = Math.max(gain, 0);
-  const total = principalPositive + gainPositive || 1;
-  const principalPct = (principalPositive / total) * 100;
-  const gainPct = (gainPositive / total) * 100;
+function DriverGauge({ savings, market }: { savings: number; market: number }) {
+  const savingsPositive = Math.max(savings, 0);
+  const marketPositive = Math.max(market, 0);
+  const total = savingsPositive + marketPositive || 1;
+  const savingsPct = (savingsPositive / total) * 100;
+  const marketPct = (marketPositive / total) * 100;
 
   return (
     <div className="flex h-7 overflow-hidden rounded-full bg-surface-soft text-xs font-semibold text-white">
-      <div
-        className="flex items-center justify-center bg-gain"
-        style={{ width: `${principalPct}%` }}
-      >
-        {principalPct > 14 ? '원금' : ''}
+      <div className="flex items-center justify-center bg-gain" style={{ width: `${savingsPct}%` }}>
+        {savingsPct > 14 ? '순유입' : ''}
       </div>
-      <div className="flex items-center justify-center bg-accent" style={{ width: `${gainPct}%` }}>
-        {gainPct > 14 ? '손익' : ''}
+      <div
+        className="flex items-center justify-center bg-accent"
+        style={{ width: `${marketPct}%` }}
+      >
+        {marketPct > 14 ? '시장' : ''}
       </div>
     </div>
   );

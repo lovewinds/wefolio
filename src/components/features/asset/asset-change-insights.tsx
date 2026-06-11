@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownRight, ArrowRightLeft, ArrowUpRight, CircleDot, Wallet } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CircleDot, LineChart, PiggyBank } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format-utils';
 import type { AssetChangeBreakdown } from '@/types';
@@ -39,8 +39,8 @@ export function AssetChangeInsights({
   if (!breakdown) return null;
 
   const waterfallRows = [
-    { label: '현금 잔고 변화', value: breakdown.delta.cashValue, icon: Wallet },
-    { label: '투자 평가액 변화', value: breakdown.delta.investmentValue, icon: ArrowRightLeft },
+    { label: '외부 순유입(저축·납입)', value: breakdown.delta.externalInflow, icon: PiggyBank },
+    { label: '시장 손익', value: breakdown.delta.marketGain, icon: LineChart },
   ];
   const maxAbs = Math.max(...waterfallRows.map(row => Math.abs(row.value)), 1);
   const holdingChanges = breakdown.holdingChanges;
@@ -95,28 +95,26 @@ export function AssetChangeInsights({
 
       <div className="mt-5 grid gap-3 border-t border-hairline pt-4 md:grid-cols-2">
         <div className="rounded-lg bg-surface-soft p-4">
-          <p className="text-xs font-medium text-ink-subtle">투자 평가액 변화의 하위 분해</p>
+          <p className="text-xs font-medium text-ink-subtle">계좌 기준 원천 변화</p>
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-ink-muted">보유원금 변화</span>
-              <span
-                className={`text-sm font-semibold ${toneClass(breakdown.delta.principalValue)}`}
-              >
-                {signedAmountFormatter(breakdown.delta.principalValue)}
+              <span className="text-sm text-ink-muted">현금 잔고 변화</span>
+              <span className={`text-sm font-semibold ${toneClass(breakdown.delta.cashValue)}`}>
+                {signedAmountFormatter(breakdown.delta.cashValue)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-ink-muted">미실현손익 변화</span>
+              <span className="text-sm text-ink-muted">투자 평가액 변화</span>
               <span
-                className={`text-sm font-semibold ${toneClass(breakdown.delta.unrealizedGain)}`}
+                className={`text-sm font-semibold ${toneClass(breakdown.delta.investmentValue)}`}
               >
-                {signedAmountFormatter(breakdown.delta.unrealizedGain)}
+                {signedAmountFormatter(breakdown.delta.investmentValue)}
               </span>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-ink-subtle">
-            미실현손익 변화는 현재 보유 중인 자산의 평가손익 잔액 변화입니다. 실현손익으로 단정하지
-            않습니다.
+            외부 순유입 = 현금 잔고 변화 + 투자로 들어간 순매매, 시장 손익 = 보유 자산의 가격 변동.
+            거래 기록이 없어 월말가 기준 추정입니다.
           </p>
         </div>
 

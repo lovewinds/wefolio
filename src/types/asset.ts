@@ -271,10 +271,18 @@ export interface AssetHoldingChangeSummary {
   closedCount: number;
 }
 
+export interface AssetChangeDelta {
+  totalValue: number; // ΔN = 총자산 변화
+  cashValue: number; // ΔC = 현금 잔고 변화
+  investmentValue: number; // ΔV = 투자 평가액 변화
+  externalInflow: number; // 외부 순유입(저축·납입) = ΔC + Σ매매 효과
+  marketGain: number; // 시장 손익 = Σ가격 효과
+}
+
 export interface AssetChangeBreakdown {
   prev: AssetMonthlyMetrics & { totalValue: number };
   current: AssetMonthlyMetrics & { totalValue: number };
-  delta: AssetMonthlyMetrics & { totalValue: number };
+  delta: AssetChangeDelta;
   movementInsight: AssetMovementInsight | null;
   holdingChanges: AssetHoldingChangeSummary;
 }

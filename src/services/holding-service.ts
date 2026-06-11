@@ -11,6 +11,7 @@ import type {
   Currency,
   HoldingTransactionType,
   AssetChangeBreakdown,
+  AssetChangeDelta,
   AssetMonthlyMetrics,
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
@@ -333,9 +334,7 @@ function zeroMetrics(): AssetMonthlyMetrics {
   };
 }
 
-function buildMovementInsight(
-  delta: AssetMonthlyMetrics & { totalValue: number }
-): AssetChangeBreakdown['movementInsight'] {
+function buildMovementInsight(delta: AssetChangeDelta): AssetChangeBreakdown['movementInsight'] {
   const cashDelta = delta.cashValue;
   const investmentDelta = delta.investmentValue;
   const netDelta = delta.totalValue;
@@ -429,16 +428,61 @@ function buildHoldingChangeSummary(
   return { newCount, increasedCount, decreasedCount, closedCount };
 }
 
+// 두 스냅샷의 (수량·가격)만으로 투자 평가액 변화를 가격 효과·매매 효과로 분해한다(원가 불필요).
+// 가격 효과 = Σ q_prev × (p_curr − p_prev)  (직전 보유 수량의 가격 변동분 = 시장 손익)
+// 매매 효과 = Σ (q_curr − q_prev) × p_curr  (수량 변화분의 월말가 평가. 교차항 Δq·Δp 포함)
+// 신규 보유는 매매 효과 = q_curr × p_curr, 정리는 매매 효과 = −q_prev × p_prev (가격 효과 0).
+function computeMarketAndFlow(
+  currentHoldings: MonthlyHolding[],
+  prevHoldings: MonthlyHolding[]
+): { marketGain: number; tradeFlow: number } {
+  const keyFor = (h: MonthlyHolding) => `${h.assetName}::${h.memberName}::${h.accountName}`;
+  const prevMap = new Map<string, MonthlyHolding>();
+  for (const holding of prevHoldings) {
+    if (isValueTypeHolding(holding) || holding.quantity <= 0) continue;
+    prevMap.set(keyFor(holding), holding);
+  }
+
+  let marketGain = 0;
+  let tradeFlow = 0;
+  const matched = new Set<string>();
+
+  for (const current of currentHoldings) {
+    if (isValueTypeHolding(current) || current.quantity <= 0) continue;
+    const key = keyFor(current);
+    const prev = prevMap.get(key);
+    if (!prev) {
+      tradeFlow += current.totalValueKRW; // 신규 보유
+      continue;
+    }
+    matched.add(key);
+    marketGain += prev.quantity * (current.priceKRW - prev.priceKRW);
+    tradeFlow += (current.quantity - prev.quantity) * current.priceKRW;
+  }
+
+  for (const [key, prev] of prevMap) {
+    if (matched.has(key)) continue;
+    tradeFlow -= prev.totalValueKRW; // 정리
+  }
+
+  return { marketGain, tradeFlow };
+}
+
 function buildChangeBreakdown(
   current: MonthlyAssetData,
   prev: MonthlyAssetData
 ): AssetChangeBreakdown {
-  const delta = {
+  const cashValue = current.metrics.cashValue - prev.metrics.cashValue;
+  const investmentValue = current.metrics.investmentValue - prev.metrics.investmentValue;
+  const { marketGain, tradeFlow } = computeMarketAndFlow(current.holdings, prev.holdings);
+
+  // ΔN = 외부 순유입(ΔC + Σ매매 효과) + 시장 손익(Σ가격 효과). 항등식 보존.
+  const delta: AssetChangeDelta = {
     totalValue: current.totalValue - prev.totalValue,
-    cashValue: current.metrics.cashValue - prev.metrics.cashValue,
-    investmentValue: current.metrics.investmentValue - prev.metrics.investmentValue,
-    principalValue: current.metrics.principalValue - prev.metrics.principalValue,
-    unrealizedGain: current.metrics.unrealizedGain - prev.metrics.unrealizedGain,
+    cashValue,
+    investmentValue,
+    externalInflow: cashValue + tradeFlow,
+    marketGain,
   };
 
   return {
