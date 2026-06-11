@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   BarChart3,
   Coins,
@@ -13,6 +14,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { formatKoreanWonCompact } from '@/lib/format-utils';
+import { fromMonthIndex, toMonthIndex } from '@/lib/year-month-utils';
 import { Card, EmptyState, PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
 import { AssetChangeInsights } from './asset-change-insights';
@@ -101,6 +103,8 @@ export function AssetOverviewView({
   const isEmpty = data.totalValue === 0 && data.metrics.cashValue === 0;
   const delta = data.changeBreakdown?.delta ?? null;
   const cashAndPrincipalDelta = delta !== null ? delta.cashValue + delta.principalValue : null;
+  const prevPeriod = fromMonthIndex(toMonthIndex({ year: selectedYear, month: selectedMonth }) - 1);
+  const changePeriodLabel = `${prevPeriod.year}.${String(prevPeriod.month).padStart(2, '0')} → ${selectedYear}.${String(selectedMonth).padStart(2, '0')}`;
 
   return (
     <PageContainer isFetching={isFetching}>
@@ -161,9 +165,11 @@ export function AssetOverviewView({
               <div className="flex h-full flex-col">
                 <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-ink-subtle">이번 달 증가 분석</p>
+                    <p className="text-[17px] font-semibold tracking-tight text-ink">
+                      이번 달 증가 분석
+                    </p>
                     <p className="mt-1 text-xs text-ink-subtle">
-                      {data.changeBreakdown ? '전월 대비 변화' : '기준월'}
+                      {data.changeBreakdown ? changePeriodLabel : '기준월'}
                     </p>
                   </div>
                   <span className="rounded-full border border-hairline bg-surface-soft px-2.5 py-1 text-xs font-semibold text-accent">
@@ -178,14 +184,16 @@ export function AssetOverviewView({
                         icon={Coins}
                         label="현금·원금 변화"
                         value={cashAndPrincipalDelta}
-                        detail={`현금 ${signedAmount(delta.cashValue)} · 원금 ${signedAmount(delta.principalValue)}`}
+                        share={driverSharePct(cashAndPrincipalDelta, delta.unrealizedGain)}
+                        tooltip={`현금 ${signedAmount(delta.cashValue)} · 원금 ${signedAmount(delta.principalValue)}`}
                       />
                       <DriverCard
                         tone="accent"
                         icon={LineChart}
                         label="평가손익 변화"
                         value={delta.unrealizedGain}
-                        detail="현재 보유 자산의 미실현손익 변화"
+                        share={driverSharePct(delta.unrealizedGain, cashAndPrincipalDelta)}
+                        tooltip="현재 보유 자산의 미실현손익 변화"
                       />
                     </div>
                     <div className="mt-auto">
@@ -207,9 +215,6 @@ export function AssetOverviewView({
                 ) : (
                   <p className="text-sm text-ink-subtle">기준월에는 직전 비교 데이터가 없습니다.</p>
                 )}
-                <p className="mt-4 text-xs text-ink-subtle">
-                  월말 스냅샷 기준 · 현금·원금과 평가손익 변화만 구분합니다.
-                </p>
               </div>
             </Card>
           </div>
@@ -337,32 +342,62 @@ function HeroSparkline({
   );
 }
 
+function HoverTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="group/tip relative inline-flex shrink-0">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-[var(--shadow-2)] transition-opacity duration-150 group-hover/tip:opacity-100"
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
 function DriverCard({
   tone,
   icon: Icon,
   label,
   value,
-  detail,
+  share,
+  tooltip,
 }: {
   tone: 'gain' | 'accent';
   icon: LucideIcon;
   label: string;
   value: number | null;
-  detail: string;
+  share: number;
+  tooltip: string;
 }) {
   const toneClasses = tone === 'gain' ? 'bg-gain/10' : 'bg-accent/10';
   const iconClass = tone === 'gain' ? 'bg-gain' : 'bg-accent';
+  const barClass = tone === 'gain' ? 'bg-gain' : 'bg-accent';
 
   return (
     <div className={`min-w-0 rounded-lg border border-hairline p-4 ${toneClasses}`}>
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconClass}`}>
-        <Icon size={20} className="text-white" />
+      <div className="flex items-center gap-2.5">
+        <HoverTooltip label={tooltip}>
+          <div
+            className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg ${iconClass}`}
+          >
+            <Icon size={18} className="text-white" />
+          </div>
+        </HoverTooltip>
+        <p className="min-w-0 text-sm font-medium text-ink-muted">{label}</p>
       </div>
-      <p className="mt-4 text-sm font-medium text-ink-muted">{label}</p>
-      <p className={`mt-2 break-keep text-2xl font-bold ${toneClass(value)}`}>
+      <p className={`mt-3 break-keep text-2xl font-bold ${toneClass(value)}`}>
         {signedAmount(value)}
       </p>
-      <p className="mt-2 break-keep text-xs leading-relaxed text-ink-subtle">{detail}</p>
+      <div className="mt-3 flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-soft">
+          <div className={`h-full rounded-full ${barClass}`} style={{ width: `${share}%` }} />
+        </div>
+        <span className="shrink-0 text-xs font-medium tabular-nums text-ink-subtle">
+          {Math.round(share)}%
+        </span>
+      </div>
     </div>
   );
 }
@@ -389,10 +424,14 @@ function DriverGauge({ principal, gain }: { principal: number; gain: number }) {
   );
 }
 
-function formatDriverShare(value: number | null, otherValue: number | null): string {
+function driverSharePct(value: number | null, otherValue: number | null): number {
   const positive = Math.max(value ?? 0, 0);
   const otherPositive = Math.max(otherValue ?? 0, 0);
   const total = positive + otherPositive;
-  if (total === 0) return '0%';
-  return `${Math.round((positive / total) * 100)}%`;
+  if (total === 0) return 0;
+  return Math.round((positive / total) * 100);
+}
+
+function formatDriverShare(value: number | null, otherValue: number | null): string {
+  return `${driverSharePct(value, otherValue)}%`;
 }
