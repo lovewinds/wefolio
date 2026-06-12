@@ -297,6 +297,41 @@ export interface AssetMonthlyDataWithDelta extends AssetMonthlyData {
 }
 
 // ============================================
+// 투자 수익 현황(FR-C1) 타입
+// ============================================
+
+// 종목별 투자 성과 행. 모든 지표는 스냅샷 필드에서 파생(별도 저장 없음).
+export interface AssetProfitRow {
+  id: string;
+  assetName: string;
+  assetClass: string;
+  subClass: string | null;
+  riskLevel: string;
+  currency: string;
+  memberName: string;
+  accountName: string;
+  institutionName: string;
+  quantity: number;
+  avgCostKRW: number;
+  currentPriceKRW: number;
+  priceOriginal: number;
+  exchangeRate: number | null;
+  principal: number; // quantity × avgCostKRW (value형은 = value)
+  value: number; // quantity × currentPriceKRW
+  gain: number; // value − principal (value형은 0)
+  returnRate: number | null; // gain / principal (원금 0 → null)
+  valueType: boolean; // 현금성(예금·청약 등) 여부
+}
+
+export interface AssetProfitData {
+  rows: AssetProfitRow[];
+  availableRange: {
+    min: { year: number; month: number };
+    max: { year: number; month: number };
+  } | null;
+}
+
+// ============================================
 // 자산 월말 입력 타입
 // ============================================
 

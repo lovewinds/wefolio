@@ -5,6 +5,7 @@ import {
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
 import { holdingTransactionService, holdingValueSnapshotService } from '@/services/holding-service';
+import { prisma } from '@/lib/prisma';
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -266,6 +267,93 @@ describe('holdingValueSnapshotService', () => {
   });
 });
 
+describe('holdingValueSnapshotService.getMonthlyProfitData', () => {
+  it('종목별 원금·평가액·수익·수익률을 파생하고 value형·원금0·외화를 처리한다', async () => {
+    vi.mocked(prisma.holdingSnapshot.findMany).mockResolvedValue([
+      // 일반 주식: 원금 10×70=700, 평가액 10×100=1000, 수익 300, 수익률 300/700
+      profitSnapshot('h-a', 'Asset A', { quantity: 10, avgCostKRW: 70, currentPriceKRW: 100 }),
+      // 원금 0(평단가 0): 수익률은 0 나눗셈 없이 null
+      profitSnapshot('h-b', 'Asset B', { quantity: 5, avgCostKRW: 0, currentPriceKRW: 50 }),
+      // value형(예금): 원금=평가액, 수익 0, 수익률 null
+      profitSnapshot('h-c', '정기예금', {
+        quantity: 1,
+        avgCostKRW: 0,
+        currentPriceKRW: 5_000_000,
+        assetClass: '예금',
+        accountType: '예금',
+        riskLevel: '안전자산',
+      }),
+      // 외화: 원통화/환율 보존
+      profitSnapshot('h-d', 'US Stock', {
+        quantity: 2,
+        avgCostKRW: 120_000,
+        currentPriceKRW: 130_000,
+        priceOriginal: 100,
+        exchangeRate: 1300,
+        currency: 'USD',
+      }),
+    ] as never);
+    vi.mocked(prisma.holdingSnapshot.findFirst)
+      .mockResolvedValueOnce({ snapshotDate: new Date(Date.UTC(2026, 0, 31)) } as never)
+      .mockResolvedValueOnce({ snapshotDate: new Date(Date.UTC(2026, 5, 30)) } as never);
+
+    const { rows, availableRange } = await holdingValueSnapshotService.getMonthlyProfitData(
+      2026,
+      6
+    );
+
+    const byName = Object.fromEntries(rows.map(r => [r.assetName, r]));
+
+    expect(byName['Asset A']).toMatchObject({
+      principal: 700,
+      value: 1000,
+      gain: 300,
+      returnRate: 300 / 700,
+      valueType: false,
+    });
+    expect(byName['Asset B']).toMatchObject({
+      principal: 0,
+      value: 250,
+      gain: 250,
+      returnRate: null,
+    });
+    expect(byName['정기예금']).toMatchObject({
+      principal: 5_000_000,
+      value: 5_000_000,
+      gain: 0,
+      returnRate: null,
+      valueType: true,
+    });
+    expect(byName['US Stock']).toMatchObject({
+      principal: 240_000,
+      value: 260_000,
+      gain: 20_000,
+      currency: 'USD',
+      priceOriginal: 100,
+      exchangeRate: 1300,
+    });
+
+    expect(availableRange).toEqual({
+      min: { year: 2026, month: 1 },
+      max: { year: 2026, month: 6 },
+    });
+  });
+
+  it('보유별 최신 스냅샷만 집계한다(같은 holdingId 중복 시 첫 항목 유지)', async () => {
+    // getSnapshotsByMonth는 snapshotDate desc 정렬이므로 최신이 먼저 온다.
+    vi.mocked(prisma.holdingSnapshot.findMany).mockResolvedValue([
+      profitSnapshot('h-a', 'Asset A', { quantity: 10, avgCostKRW: 70, currentPriceKRW: 110 }),
+      profitSnapshot('h-a', 'Asset A', { quantity: 8, avgCostKRW: 70, currentPriceKRW: 100 }),
+    ] as never);
+    vi.mocked(prisma.holdingSnapshot.findFirst).mockResolvedValue(null as never);
+
+    const { rows } = await holdingValueSnapshotService.getMonthlyProfitData(2026, 6);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ quantity: 10, value: 1100 });
+  });
+});
+
 describe('holdingTransactionService 비권위 격리', () => {
   it('record는 거래만 생성하고 Holding을 재계산하지 않는다', async () => {
     const now = new Date('2026-05-01T00:00:00.000Z');
@@ -428,6 +516,57 @@ describe('holdingValueSnapshotService.saveMonthlyInput', () => {
     draftSpy.mockRestore();
   });
 });
+
+function profitSnapshot(
+  holdingId: string,
+  assetName: string,
+  overrides: {
+    quantity: number;
+    avgCostKRW: number;
+    currentPriceKRW: number;
+    priceOriginal?: number | null;
+    exchangeRate?: number | null;
+    assetClass?: string;
+    subClass?: string | null;
+    riskLevel?: string;
+    currency?: string;
+    accountType?: string;
+  }
+) {
+  const {
+    quantity,
+    avgCostKRW,
+    currentPriceKRW,
+    priceOriginal = null,
+    exchangeRate = null,
+    assetClass = '주식',
+    subClass = null,
+    riskLevel = '위험자산',
+    currency = 'KRW',
+    accountType = '종합',
+  } = overrides;
+
+  return {
+    id: `snap-${holdingId}-${assetName}`,
+    holdingId,
+    snapshotDate: new Date(Date.UTC(2026, 5, 30)),
+    quantity,
+    avgCostKRW,
+    currentPriceKRW,
+    exchangeRate,
+    priceOriginal,
+    avgCostOriginal: null,
+    holding: {
+      assetMaster: { name: assetName, assetClass, subClass, riskLevel, currency },
+      account: {
+        name: `${assetName} 계좌`,
+        accountType,
+        member: { name: '지완' },
+        institution: { name: '증권사' },
+      },
+    },
+  };
+}
 
 function monthlyHolding(
   assetName: string,

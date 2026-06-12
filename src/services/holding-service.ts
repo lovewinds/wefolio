@@ -15,6 +15,8 @@ import type {
   AssetChangeBreakdown,
   AssetChangeDelta,
   AssetMonthlyMetrics,
+  AssetProfitData,
+  AssetProfitRow,
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
   AssetMonthlyInputSaveRow,
@@ -542,6 +544,40 @@ function latestSnapshotByHolding(
   return map;
 }
 
+// 스냅샷 → 종목별 투자 성과 행(FR-C1). value형(현금성)은 원금=평가액·수익 0으로 강제한다
+// (시드 평단가가 0이어도 안전). 그 외는 quantity×avgCost를 원금으로, 평가액−원금을 수익으로 본다.
+function toProfitRow(s: SnapshotWithHolding): AssetProfitRow {
+  const { holding } = s;
+  const { assetMaster, account } = holding;
+  const valueType = getAssetInputType(assetMaster.assetClass, account.accountType) === 'value';
+  const value = snapshotTotalValueKRW(s);
+  const principal = valueType ? value : s.quantity * s.avgCostKRW;
+  const gain = valueType ? 0 : value - principal;
+  const returnRate = !valueType && principal > 0 ? gain / principal : null;
+
+  return {
+    id: s.id,
+    assetName: assetMaster.name,
+    assetClass: assetMaster.assetClass,
+    subClass: assetMaster.subClass,
+    riskLevel: assetMaster.riskLevel,
+    currency: assetMaster.currency,
+    memberName: account.member.name,
+    accountName: account.name,
+    institutionName: account.institution.name,
+    quantity: s.quantity,
+    avgCostKRW: s.avgCostKRW,
+    currentPriceKRW: s.currentPriceKRW,
+    priceOriginal: snapshotDisplayPriceOriginal(s),
+    exchangeRate: s.exchangeRate,
+    principal,
+    value,
+    gain,
+    returnRate,
+    valueType,
+  };
+}
+
 function buildMonthlyInputRow(
   holdingId: string,
   prevSnapshot: SnapshotWithHolding | undefined,
@@ -883,6 +919,41 @@ export const holdingValueSnapshotService = {
       prevByRiskLevel,
       changeBreakdown: hasPrev ? buildChangeBreakdown(current, prevData) : null,
     };
+  },
+
+  // FR-C1 투자 수익 현황: 종목별 원금·평가액·수익·수익률. 보유별 최신 스냅샷만 집계한다.
+  async getMonthlyProfitData(year: number, month: number): Promise<AssetProfitData> {
+    const snapshots = await getSnapshotsByMonth(year, month);
+    const latest = latestSnapshotByHolding(snapshots);
+
+    const [minSnapshot, maxSnapshot] = await Promise.all([
+      prisma.holdingSnapshot.findFirst({
+        orderBy: { snapshotDate: 'asc' },
+        select: { snapshotDate: true },
+      }),
+      prisma.holdingSnapshot.findFirst({
+        orderBy: { snapshotDate: 'desc' },
+        select: { snapshotDate: true },
+      }),
+    ]);
+
+    const availableRange =
+      minSnapshot && maxSnapshot
+        ? {
+            min: {
+              year: minSnapshot.snapshotDate.getUTCFullYear(),
+              month: minSnapshot.snapshotDate.getUTCMonth() + 1,
+            },
+            max: {
+              year: maxSnapshot.snapshotDate.getUTCFullYear(),
+              month: maxSnapshot.snapshotDate.getUTCMonth() + 1,
+            },
+          }
+        : null;
+
+    const rows = Array.from(latest.values()).map(toProfitRow);
+
+    return { rows, availableRange };
   },
 
   async getAssetTrendData(
