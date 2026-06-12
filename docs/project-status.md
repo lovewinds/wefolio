@@ -69,7 +69,7 @@
 | M006. 자산 데이터 관리 안정화                | `진행 중` | [m006-asset-data-stabilization.md](./milestones/m006-asset-data-stabilization.md)               | 2026-05-09 월말 스냅샷 입력 구현. CRUD/정합성/연동 미완                           |
 | M007. 문서 동기화                            | `시작 전` | [m007-documentation-sync.md](./milestones/m007-documentation-sync.md)                           | README/ROADMAP 정리 미착수                                                        |
 | M008. 디자인 시스템 적용                     | `완료`    | [m008-design-system-migration.md](./milestones/m008-design-system-migration.md)                 | 2026-06-02 Pass                                                                   |
-| M009. 정보구조(IA) 재편 & 신규 인사이트 화면 | `진행 중` | [m009-ia-restructure-and-new-insights.md](./milestones/m009-ia-restructure-and-new-insights.md) | 2026-06-08 자산 개요/월별/상세/추이/포트폴리오 탭 재구성 및 `/asset/transactions` 호환 redirect 구현 |
+| M009. 정보구조(IA) 재편 & 신규 인사이트 화면 | `진행 중` | [m009-ia-restructure-and-new-insights.md](./milestones/m009-ia-restructure-and-new-insights.md) | 2026-06-13 투자 수익 현황(FR-C1) 화면(`/asset/profit`) 구현. 2026-06-08 자산 개요/월별/상세/추이/포트폴리오 탭 재구성 및 `/asset/transactions` 호환 redirect 구현 |
 
 ## 상태 표기
 
