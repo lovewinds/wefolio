@@ -26,10 +26,20 @@ export interface AssetSubNavItem {
 export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
   { href: '/asset', label: '자산' },
   { href: '/asset/monthly', label: '월별 현황' },
+  { href: '/asset/profit', label: '투자 수익' },
   { href: '/asset/detail', label: '자산 상세' },
   { href: '/asset/trend', label: '자산 추이' },
   { href: '/asset/portfolio', label: '포트폴리오' },
 ];
+
+// 자산군별 점 색상(디자인 SSOT: docs/product/design/data.js의 CLASS_COLOR)
+export const ASSET_CLASS_COLORS: Record<string, string> = {
+  주식: '#E07856',
+  채권: '#3E9C6B',
+  예금: '#E8B04B',
+  금: '#C9963F',
+  코인: '#A78BFA',
+};
 
 // Warm-tuned palette (matches design tokens: gain/accent/loss)
 export const RISK_LEVEL_COLORS: Record<string, string> = {

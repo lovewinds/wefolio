@@ -8,6 +8,7 @@ describe('asset navigation', () => {
     expect(ASSET_SUB_NAV_ITEMS).toEqual([
       { href: '/asset', label: '자산' },
       { href: '/asset/monthly', label: '월별 현황' },
+      { href: '/asset/profit', label: '투자 수익' },
       { href: '/asset/detail', label: '자산 상세' },
       { href: '/asset/trend', label: '자산 추이' },
       { href: '/asset/portfolio', label: '포트폴리오' },
