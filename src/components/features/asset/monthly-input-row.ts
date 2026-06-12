@@ -18,6 +18,8 @@ export interface EditableMonthlyRow extends Omit<
   exchangeRateInput: string;
   priceKRWInput: string;
   avgCostInput: string;
+  // 사용자가 평균단가를 직접 입력했는지. true면 수량/가격 변경 시 자동 파생으로 덮어쓰지 않는다.
+  avgCostEdited: boolean;
   totalValueInput: string;
   isExpanded: boolean;
   isNew: boolean;
@@ -88,6 +90,7 @@ export function buildNewHoldingRow(params: {
     exchangeRateInput: '',
     priceKRWInput: '',
     avgCostInput: '',
+    avgCostEdited: false,
     totalValueInput: '',
     isCurrentMissing: false,
     isExpanded: inputType === 'quantity',

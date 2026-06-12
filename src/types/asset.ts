@@ -361,6 +361,8 @@ export interface AssetMonthlyInputSaveRow {
   exchangeRate?: number | null;
   priceKRW: number;
   avgCostKRW?: number;
+  // true면 사용자가 평균단가를 직접 보정한 값 → 서버가 그대로 사용. false/미지정이면 직전 스냅샷으로 자동 파생.
+  avgCostManual?: boolean;
   totalValueKRW: number;
 }
 

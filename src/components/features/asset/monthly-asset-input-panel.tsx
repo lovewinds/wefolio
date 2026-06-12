@@ -25,6 +25,7 @@ import {
   formatThousandsInput,
   stripThousandsInput,
 } from '@/lib/format-utils';
+import { deriveAvgCostKRW } from '@/lib/asset-cost';
 import type {
   AssetMonthlyInputDraft,
   AssetMonthlyInputRow,
@@ -124,6 +125,7 @@ function toEditableRow(row: AssetMonthlyInputRow): EditableMonthlyRow {
     exchangeRateInput,
     priceKRWInput: missing ? '' : String(row.priceKRW),
     avgCostInput,
+    avgCostEdited: false,
     totalValueInput: missing ? '' : String(row.totalValueKRW),
     isExpanded: row.inputType === 'quantity',
     isNew: false,
@@ -241,6 +243,8 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
       exchangeRate: null,
       priceKRW: totalValueKRW,
       avgCostKRW: totalValueKRW,
+      // 현금성(value형)은 원가=평가액 고정. 자동 파생 대상이 아니므로 보정값으로 그대로 저장.
+      avgCostManual: true,
       totalValueKRW,
     };
   }
@@ -254,7 +258,7 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
   const exchangeRate = parseNumberInput(row.exchangeRateInput);
   if (exchangeRate !== null && exchangeRate <= 0) return null;
 
-  // 평균단가(원금 기준) — 미입력 시 현재가로 시작(수익 0).
+  // 평균단가: 사용자가 직접 보정한 경우만 그 값을 우선(avgCostManual). 아니면 서버가 직전 스냅샷으로 자동 파생.
   const avgCostKRW = parseNumberInput(row.avgCostInput);
   if (avgCostKRW !== null && avgCostKRW < 0) return null;
 
@@ -268,6 +272,7 @@ function buildPayloadRow(row: EditableMonthlyRow): AssetMonthlyInputSaveRow | nu
     exchangeRate,
     priceKRW,
     avgCostKRW: avgCostKRW ?? priceKRW,
+    avgCostManual: row.avgCostEdited,
     totalValueKRW,
   };
 }
@@ -625,6 +630,12 @@ export function MonthlyAssetInputPanel({
           return next;
         }
 
+        if (field === 'avgCostInput') {
+          // 사용자가 평균단가를 직접 입력 → 이후 수량/가격 변경에도 자동 파생으로 덮어쓰지 않는다.
+          next.avgCostEdited = true;
+          return next;
+        }
+
         const quantity = parseNumberInput(field === 'quantityInput' ? value : next.quantityInput);
         const priceOriginal = parseNumberInput(
           field === 'priceOriginalInput' ? value : next.priceOriginalInput
@@ -658,6 +669,24 @@ export function MonthlyAssetInputPanel({
           priceKRW !== null
         ) {
           next.totalValueInput = String(Math.round(quantity * priceKRW));
+        }
+
+        // 평균단가 미보정 시: 수량/현재가 변경에 따라 자동 파생값으로 갱신(저장값·미리보기 정합).
+        if (
+          !next.avgCostEdited &&
+          (field === 'quantityInput' ||
+            field === 'priceKRWInput' ||
+            field === 'priceOriginalInput' ||
+            field === 'exchangeRateInput')
+        ) {
+          const q = parseNumberInput(next.quantityInput);
+          if (q !== null && priceKRW !== null) {
+            const prevCost =
+              row.prevQuantity !== null && row.prevAvgCostKRW !== null
+                ? { quantity: row.prevQuantity, avgCostKRW: row.prevAvgCostKRW }
+                : null;
+            next.avgCostInput = String(Math.round(deriveAvgCostKRW(prevCost, q, priceKRW)));
+          }
         }
 
         return next;
@@ -1329,6 +1358,8 @@ function MonthlyInputTableRows({
 
   // 편집칸을 전월값으로 일괄 되돌린다. 환율→현재가→수량 순서로 파생값이 올바르게 재계산된다.
   const resetToPrev = () => {
+    // 자동 파생 모드로 되돌린다: 보정 플래그를 먼저 끄면 수량 복원 시 평균단가가 전월값으로 재파생된다.
+    onUpdate(row.rowKey, 'avgCostEdited', false);
     onUpdate(
       row.rowKey,
       'exchangeRateInput',
@@ -1339,11 +1370,6 @@ function MonthlyInputTableRows({
       row.rowKey,
       'quantityInput',
       row.prevQuantity === null ? '' : String(row.prevQuantity)
-    );
-    onUpdate(
-      row.rowKey,
-      'avgCostInput',
-      row.prevAvgCostKRW === null ? '' : String(row.prevAvgCostKRW)
     );
   };
   // 수량 0 → 평가액 0 → 상태 '정리됨'.

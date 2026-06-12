@@ -5,6 +5,7 @@ import {
   holdingValueSnapshotRepository,
 } from '@/repositories/holding-repository';
 import { prisma } from '@/lib/prisma';
+import { deriveAvgCostKRW } from '@/lib/asset-cost';
 import type { AssetMaster, Holding, HoldingTransaction, Prisma } from '@prisma/client';
 import type {
   AssetClass,
@@ -680,8 +681,6 @@ export const holdingValueSnapshotService = {
   ): Promise<AssetMonthlyInputDraft> {
     for (const row of rows) {
       const date = assertDateInMonth(row.date, year, month);
-      // 평균단가(cost basis)를 입력하지 않은 경우 현재가로 시작(수익 0). 디자인 시드 규칙과 동일.
-      const avgCostKRW = row.avgCostKRW ?? row.priceKRW;
       let holdingId = row.holdingId ?? undefined;
 
       if (!holdingId) {
@@ -699,6 +698,25 @@ export const holdingValueSnapshotService = {
           });
           holdingId = createdHolding.id;
         }
+      }
+
+      // 평균단가: 사용자가 직접 보정했으면 그 값을 우선. 아니면 직전 스냅샷의 수량·평단가와
+      // 이번 달 수량·현재가로 자동 파생(신규=현재가, 수량 증가=가중평균, 동일/감소=유지).
+      let avgCostKRW: number;
+      if (row.avgCostManual && row.avgCostKRW != null) {
+        avgCostKRW = row.avgCostKRW;
+      } else {
+        const prevSnapshot = await holdingValueSnapshotRepository.findLatestBeforeDate(
+          holdingId,
+          date
+        );
+        avgCostKRW = deriveAvgCostKRW(
+          prevSnapshot
+            ? { quantity: prevSnapshot.quantity, avgCostKRW: prevSnapshot.avgCostKRW }
+            : null,
+          row.quantity,
+          row.priceKRW
+        );
       }
 
       // 외화 종목은 원통화 입력값을 보존한다(원화 종목은 null). 환율로 원통화 평균단가를 역산해 함께 저장.

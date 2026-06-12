@@ -285,6 +285,13 @@ export const holdingValueSnapshotRepository = {
     });
   },
 
+  async findLatestBeforeDate(holdingId: string, beforeDate: Date): Promise<HoldingSnapshot | null> {
+    return prisma.holdingSnapshot.findFirst({
+      where: { holdingId, snapshotDate: { lt: beforeDate } },
+      orderBy: { snapshotDate: 'desc' },
+    });
+  },
+
   async create(data: Prisma.HoldingSnapshotCreateInput): Promise<HoldingSnapshot> {
     return prisma.holdingSnapshot.create({ data });
   },
