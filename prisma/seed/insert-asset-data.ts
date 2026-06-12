@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { SeedAssetSnapshotInput } from './read-xlsx-asset';
+import { backfillAvgCostKRW } from './backfill-avg-cost';
 
 // 기관 유형 추론 (증권사 키워드 포함 시 brokerage)
 function inferInstitutionType(name: string): 'bank' | 'brokerage' {
@@ -234,7 +235,12 @@ export async function insertAssetSeedData(
     }
   }
 
+  // 적재된 스냅샷의 평균단가를 보유별 시간순으로 자동 파생(엑셀엔 원가가 없어 현재가로 적재되므로).
+  // 이로써 재로드 후에도 종목별 원금·미실현손익이 의미를 갖는다.
+  const { updated: avgCostUpdated } = await backfillAvgCostKRW(prisma);
+
   console.log('\n📊 자산 시드 데이터 삽입 결과:');
+  console.log(`   - 평균단가 자동 파생 백필: ${avgCostUpdated}개 스냅샷 갱신`);
   console.log(`   - 가족 구성원: ${membersCreated}명 생성`);
   console.log(`   - 금융기관: ${institutionsCreated}개 생성`);
   console.log(`   - 자산 마스터: ${assetMastersCreated}개 생성`);

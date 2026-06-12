@@ -1,4 +1,5 @@
 import type { AssetMonthlyInputRow, AssetMonthlyInputType } from '@/types';
+import { getAssetInputType } from '@/lib/asset-input-type';
 
 export interface EditableMonthlyRow extends Omit<
   AssetMonthlyInputRow,
@@ -26,25 +27,7 @@ export interface EditableMonthlyRow extends Omit<
 }
 
 export function getInputType(assetClass: string, accountType: string): AssetMonthlyInputType {
-  const lowerAssetClass = assetClass.toLowerCase();
-  const lowerAccountType = accountType.toLowerCase();
-  const valueOnlyTokens = ['deposit', 'savings', 'time_deposit', 'cma', 'cash'];
-
-  if (
-    assetClass.includes('예금') ||
-    assetClass.includes('현금') ||
-    accountType.includes('예금') ||
-    accountType.includes('적금') ||
-    accountType.toUpperCase().includes('CMA')
-  ) {
-    return 'value';
-  }
-
-  return valueOnlyTokens.some(
-    token => lowerAssetClass.includes(token) || lowerAccountType === token
-  )
-    ? 'value'
-    : 'quantity';
+  return getAssetInputType(assetClass, accountType);
 }
 
 export function buildNewHoldingRow(params: {

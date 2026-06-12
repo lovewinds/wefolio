@@ -217,10 +217,11 @@ model BudgetRecurringTemplate {
 > 기존 파서의 `isCashLikeAsset` 규칙과 동일.
 
 > **평균단가 주의**: 기존 엑셀에는 _평균단가_ 컬럼이 없고 _개당 현재가(L)_ 만 있다.
-> 시드 적재 시 `avgCostKRW`를 `currentPriceKRW`와 동일하게 넣어 **수익 0**으로 시작하고,
-> 이후 입력부터 **수량 변화 기반 자동 파생 규칙**(가중평균 — `insights.md`의 "평균단가 자동 파생" 참조)으로
-> `avgCostKRW`를 채운다. 사용자가 직접 덮어쓸 수도 있다(보정월 표식). 원금·평가액·수익 등 파생값은
-> 여전히 저장하지 않으며, `avgCostKRW`만 스냅샷 필드로 보존한다(스키마 변경 없음).
+> 시드/로드는 일단 `avgCostKRW = currentPriceKRW`로 적재한 뒤, **마지막에 보유별 시간순 백필**
+> (`prisma/seed/backfill-avg-cost.ts`)로 **수량 변화 기반 자동 파생 규칙**(가중평균 — `insights.md`의
+> "평균단가 자동 파생" 참조)을 적용한다. 따라서 재로드해도 종목별 원금·손익이 유지된다(value형 제외).
+> 이후 월별 입력 저장도 같은 규칙으로 파생하며, 사용자가 직접 덮어쓸 수도 있다. 원금·평가액·수익 등
+> 파생값은 여전히 저장하지 않고 `avgCostKRW`만 스냅샷 필드로 보존한다(스키마 변경 없음).
 
 ### 가계부 시트 (`read-xlsx-expense.ts` / `read-xlsx-income.ts`)
 

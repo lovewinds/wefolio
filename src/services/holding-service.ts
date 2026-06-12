@@ -6,6 +6,7 @@ import {
 } from '@/repositories/holding-repository';
 import { prisma } from '@/lib/prisma';
 import { deriveAvgCostKRW } from '@/lib/asset-cost';
+import { getAssetInputType } from '@/lib/asset-input-type';
 import type { AssetMaster, Holding, HoldingTransaction, Prisma } from '@prisma/client';
 import type {
   AssetClass,
@@ -18,7 +19,6 @@ import type {
   AssetMonthlyInputRow,
   AssetMonthlyInputSaveRow,
   AssetMonthlyInputStatus,
-  AssetMonthlyInputType,
 } from '@/types/asset';
 
 // ============================================
@@ -300,30 +300,8 @@ function getMonthlyInputStatus(
   return '유지';
 }
 
-function getMonthlyInputType(assetClass: string, accountType: string): AssetMonthlyInputType {
-  const valueOnlyTokens = ['deposit', 'savings', 'time_deposit', 'cma', 'cash'];
-  const lowerAssetClass = assetClass.toLowerCase();
-  const lowerAccountType = accountType.toLowerCase();
-
-  if (
-    assetClass.includes('예금') ||
-    assetClass.includes('현금') ||
-    accountType.includes('예금') ||
-    accountType.includes('적금') ||
-    accountType.toUpperCase().includes('CMA')
-  ) {
-    return 'value';
-  }
-
-  return valueOnlyTokens.some(
-    token => lowerAssetClass.includes(token) || lowerAccountType === token
-  )
-    ? 'value'
-    : 'quantity';
-}
-
 function isValueTypeHolding(holding: MonthlyHolding): boolean {
-  return getMonthlyInputType(holding.assetClass, holding.accountType) === 'value';
+  return getAssetInputType(holding.assetClass, holding.accountType) === 'value';
 }
 
 function zeroMetrics(): AssetMonthlyMetrics {
@@ -598,7 +576,7 @@ function buildMonthlyInputRow(
     accountType: account.accountType,
     institutionName: account.institution.name,
     institutionType: account.institution.type,
-    inputType: getMonthlyInputType(assetMaster.assetClass, account.accountType),
+    inputType: getAssetInputType(assetMaster.assetClass, account.accountType),
     prevQuantity: prevSnapshot?.quantity ?? null,
     prevPriceOriginal: prevSnapshot ? snapshotDisplayPriceOriginal(prevSnapshot) : null,
     prevExchangeRate: prevSnapshot?.exchangeRate ?? null,
