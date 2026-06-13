@@ -325,6 +325,7 @@ export interface AssetProfitRow {
 
 export interface AssetProfitData {
   rows: AssetProfitRow[];
+  snapshotDate: string | null; // 표시용 기준일(해당 월 최신 스냅샷 날짜, YYYY-MM-DD)
   availableRange: {
     min: { year: number; month: number };
     max: { year: number; month: number };

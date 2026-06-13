@@ -9,17 +9,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronsUpDown,
-  Coins,
-  Info,
-  Percent,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronsUpDown, Info } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { formatKoreanWonCompact, formatExchangeRate } from '@/lib/format-utils';
 import { ASSET_CLASS_COLORS, RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
@@ -122,7 +112,22 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
     const value = rows.reduce((s, r) => s + r.value, 0);
     const gain = value - principal;
     const returnRate = principal > 0 ? gain / principal : null;
-    return { principal, value, gain, returnRate };
+
+    // 손익 종목 목록은 평가손익이 0인 value형(현금성)을 빼고 종목형만, 손익 큰 순으로 본다.
+    const investRows = rows.filter(r => !r.valueType);
+    const gainers = investRows.filter(r => r.gain > 0).sort((a, b) => b.gain - a.gain);
+    const losers = investRows.filter(r => r.gain < 0).sort((a, b) => a.gain - b.gain);
+
+    return {
+      principal,
+      value,
+      gain,
+      returnRate,
+      winCount: gainers.length,
+      lossCount: losers.length,
+      gainers,
+      losers,
+    };
   }, [rows]);
 
   const columns = useMemo<ColumnDef<AssetProfitRow>[]>(
@@ -207,8 +212,18 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
         meta: { align: 'right' } satisfies ColumnMeta,
       },
       {
+        id: 'weight',
+        header: '비중',
+        accessorFn: row => row.value,
+        cell: ({ row }) => {
+          const pct = summary.value > 0 ? (row.original.value / summary.value) * 100 : 0;
+          return `${pct.toFixed(1)}%`;
+        },
+        meta: { align: 'right' } satisfies ColumnMeta,
+      },
+      {
         accessorKey: 'gain',
-        header: '수익',
+        header: '평가손익',
         cell: ({ row }) => {
           const h = row.original;
           if (h.valueType) return DASH;
@@ -235,7 +250,7 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
         meta: { align: 'right' } satisfies ColumnMeta,
       },
     ],
-    []
+    [summary.value]
   );
 
   const table = useReactTable({
@@ -246,6 +261,10 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const dateLabel = data.snapshotDate
+    ? data.snapshotDate.replace(/-/g, '.')
+    : `${selectedYear}.${String(selectedMonth).padStart(2, '0')}`;
 
   const isEmpty = data.rows.length === 0;
 
@@ -270,29 +289,9 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
         />
       ) : (
         <>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              icon={Coins}
-              label="투자 원금"
-              value={formatKoreanWonCompact(summary.principal)}
-            />
-            <KpiCard
-              icon={TrendingUp}
-              label="평가액"
-              value={formatKoreanWonCompact(summary.value)}
-            />
-            <KpiCard
-              icon={Sparkles}
-              label="평가손익"
-              value={formatKoreanWonCompact(summary.gain, { signed: true })}
-              valueClass={toneClass(summary.gain)}
-            />
-            <KpiCard
-              icon={Percent}
-              label="수익률"
-              value={summary.returnRate === null ? DASH : formatPct(summary.returnRate)}
-              valueClass={toneClass(summary.returnRate)}
-            />
+          <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <HeroSummary dateLabel={dateLabel} summary={summary} />
+            <ProfitBreakdownCard summary={summary} />
           </div>
 
           <Card>
@@ -301,10 +300,6 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
                 <h3 className="text-[17px] font-semibold tracking-tight text-ink">
                   종목별 투자 성과
                 </h3>
-                <p className="mt-1 text-xs text-ink-subtle">
-                  {selectedYear}.{String(selectedMonth).padStart(2, '0')} 스냅샷 기준 ·
-                  원금/평가액/수익은 모두 파생값
-                </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <input
@@ -438,6 +433,9 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
                       <td className="px-3 py-2.5 text-right">
                         {formatKoreanWonCompact(summary.value)}
                       </td>
+                      <td className="px-3 py-2.5 text-right">
+                        {summary.value > 0 ? '100.0%' : DASH}
+                      </td>
                       <td className={`px-3 py-2.5 text-right ${toneClass(summary.gain)}`}>
                         {formatKoreanWonCompact(summary.gain, { signed: true })}
                       </td>
@@ -454,9 +452,10 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
           <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-hairline bg-surface-soft p-4 text-sm text-ink-subtle">
             <Info size={18} className="mt-0.5 shrink-0 text-ink-faint" />
             <span>
-              현금형 종목(예금·청약 등 value형)은 원금=평가액으로 수익이 0이라 기본 성과표에서
+              현금형 종목(예금·청약 등 value형)은 원금=평가액으로 평가손익이 0이라 기본 성과표에서
               제외됩니다. <b className="font-semibold text-ink-muted">현금형 포함</b>으로 함께 볼 수
-              있어요.
+              있어요. 평균단가는 스냅샷 수량 변화로 파생되어, 최초 보유 시점은 현재가를 원가로 보아
+              평가손익이 0(또는 —)으로 보일 수 있어요.
             </span>
           </div>
         </>
@@ -465,21 +464,107 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
   );
 }
 
-interface KpiCardProps {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  valueClass?: string;
+interface ProfitSummary {
+  principal: number;
+  value: number;
+  gain: number;
+  returnRate: number | null;
+  winCount: number;
+  lossCount: number;
+  gainers: AssetProfitRow[];
+  losers: AssetProfitRow[];
 }
 
-function KpiCard({ icon: Icon, label, value, valueClass = 'text-ink' }: KpiCardProps) {
+// 페이지 목적(원금 대비 미실현 손익)을 헤드라인으로 끌어올린 요약 히어로.
+function HeroSummary({ dateLabel, summary }: { dateLabel: string; summary: ProfitSummary }) {
+  const { principal, value, gain, returnRate } = summary;
+  const isGain = gain >= 0;
+  const denom = Math.max(principal, value, 1);
+  const basePct = (Math.min(principal, value) / denom) * 100; // 원금·평가액 중 작은 쪽이 기준 막대
+  const deltaPct = (Math.abs(gain) / denom) * 100; // 손익만큼 덧대는 막대
+
   return (
-    <Card>
-      <div className="flex items-center gap-2 text-sm font-semibold text-ink-subtle">
-        <Icon size={16} />
-        {label}
+    <div
+      className="flex h-full flex-col overflow-hidden rounded-xl border border-hairline p-6 shadow-[var(--shadow-1)]"
+      style={{ backgroundColor: 'var(--block-cream)' }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-ink-subtle">투자 성과</p>
+        <p className="text-sm text-ink-subtle">{dateLabel} (미실현)</p>
       </div>
-      <p className={`mt-3 text-2xl font-bold ${valueClass}`}>{value}</p>
+      <div className="flex flex-1 items-center py-4">
+        <p>
+          <span className={`text-4xl font-bold ${toneClass(gain)}`}>
+            {formatKoreanWonCompact(gain, { signed: true })}
+          </span>
+          <span className={`ml-2 text-lg font-semibold ${toneClass(returnRate)}`}>
+            ({returnRate === null ? DASH : formatPct(returnRate)})
+          </span>
+        </p>
+      </div>
+      <div>
+        <div className="mb-3 flex items-center justify-between text-sm">
+          <span className="text-ink-subtle">
+            투자 원금{' '}
+            <span className="ml-1 font-semibold text-ink">{formatKoreanWonCompact(principal)}</span>
+          </span>
+          <span className="text-ink-subtle">
+            평가액{' '}
+            <span className="ml-1 font-semibold text-ink">{formatKoreanWonCompact(value)}</span>
+          </span>
+        </div>
+        <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-soft">
+          <div className="bg-ink/20" style={{ width: `${basePct}%` }} />
+          <div className={isGain ? 'bg-gain' : 'bg-loss'} style={{ width: `${deltaPct}%` }} />
+        </div>
+        <div className="mt-2 flex items-center justify-end gap-4 text-xs text-ink-subtle">
+          <span className="flex items-center gap-1.5">
+            <i className="h-2.5 w-2.5 rounded-sm bg-ink/20" />
+            {isGain ? '원금' : '평가액'}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <i className={`h-2.5 w-2.5 rounded-sm ${isGain ? 'bg-gain' : 'bg-loss'}`} />
+            {isGain ? '평가이익' : '평가손실'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 손익 종목 카드: 이익·손실 상위 종목을 종목·계좌·수익률로 간략히 보여준다(손익 큰 순).
+function ProfitBreakdownCard({ summary }: { summary: ProfitSummary }) {
+  const items = [...summary.gainers.slice(0, 3), ...summary.losers.slice(0, 3)];
+
+  return (
+    <Card className="flex h-full flex-col">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-ink-subtle">손익 종목</span>
+        <span className="text-xs">
+          <span className="text-gain">이익 {summary.winCount}</span>
+          <span className="text-ink-subtle"> · </span>
+          <span className="text-loss">손실 {summary.lossCount}</span>
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-3 flex-1 text-xs text-ink-subtle">표시할 종목이 없습니다.</p>
+      ) : (
+        <ul className="mt-3 flex-1 space-y-2.5 overflow-hidden">
+          {items.map(r => (
+            <li key={r.id} className="flex items-center justify-between gap-2 leading-tight">
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-medium text-ink">{r.assetName}</span>
+                <span className="block truncate text-[11px] text-ink-subtle">
+                  {r.memberName} · {r.accountName}
+                </span>
+              </span>
+              <span className={`shrink-0 text-xs font-semibold tabular-nums ${toneClass(r.gain)}`}>
+                {r.returnRate !== null ? formatPct(r.returnRate) : DASH}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -951,9 +951,14 @@ export const holdingValueSnapshotService = {
           }
         : null;
 
-    const rows = Array.from(latest.values()).map(toProfitRow);
+    const latestSnapshots = Array.from(latest.values());
+    const maxDate = latestSnapshots.reduce<Date | null>(
+      (max, s) => (!max || s.snapshotDate > max ? s.snapshotDate : max),
+      null
+    );
+    const rows = latestSnapshots.map(toProfitRow);
 
-    return { rows, availableRange };
+    return { rows, snapshotDate: maxDate ? toDateInput(maxDate) : null, availableRange };
   },
 
   async getAssetTrendData(
