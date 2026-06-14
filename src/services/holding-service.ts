@@ -564,6 +564,7 @@ function toProfitRow(s: SnapshotWithHolding): AssetProfitRow {
     currency: assetMaster.currency,
     memberName: account.member.name,
     accountName: account.name,
+    accountType: account.accountType,
     institutionName: account.institution.name,
     quantity: s.quantity,
     avgCostKRW: s.avgCostKRW,

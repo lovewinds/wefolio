@@ -310,6 +310,7 @@ export interface AssetProfitRow {
   currency: string;
   memberName: string;
   accountName: string;
+  accountType: string;
   institutionName: string;
   quantity: number;
   avgCostKRW: number;

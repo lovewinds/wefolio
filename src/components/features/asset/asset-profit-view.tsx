@@ -12,7 +12,7 @@ import {
 import { ArrowDown, ArrowUp, ChevronsUpDown, Info } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { formatKoreanWonCompact, formatExchangeRate } from '@/lib/format-utils';
-import { ASSET_CLASS_COLORS, RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
+import { ASSET_CLASS_COLORS, PENSION_ACCOUNT_TYPES, RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
 import { Card, EmptyState, PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
 import { AssetPageToolbar } from './asset-page-toolbar';
@@ -43,6 +43,8 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
   const [member, setMember] = useState<string | null>(null);
   const [showValue, setShowValue] = useState(false);
   const [riskFilter, setRiskFilter] = useState<string | null>(null);
+  const [assetClassFilter, setAssetClassFilter] = useState<string | null>(null);
+  const [institutionFilter, setInstitutionFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'value', desc: true }]);
 
@@ -95,6 +97,20 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
       ),
     [data.rows]
   );
+  const assetClasses = useMemo(
+    () =>
+      Array.from(new Set(data.rows.map(r => r.assetClass))).sort((a, b) =>
+        a.localeCompare(b, 'ko-KR')
+      ),
+    [data.rows]
+  );
+  const institutions = useMemo(
+    () =>
+      Array.from(new Set(data.rows.map(r => r.institutionName))).sort((a, b) =>
+        a.localeCompare(b, 'ko-KR')
+      ),
+    [data.rows]
+  );
 
   const rows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -102,10 +118,14 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
       if (!showValue && r.valueType) return false;
       if (member !== null && r.memberName !== member) return false;
       if (riskFilter !== null && r.riskLevel !== riskFilter) return false;
+      if (assetClassFilter !== null && r.assetClass !== assetClassFilter) return false;
+      if (institutionFilter !== null && r.institutionName !== institutionFilter) return false;
       if (keyword && !r.assetName.toLowerCase().includes(keyword)) return false;
       return true;
     });
-  }, [data.rows, showValue, member, riskFilter, search]);
+  }, [data.rows, showValue, member, riskFilter, assetClassFilter, institutionFilter, search]);
+
+  const comparisonRows = useMemo(() => data.rows.filter(r => !r.valueType), [data.rows]);
 
   const summary = useMemo(() => {
     const principal = rows.reduce((s, r) => s + r.principal, 0);
@@ -294,6 +314,8 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
             <ProfitBreakdownCard summary={summary} />
           </div>
 
+          <ProfitComparisonCard rows={comparisonRows} />
+
           <Card>
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -317,6 +339,30 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
                   {riskLevels.map(level => (
                     <option key={level} value={level}>
                       {level}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={assetClassFilter ?? ''}
+                  onChange={e => setAssetClassFilter(e.target.value || null)}
+                  className="h-8 rounded-md border border-hairline bg-surface px-2 text-sm text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">자산군 전체</option>
+                  {assetClasses.map(cls => (
+                    <option key={cls} value={cls}>
+                      {cls}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={institutionFilter ?? ''}
+                  onChange={e => setInstitutionFilter(e.target.value || null)}
+                  className="h-8 rounded-md border border-hairline bg-surface px-2 text-sm text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">기관 전체</option>
+                  {institutions.map(inst => (
+                    <option key={inst} value={inst}>
+                      {inst}
                     </option>
                   ))}
                 </select>
@@ -564,6 +610,192 @@ function ProfitBreakdownCard({ summary }: { summary: ProfitSummary }) {
             </li>
           ))}
         </ul>
+      )}
+    </Card>
+  );
+}
+
+type GroupDim = 'member' | 'assetClass' | 'institution' | 'accountKind';
+
+const GROUP_DIMS: { key: GroupDim; label: string; field: (r: AssetProfitRow) => string }[] = [
+  { key: 'member', label: '구성원', field: r => r.memberName },
+  { key: 'assetClass', label: '자산군', field: r => r.assetClass },
+  { key: 'institution', label: '기관', field: r => r.institutionName },
+  {
+    key: 'accountKind',
+    label: '연금·일반',
+    field: r =>
+      (PENSION_ACCOUNT_TYPES as readonly string[]).includes(r.accountType) ? '연금' : '일반',
+  },
+];
+
+interface ProfitGroup {
+  key: string;
+  count: number;
+  principal: number;
+  value: number;
+  gain: number;
+  returnRate: number | null;
+  weight: number;
+}
+
+function buildProfitGroups(
+  rows: AssetProfitRow[],
+  field: (r: AssetProfitRow) => string
+): ProfitGroup[] {
+  const totalValue = rows.reduce((s, r) => s + r.value, 0);
+  const map = new Map<string, AssetProfitRow[]>();
+  for (const r of rows) {
+    const k = field(r);
+    const arr = map.get(k);
+    if (arr) arr.push(r);
+    else map.set(k, [r]);
+  }
+  return Array.from(map.entries())
+    .map(([key, rs]) => {
+      const principal = rs.reduce((s, r) => s + r.principal, 0);
+      const value = rs.reduce((s, r) => s + r.value, 0);
+      const gain = value - principal;
+      return {
+        key,
+        count: rs.length,
+        principal,
+        value,
+        gain,
+        returnRate: principal > 0 ? gain / principal : null,
+        weight: totalValue > 0 ? value / totalValue : 0,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+}
+
+// 차원별 성과 비교: 전체 투자 종목(현금형 제외)을 구성원/자산군/기관/위험구분으로 묶어
+// 그룹별 원금·평가액·비중·평가손익·수익률을 한 줄씩 비교한다(표 필터와 독립).
+function ProfitComparisonCard({ rows }: { rows: AssetProfitRow[] }) {
+  const [groupDim, setGroupDim] = useState<GroupDim>('member');
+  const activeLabel = GROUP_DIMS.find(d => d.key === groupDim)!.label;
+
+  const groups = useMemo(() => {
+    const dim = GROUP_DIMS.find(d => d.key === groupDim)!;
+    return buildProfitGroups(rows, dim.field);
+  }, [rows, groupDim]);
+
+  const totals = useMemo(() => {
+    const principal = rows.reduce((s, r) => s + r.principal, 0);
+    const value = rows.reduce((s, r) => s + r.value, 0);
+    const gain = value - principal;
+    return { principal, value, gain, returnRate: principal > 0 ? gain / principal : null };
+  }, [rows]);
+
+  const maxAbsRet = useMemo(
+    () => Math.max(...groups.map(g => Math.abs(g.returnRate ?? 0)), 0.0001),
+    [groups]
+  );
+
+  return (
+    <Card className="mb-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-[17px] font-semibold tracking-tight text-ink">차원별 성과 비교</h3>
+          <p className="mt-1 text-xs text-ink-subtle">현금형 제외 · 전체 투자 종목 기준</p>
+        </div>
+        <nav className="toggle">
+          {GROUP_DIMS.map(d => (
+            <button
+              key={d.key}
+              className={groupDim === d.key ? 'on' : ''}
+              onClick={() => setGroupDim(d.key)}
+            >
+              {d.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-ink-subtle">표시할 종목이 없습니다.</p>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+          <div className="overflow-auto">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+              <colgroup>
+                <col />
+                <col className="w-24" />
+                <col className="w-32" />
+                <col className="w-20" />
+                <col className="w-28" />
+                <col className="w-36" />
+              </colgroup>
+              <thead className="bg-surface-soft text-xs font-semibold uppercase tracking-wide text-ink-subtle">
+                <tr>
+                  <th className="border-b border-hairline px-3 py-2.5 text-left">{activeLabel}</th>
+                  <th className="border-b border-hairline px-3 py-2.5 text-right">원금</th>
+                  <th className="border-b border-hairline px-3 py-2.5 text-right">평가액</th>
+                  <th className="border-b border-hairline px-3 py-2.5 text-right">비중</th>
+                  <th className="border-b border-hairline px-3 py-2.5 text-right">평가손익</th>
+                  <th className="border-b border-hairline px-3 py-2.5 text-right">수익률</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map(g => (
+                  <tr
+                    key={g.key}
+                    className="border-b border-hairline transition-colors hover:bg-canvas"
+                  >
+                    <td className="border-b border-hairline px-3 py-2.5 text-ink">
+                      {g.key} <span className="text-xs text-ink-subtle">· {g.count}</span>
+                    </td>
+                    <td className="border-b border-hairline px-3 py-2.5 text-right text-ink-muted">
+                      {formatKoreanWonCompact(g.principal)}
+                    </td>
+                    <td className="border-b border-hairline px-3 py-2.5 text-right font-semibold text-ink">
+                      {formatKoreanWonCompact(g.value)}
+                    </td>
+                    <td className="border-b border-hairline px-3 py-2.5 text-right text-ink-muted">
+                      {(g.weight * 100).toFixed(1)}%
+                    </td>
+                    <td
+                      className={`border-b border-hairline px-3 py-2.5 text-right font-semibold ${toneClass(g.gain)}`}
+                    >
+                      {formatKoreanWonCompact(g.gain, { signed: true })}
+                    </td>
+                    <td className="border-b border-hairline px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={`font-semibold tabular-nums ${toneClass(g.returnRate)}`}>
+                          {g.returnRate === null ? DASH : formatPct(g.returnRate)}
+                        </span>
+                        <span className="h-1.5 w-12 overflow-hidden rounded-full bg-surface-soft">
+                          <span
+                            className={`block h-full rounded-full ${g.gain >= 0 ? 'bg-gain' : 'bg-loss'}`}
+                            style={{
+                              width: `${(Math.abs(g.returnRate ?? 0) / maxAbsRet) * 100}%`,
+                            }}
+                          />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-surface-soft text-sm font-semibold text-ink">
+                <tr>
+                  <td className="px-3 py-2.5">합계</td>
+                  <td className="px-3 py-2.5 text-right">
+                    {formatKoreanWonCompact(totals.principal)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right">{formatKoreanWonCompact(totals.value)}</td>
+                  <td className="px-3 py-2.5 text-right">{totals.value > 0 ? '100.0%' : DASH}</td>
+                  <td className={`px-3 py-2.5 text-right ${toneClass(totals.gain)}`}>
+                    {formatKoreanWonCompact(totals.gain, { signed: true })}
+                  </td>
+                  <td className={`px-3 py-2.5 text-right ${toneClass(totals.returnRate)}`}>
+                    {totals.returnRate === null ? DASH : formatPct(totals.returnRate)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       )}
     </Card>
   );
