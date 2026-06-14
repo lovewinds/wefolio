@@ -37,6 +37,15 @@ function formatPct(ratio: number): string {
 
 const DASH = '—';
 
+// formatKoreanWonCompact는 1만원 미만을 모두 "0원"으로 표시한다. 원금·평가액이 모두
+// 1만원 미만인 소액(dust) 종목은 0원·0원으로 보이면서 수익률만 떠 모순처럼 보이므로
+// 차원별 성과 비교에서 제외한다.
+const COMPARISON_DUST_THRESHOLD_KRW = 10_000;
+
+export function isDustComparisonRow(r: Pick<AssetProfitRow, 'principal' | 'value'>): boolean {
+  return r.principal < COMPARISON_DUST_THRESHOLD_KRW && r.value < COMPARISON_DUST_THRESHOLD_KRW;
+}
+
 export function AssetProfitView({ initialData, initialYear, initialMonth }: AssetProfitViewProps) {
   const [data, setData] = useState<AssetProfitData>(initialData);
   const [isFetching, setIsFetching] = useState(false);
@@ -125,7 +134,10 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
     });
   }, [data.rows, showValue, member, riskFilter, assetClassFilter, institutionFilter, search]);
 
-  const comparisonRows = useMemo(() => data.rows.filter(r => !r.valueType), [data.rows]);
+  const comparisonRows = useMemo(
+    () => data.rows.filter(r => !r.valueType && !isDustComparisonRow(r)),
+    [data.rows]
+  );
 
   const summary = useMemo(() => {
     const principal = rows.reduce((s, r) => s + r.principal, 0);
