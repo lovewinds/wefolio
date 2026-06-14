@@ -105,18 +105,21 @@ export function LNB() {
                 <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
                 <span className="nav-label">{item.label}</span>
               </Link>
-              {item.href === '/asset' && isActive && !collapsed && (
+              {item.href === '/asset' && isActive && (
                 <div className="nav-subtree">
                   {ASSET_SUB_NAV_ITEMS.filter(subItem => subItem.href !== '/asset').map(subItem => {
                     const isSubActive =
                       pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
+                    const SubIcon = subItem.icon;
                     return (
                       <Link
                         key={subItem.href}
                         href={subItem.href}
                         className={`nav-sub-item${isSubActive ? ' on' : ''}`}
+                        title={subItem.label}
                       >
-                        {subItem.label}
+                        <SubIcon size={16} strokeWidth={1.75} suppressHydrationWarning />
+                        <span className="nav-label">{subItem.label}</span>
                       </Link>
                     );
                   })}

@@ -5,7 +5,7 @@ import { buildAssetTabHref } from '@/lib/asset-navigation';
 describe('asset navigation', () => {
   it('uses the requested asset tab order and labels', () => {
     expect(NAV_ITEMS.find(item => item.href === '/asset')?.label).toBe('자산');
-    expect(ASSET_SUB_NAV_ITEMS).toEqual([
+    expect(ASSET_SUB_NAV_ITEMS.map(({ href, label }) => ({ href, label }))).toEqual([
       { href: '/asset', label: '자산' },
       { href: '/asset/monthly', label: '월별 현황' },
       { href: '/asset/profit', label: '투자 수익' },

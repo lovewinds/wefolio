@@ -1,4 +1,15 @@
-import { Calendar, Database, PieChart, type LucideIcon } from 'lucide-react';
+import {
+  Briefcase,
+  Calendar,
+  CalendarDays,
+  Database,
+  LayoutDashboard,
+  LineChart,
+  PieChart,
+  Table2,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react';
 
 // Navigation
 export interface NavItem {
@@ -21,15 +32,16 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
 export interface AssetSubNavItem {
   href: string;
   label: string;
+  icon: LucideIcon;
 }
 
 export const ASSET_SUB_NAV_ITEMS: AssetSubNavItem[] = [
-  { href: '/asset', label: '자산' },
-  { href: '/asset/monthly', label: '월별 현황' },
-  { href: '/asset/profit', label: '투자 수익' },
-  { href: '/asset/detail', label: '자산 상세' },
-  { href: '/asset/trend', label: '자산 추이' },
-  { href: '/asset/portfolio', label: '포트폴리오' },
+  { href: '/asset', label: '자산', icon: LayoutDashboard },
+  { href: '/asset/monthly', label: '월별 현황', icon: CalendarDays },
+  { href: '/asset/profit', label: '투자 수익', icon: TrendingUp },
+  { href: '/asset/detail', label: '자산 상세', icon: Table2 },
+  { href: '/asset/trend', label: '자산 추이', icon: LineChart },
+  { href: '/asset/portfolio', label: '포트폴리오', icon: Briefcase },
 ];
 
 // 자산군별 점 색상(디자인 SSOT: docs/product/design/data.js의 CLASS_COLOR)
