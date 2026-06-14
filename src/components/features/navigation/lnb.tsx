@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useSyncExternalStore } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 import { ASSET_SUB_NAV_ITEMS, NAV_ITEMS, SETTINGS_NAV_ITEMS } from '@/lib/constants';
 
 function useTheme() {
@@ -30,9 +30,29 @@ function useTheme() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+function useSidebarCollapsed() {
+  const subscribe = useCallback((callback: () => void) => {
+    window.addEventListener('storage', callback);
+    return () => window.removeEventListener('storage', callback);
+  }, []);
+
+  const getSnapshot = useCallback(() => localStorage.getItem('sidebar-collapsed') === '1', []);
+
+  const getServerSnapshot = useCallback(() => false, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 export function LNB() {
   const pathname = usePathname();
   const isDark = useTheme();
+  const collapsed = useSidebarCollapsed();
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    localStorage.setItem('sidebar-collapsed', next ? '1' : '0');
+    window.dispatchEvent(new Event('storage'));
+  };
 
   const setTheme = (dark: boolean) => {
     if (dark) {
@@ -48,12 +68,26 @@ export function LNB() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <div className="sb-brand">
         <Image src="/brand/wefolio-mark.svg" alt="" width={30} height={30} priority />
         <span className="sb-wm">
           We<span>Folio</span>
         </span>
+        <button
+          type="button"
+          className="sb-collapse"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          aria-expanded={!collapsed}
+          title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+        >
+          {collapsed ? (
+            <PanelLeft size={18} strokeWidth={1.75} suppressHydrationWarning />
+          ) : (
+            <PanelLeftClose size={18} strokeWidth={1.75} suppressHydrationWarning />
+          )}
+        </button>
       </div>
 
       <div className="sb-group">
@@ -63,11 +97,15 @@ export function LNB() {
           const Icon = item.icon;
           return (
             <div key={item.href}>
-              <Link href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
+              <Link
+                href={item.href}
+                className={`nav-item${isActive ? ' on' : ''}`}
+                title={item.label}
+              >
                 <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
-                {item.label}
+                <span className="nav-label">{item.label}</span>
               </Link>
-              {item.href === '/asset' && isActive && (
+              {item.href === '/asset' && isActive && !collapsed && (
                 <div className="nav-subtree">
                   {ASSET_SUB_NAV_ITEMS.filter(subItem => subItem.href !== '/asset').map(subItem => {
                     const isSubActive =
@@ -95,9 +133,14 @@ export function LNB() {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href} className={`nav-item${isActive ? ' on' : ''}`}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`nav-item${isActive ? ' on' : ''}`}
+              title={item.label}
+            >
               <Icon size={18} strokeWidth={1.75} suppressHydrationWarning />
-              {item.label}
+              <span className="nav-label">{item.label}</span>
             </Link>
           );
         })}
@@ -111,7 +154,8 @@ export function LNB() {
             onClick={() => setTheme(false)}
             style={{ flex: 1, justifyContent: 'center' }}
           >
-            <Sun size={14} strokeWidth={1.75} suppressHydrationWarning /> Light
+            <Sun size={14} strokeWidth={1.75} suppressHydrationWarning />
+            <span className="nav-label"> Light</span>
           </button>
           <button
             type="button"
@@ -119,7 +163,8 @@ export function LNB() {
             onClick={() => setTheme(true)}
             style={{ flex: 1, justifyContent: 'center' }}
           >
-            <Moon size={14} strokeWidth={1.75} suppressHydrationWarning /> Dark
+            <Moon size={14} strokeWidth={1.75} suppressHydrationWarning />
+            <span className="nav-label"> Dark</span>
           </button>
         </div>
         <div className="sb-house">
