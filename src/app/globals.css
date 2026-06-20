@@ -494,14 +494,23 @@ body {
 .sidebar.collapsed .sb-wm,
 .sidebar.collapsed .sb-brand img,
 .sidebar.collapsed .nav-label,
-.sidebar.collapsed .sb-group-label,
 .sidebar.collapsed .sb-house > div {
   display: none;
 }
-.sidebar.collapsed .sb-group:not(:first-of-type) {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--hairline-soft);
+/* 접힘 시 그룹 라벨은 자리(높이)를 유지해 펼침과 상하 정렬을 맞추고,
+   텍스트는 숨긴 채 그 자리에 구분선만 표시한다. */
+.sidebar.collapsed .sb-group-label {
+  position: relative;
+  color: transparent;
+}
+.sidebar.collapsed .sb-group-label::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  height: 1px;
+  background: var(--hairline-soft);
 }
 .sidebar.collapsed .sb-brand {
   justify-content: center;
