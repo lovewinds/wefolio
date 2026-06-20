@@ -504,6 +504,14 @@ function snapshotDisplayPriceOriginal(s: {
   return s.priceOriginal ?? s.currentPriceKRW;
 }
 
+// 표시용 "개당 평균단가": 외화 종목은 원통화 평단(avgCostOriginal), 원화 종목은 원화 평단.
+function snapshotDisplayAvgCostOriginal(s: {
+  avgCostOriginal: number | null;
+  avgCostKRW: number;
+}): number {
+  return s.avgCostOriginal ?? s.avgCostKRW;
+}
+
 async function getSnapshotsByMonth(year: number, month: number): Promise<SnapshotWithHolding[]> {
   const startOfMonth = getMonthStart(year, month);
   const startOfNextMonth = new Date(Date.UTC(year, month, 1));
@@ -568,6 +576,7 @@ function toProfitRow(s: SnapshotWithHolding): AssetProfitRow {
     institutionName: account.institution.name,
     quantity: s.quantity,
     avgCostKRW: s.avgCostKRW,
+    avgCostOriginal: snapshotDisplayAvgCostOriginal(s),
     currentPriceKRW: s.currentPriceKRW,
     priceOriginal: snapshotDisplayPriceOriginal(s),
     exchangeRate: s.exchangeRate,

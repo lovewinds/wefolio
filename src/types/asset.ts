@@ -314,6 +314,7 @@ export interface AssetProfitRow {
   institutionName: string;
   quantity: number;
   avgCostKRW: number;
+  avgCostOriginal: number;
   currentPriceKRW: number;
   priceOriginal: number;
   exchangeRate: number | null;

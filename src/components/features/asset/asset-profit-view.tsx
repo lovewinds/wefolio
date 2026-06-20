@@ -11,7 +11,11 @@ import {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronsUpDown, Info } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { formatKoreanWonCompact, formatExchangeRate } from '@/lib/format-utils';
+import {
+  formatKoreanWonCompact,
+  formatExchangeRate,
+  formatForeignAmount,
+} from '@/lib/format-utils';
 import { ASSET_CLASS_COLORS, PENSION_ACCOUNT_TYPES, RISK_LEVEL_TEXT_COLORS } from '@/lib/constants';
 import { Card, EmptyState, PageContainer } from '@/components/ui';
 import { useMonthNavigation } from '@/hooks';
@@ -51,7 +55,6 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
   const [isFetching, setIsFetching] = useState(false);
   const [member, setMember] = useState<string | null>(null);
   const [showValue, setShowValue] = useState(false);
-  const [riskFilter, setRiskFilter] = useState<string | null>(null);
   const [assetClassFilter, setAssetClassFilter] = useState<string | null>(null);
   const [institutionFilter, setInstitutionFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -99,13 +102,6 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
       ),
     [data.rows]
   );
-  const riskLevels = useMemo(
-    () =>
-      Array.from(new Set(data.rows.map(r => r.riskLevel))).sort((a, b) =>
-        a.localeCompare(b, 'ko-KR')
-      ),
-    [data.rows]
-  );
   const assetClasses = useMemo(
     () =>
       Array.from(new Set(data.rows.map(r => r.assetClass))).sort((a, b) =>
@@ -126,13 +122,12 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
     return data.rows.filter(r => {
       if (!showValue && r.valueType) return false;
       if (member !== null && r.memberName !== member) return false;
-      if (riskFilter !== null && r.riskLevel !== riskFilter) return false;
       if (assetClassFilter !== null && r.assetClass !== assetClassFilter) return false;
       if (institutionFilter !== null && r.institutionName !== institutionFilter) return false;
       if (keyword && !r.assetName.toLowerCase().includes(keyword)) return false;
       return true;
     });
-  }, [data.rows, showValue, member, riskFilter, assetClassFilter, institutionFilter, search]);
+  }, [data.rows, showValue, member, assetClassFilter, institutionFilter, search]);
 
   const comparisonRows = useMemo(
     () => data.rows.filter(r => !r.valueType && !isDustComparisonRow(r)),
@@ -204,8 +199,20 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
       {
         accessorKey: 'avgCostKRW',
         header: '평균단가',
-        cell: ({ row }) =>
-          row.original.valueType ? DASH : row.original.avgCostKRW.toLocaleString('ko-KR'),
+        cell: ({ row }) => {
+          const h = row.original;
+          if (h.valueType) return DASH;
+          const isForeign = h.currency !== 'KRW' && h.exchangeRate != null;
+          if (!isForeign) return h.avgCostKRW.toLocaleString('ko-KR');
+          return (
+            <div className="leading-tight">
+              <div>{formatForeignAmount(h.avgCostOriginal, h.currency)}</div>
+              <div className="text-[11px] text-ink-faint">
+                ₩{h.avgCostKRW.toLocaleString('ko-KR')}
+              </div>
+            </div>
+          );
+        },
         meta: { align: 'right' } satisfies ColumnMeta,
       },
       {
@@ -214,16 +221,26 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
         cell: ({ row }) => {
           const h = row.original;
           if (h.valueType) return DASH;
+          const isForeign = h.currency !== 'KRW' && h.exchangeRate != null;
+          if (!isForeign) return h.currentPriceKRW.toLocaleString('ko-KR');
           return (
-            <span>
-              {h.currentPriceKRW.toLocaleString('ko-KR')}
-              {h.exchangeRate ? (
-                <span className="ml-1 text-[10px] text-ink-faint">
-                  @{formatExchangeRate(h.exchangeRate, h.currency)}
-                </span>
-              ) : null}
-            </span>
+            <div className="leading-tight">
+              <div>{formatForeignAmount(h.priceOriginal, h.currency)}</div>
+              <div className="text-[11px] text-ink-faint">
+                ₩{h.currentPriceKRW.toLocaleString('ko-KR')}
+              </div>
+            </div>
           );
+        },
+        meta: { align: 'right' } satisfies ColumnMeta,
+      },
+      {
+        accessorKey: 'exchangeRate',
+        header: '환율',
+        cell: ({ row }) => {
+          const h = row.original;
+          if (h.valueType || h.exchangeRate == null) return DASH;
+          return formatExchangeRate(h.exchangeRate, h.currency);
         },
         meta: { align: 'right' } satisfies ColumnMeta,
       },
@@ -342,18 +359,6 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
                   placeholder="종목 검색"
                   className="h-8 w-32 rounded-md border border-hairline bg-surface px-2.5 text-sm text-ink-muted placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
-                <select
-                  value={riskFilter ?? ''}
-                  onChange={e => setRiskFilter(e.target.value || null)}
-                  className="h-8 rounded-md border border-hairline bg-surface px-2 text-sm text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                >
-                  <option value="">위험구분 전체</option>
-                  {riskLevels.map(level => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
-                  ))}
-                </select>
                 <select
                   value={assetClassFilter ?? ''}
                   onChange={e => setAssetClassFilter(e.target.value || null)}
@@ -481,6 +486,7 @@ export function AssetProfitView({ initialData, initialYear, initialMonth }: Asse
                   <tfoot className="bg-surface-soft text-sm font-semibold text-ink">
                     <tr>
                       <td className="px-3 py-2.5">합계</td>
+                      <td className="px-3 py-2.5" />
                       <td className="px-3 py-2.5" />
                       <td className="px-3 py-2.5" />
                       <td className="px-3 py-2.5" />

@@ -289,6 +289,7 @@ describe('holdingValueSnapshotService.getMonthlyProfitData', () => {
         avgCostKRW: 120_000,
         currentPriceKRW: 130_000,
         priceOriginal: 100,
+        avgCostOriginal: 95,
         exchangeRate: 1300,
         currency: 'USD',
       }),
@@ -330,6 +331,7 @@ describe('holdingValueSnapshotService.getMonthlyProfitData', () => {
       gain: 20_000,
       currency: 'USD',
       priceOriginal: 100,
+      avgCostOriginal: 95,
       exchangeRate: 1300,
     });
 
@@ -525,6 +527,7 @@ function profitSnapshot(
     avgCostKRW: number;
     currentPriceKRW: number;
     priceOriginal?: number | null;
+    avgCostOriginal?: number | null;
     exchangeRate?: number | null;
     assetClass?: string;
     subClass?: string | null;
@@ -538,6 +541,7 @@ function profitSnapshot(
     avgCostKRW,
     currentPriceKRW,
     priceOriginal = null,
+    avgCostOriginal = null,
     exchangeRate = null,
     assetClass = '주식',
     subClass = null,
@@ -555,7 +559,7 @@ function profitSnapshot(
     currentPriceKRW,
     exchangeRate,
     priceOriginal,
-    avgCostOriginal: null,
+    avgCostOriginal,
     holding: {
       assetMaster: { name: assetName, assetClass, subClass, riskLevel, currency },
       account: {
